@@ -1,11 +1,12 @@
 #BattleUI_Root {
     background-color: #1A1A1A;
     position: absolute;
-    top: 540px;
+    top: 540px; /* Restored to bottom half */
     width: 1920px;
     height: 540px;
     flex-direction: row;
     opacity: 1;
+    overflow: visible;
 }
 
 #HeroesContainer, #MonstersContainer {
@@ -15,6 +16,7 @@
     height: 540px;
     position: absolute;
     opacity: 1;
+    overflow: visible;
 }
 
 #HeroesContainer {
@@ -35,6 +37,7 @@
     height: 135px;
     width: 240px;
     opacity: 1;
+    overflow: visible;
 }
 
 .health-bar {
@@ -45,18 +48,32 @@
     width: 200px;
     margin-bottom: 5px;
     opacity: 1;
+    overflow: visible;
+    position: relative;
 }
 
 .health-fill-hero {
     background-color: #00FF00;
+    background-image: none;
     height: 100%;
+    width: 100%;
     opacity: 1;
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .health-fill-monster {
     background-color: #FF0000;
+    background-image: none;
     height: 100%;
+    width: 100%;
     opacity: 1;
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .stat-label {

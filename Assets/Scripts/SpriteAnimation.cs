@@ -12,17 +12,17 @@ public class SpriteAnimation : MonoBehaviour
         originalPosition = transform.localPosition;
     }
 
-    public void Jiggle()
+    public void Jiggle(bool isAttacker)
     {
-        StartCoroutine(JiggleCoroutine());
+        StartCoroutine(JiggleCoroutine(isAttacker));
     }
 
-    private IEnumerator JiggleCoroutine()
+    private IEnumerator JiggleCoroutine(bool isAttacker)
     {
         float duration = 0.3f;
         float elapsed = 0f;
-        float scaleAmount = 0.2f;
-        float hopAmount = 0.5f;
+        float scaleAmount = isAttacker ? 0.3f : 0.15f; // Bigger scale for attacker
+        float hopAmount = isAttacker ? 0.7f : 0.3f;   // Bigger hop for attacker
 
         while (elapsed < duration)
         {
