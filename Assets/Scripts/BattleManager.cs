@@ -81,6 +81,7 @@ public class BattleManager : MonoBehaviour
 
         float damage = Mathf.Max(attacker.attack - target.defense, 0f);
         bool isDead = target.TakeDamage(damage);
+
         if (uiManager != null)
         {
             uiManager.UpdateUnitUI(attacker, target);

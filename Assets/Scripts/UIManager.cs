@@ -76,18 +76,15 @@ public class UIManager : MonoBehaviour
 
         VisualElement panel = unitPanels[target];
         Label hpLabel = panel.Q<Label>($"{panel.name}_HP");
-        if (hpLabel == null)
+        VisualElement healthBar = panel.Q<VisualElement>($"{panel.name}_HealthBar");
+        VisualElement healthFill = healthBar?.Q<VisualElement>($"{panel.name}_HealthFill");
+
+        if (hpLabel == null || healthFill == null)
         {
             return;
         }
 
         hpLabel.text = $"HP: {Mathf.Round(target.health)}/{target.maxHealth}";
-        VisualElement healthFill = panel.Q<VisualElement>($"{panel.name}_HealthFill");
-        if (healthFill == null)
-        {
-            return;
-        }
-
         float healthPercent = target.health / target.maxHealth;
         healthFill.style.width = new StyleLength(new Length(healthPercent * 200, LengthUnit.Pixel));
         healthFill.style.height = new StyleLength(new Length(30, LengthUnit.Pixel));
@@ -108,14 +105,12 @@ public class UIManager : MonoBehaviour
 
         Vector3 worldPos = character.transform.position + Vector3.up * 1.5f;
         Vector2 screenPos = mainCamera.WorldToScreenPoint(worldPos);
-        // Normalize screen position to [0,1], flip Y, scale to canvas (1920x540)
         Vector2 panelPos = new Vector2(
             (screenPos.x / Screen.width) * 1920,
             ((Screen.height - screenPos.y) / Screen.height) * 540
         );
-        // Clamp to canvas bounds
-        panelPos.x = Mathf.Clamp(panelPos.x - 50, 0, 1920); // Offset left for centering
-        panelPos.y = Mathf.Clamp(panelPos.y - 20, 0, 540); // Offset up for above sprite
+        panelPos.x = Mathf.Clamp(panelPos.x - 50, 0, 1920);
+        panelPos.y = Mathf.Clamp(panelPos.y - 20, 0, 540);
         Label popup = new Label
         {
             text = message,
