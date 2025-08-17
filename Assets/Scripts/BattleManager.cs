@@ -4,82 +4,75 @@ using System.Collections.Generic;
 
 public class BattleManager : MonoBehaviour
 {
-    [SerializeField] private List<CharacterStats> fighters;
-    [SerializeField] private List<CharacterStats> ghouls;
+    [SerializeField] private List<BaseCharacterStats> fighters;
+    [SerializeField] private List<BaseCharacterStats> ghouls;
     [SerializeField] private UIManager uiManager;
-    [SerializeField] private float attackDelay = 0.5f;
-    [SerializeField] private float roundDelay = 1f;
+    [SerializeField] private TimeKeeper timeKeeper;
     private bool isBattleActive = false;
+    private const float retreatMoraleThreshold = 20f;
 
     void Start()
     {
-        if (fighters.Count != 4 || ghouls.Count != 4 || uiManager == null)
+        if (fighters.Count != 4 || ghouls.Count != 4 || uiManager == null || timeKeeper == null)
         {
             return;
         }
         foreach (var fighter in fighters)
         {
-            if (fighter == null || fighter.Type != CharacterStats.CharacterType.Fighter)
+            if (fighter == null || fighter.characterType != BaseCharacterStats.CharacterType.Fighter)
             {
                 return;
             }
         }
         foreach (var ghoul in ghouls)
         {
-            if (ghoul == null || ghoul.Type != CharacterStats.CharacterType.Ghoul)
+            if (ghoul == null || ghoul.characterType != BaseCharacterStats.CharacterType.Ghoul)
             {
                 return;
             }
         }
-        StartCoroutine(BattleLoop());
+        timeKeeper.OnTick.AddListener(ProcessTick);
+        isBattleActive = true;
     }
 
-    private IEnumerator BattleLoop()
+    private void ProcessTick(int currentTick)
     {
-        isBattleActive = true;
-        while (isBattleActive)
+        if (!isBattleActive) return;
+
+        // Process monsters first
+        ProcessGroupActions(ghouls, fighters, currentTick, true);
+        if (!AreAnyAlive(fighters) || CheckRetreat(fighters))
         {
-            foreach (var fighter in fighters)
-            {
-                if (fighter != null && fighter.health > 0)
-                {
-                    CharacterStats target = GetRandomAliveTarget(ghouls);
-                    if (target != null)
-                    {
-                        yield return StartCoroutine(PerformAttack(fighter, target, true));
-                    }
-                }
-            }
+            isBattleActive = false;
+            return;
+        }
 
-            if (!AreAnyAlive(ghouls))
-            {
-                isBattleActive = false;
-                yield break;
-            }
-
-            foreach (var ghoul in ghouls)
-            {
-                if (ghoul != null && ghoul.health > 0)
-                {
-                    CharacterStats target = GetRandomAliveTarget(fighters);
-                    if (target != null)
-                    {
-                        yield return StartCoroutine(PerformAttack(ghoul, target, false));
-                    }
-                }
-            }
-
-            if (!AreAnyAlive(fighters))
-            {
-                isBattleActive = false;
-                yield break;
-            }
-
-            yield return new WaitForSeconds(roundDelay);
+        // Process fighters
+        ProcessGroupActions(fighters, ghouls, currentTick, false);
+        if (!AreAnyAlive(ghouls) || CheckRetreat(ghouls))
+        {
+            isBattleActive = false;
+            return;
         }
     }
 
-    private IEnumerator PerformAttack(CharacterStats attacker, CharacterStats target, bool isAttackerFighter)
+    private void ProcessGroupActions(List<BaseCharacterStats> attackers, List<BaseCharacterStats> targets, int currentTick, bool isMonsterGroup)
+    {
+        for (int i = 0; i < attackers.Count; i++)
+        {
+            var attacker = attackers[i];
+            if (attacker != null && attacker.health > 0 && currentTick % attacker.EffectiveSpeed == 0)
+            {
+                BaseCharacterStats target = GetRandomAliveTarget(targets);
+                if (target != null)
+                {
+                    StartCoroutine(PerformAttack(attacker, target, !isMonsterGroup));
+                }
+            }
+        }
+    }
+
+    private IEnumerator PerformAttack(BaseCharacterStats attacker, BaseCharacterStats target, bool isAttackerFighter)
     {
         SpriteAnimation attackerAnim = attacker.GetComponent<SpriteAnimation>();
         SpriteAnimation targetAnim = target.GetComponent<SpriteAnimation>();
@@ -87,29 +80,41 @@ public class BattleManager : MonoBehaviour
         if (targetAnim != null) targetAnim.Jiggle(false);
 
         float damage = Mathf.Max(attacker.attack - target.defense, 0f);
-        bool isDead = target.TakeDamage(attacker.attack);
+        bool isDead = target.TakeDamage(damage);
         if (uiManager != null)
         {
             uiManager.UpdateUnitUI(attacker, target);
-            uiManager.ShowPopup(target, "Attack Landed!");
+            uiManager.ShowPopup(target, isDead ? "Unit Defeated!" : "Attack Landed!");
         }
 
         if (attacker.TryInfect())
         {
-            target.TryInfect();
+            if (target.TryInfect())
+            {
+                target.ApplySlowEffect(1);
+                if (uiManager != null)
+                {
+                    uiManager.ShowPopup(target, "Infected: Slowed!");
+                }
+            }
         }
 
-        yield return new WaitForSeconds(attackDelay);
+        yield return new WaitForSeconds(timeKeeper.GetTickRate());
     }
 
-    private CharacterStats GetRandomAliveTarget(List<CharacterStats> targets)
+    private BaseCharacterStats GetRandomAliveTarget(List<BaseCharacterStats> targets)
     {
-        List<CharacterStats> aliveTargets = targets.FindAll(t => t != null && t.health > 0);
+        List<BaseCharacterStats> aliveTargets = targets.FindAll(t => t != null && t.health > 0);
         return aliveTargets.Count > 0 ? aliveTargets[Random.Range(0, aliveTargets.Count)] : null;
     }
 
-    private bool AreAnyAlive(List<CharacterStats> characters)
+    private bool AreAnyAlive(List<BaseCharacterStats> characters)
     {
         return characters.Exists(c => c != null && c.health > 0);
+    }
+
+    private bool CheckRetreat(List<BaseCharacterStats> characters)
+    {
+        return characters.Exists(c => c != null && c.morale <= retreatMoraleThreshold);
     }
 }

@@ -2,17 +2,16 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 public class UIManager : MonoBehaviour
 {
     [SerializeField] private UIConfig uiConfig;
-    [SerializeField] private List<CharacterStats> fighters;
-    [SerializeField] private List<CharacterStats> ghouls;
+    [SerializeField] private List<BaseCharacterStats> fighters;
+    [SerializeField] private List<BaseCharacterStats> ghouls;
     private VisualElement root;
     private RectTransform canvasRectTransform;
     private Camera mainCamera;
-    private Dictionary<CharacterStats, VisualElement> unitPanels;
+    private Dictionary<BaseCharacterStats, VisualElement> unitPanels;
 
     void Start()
     {
@@ -25,29 +24,29 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        unitPanels = new Dictionary<CharacterStats, VisualElement>();
+        unitPanels = new Dictionary<BaseCharacterStats, VisualElement>();
         SetupUnitPanels(fighters, "HeroesContainer", "Hero");
         SetupUnitPanels(ghouls, "MonstersContainer", "Monster");
 
         foreach (var fighter in fighters)
         {
-            if (fighter != null && fighter.Type == CharacterStats.CharacterType.Fighter)
+            if (fighter != null && fighter.characterType == BaseCharacterStats.CharacterType.Fighter)
             {
-                fighter.OnInfected.AddListener((target) => ShowPopup(fighter, "Bog Rot Infected!"));
+                fighter.OnInfected.AddListener((target) => ShowPopup(fighter, "Hero Infected!"));
                 UpdateUnitUI(null, fighter);
             }
         }
         foreach (var ghoul in ghouls)
         {
-            if (ghoul != null && ghoul.Type == CharacterStats.CharacterType.Ghoul)
+            if (ghoul != null && ghoul.characterType == BaseCharacterStats.CharacterType.Ghoul)
             {
-                ghoul.OnInfected.AddListener((target) => ShowPopup(ghoul, "Bog Rot Infected!"));
+                ghoul.OnInfected.AddListener((target) => ShowPopup(ghoul, "Ghoul Infected!"));
                 UpdateUnitUI(null, ghoul);
             }
         }
     }
 
-    private void SetupUnitPanels(List<CharacterStats> characters, string containerName, string panelPrefix)
+    private void SetupUnitPanels(List<BaseCharacterStats> characters, string containerName, string panelPrefix)
     {
         VisualElement container = root.Q<VisualElement>(containerName);
         if (container == null)
@@ -68,7 +67,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    public void UpdateUnitUI(CharacterStats attacker, CharacterStats target)
+    public void UpdateUnitUI(BaseCharacterStats attacker, BaseCharacterStats target)
     {
         if (target == null || !unitPanels.ContainsKey(target))
         {
@@ -92,7 +91,7 @@ public class UIManager : MonoBehaviour
         float healthPercent = target.health / target.maxHealth;
         healthFill.style.width = new StyleLength(new Length(healthPercent * 200, LengthUnit.Pixel));
         healthFill.style.height = new StyleLength(new Length(30, LengthUnit.Pixel));
-        healthFill.style.backgroundColor = new StyleColor(target.Type == CharacterStats.CharacterType.Fighter ? new Color(0, 1, 0) : new Color(1, 0, 0));
+        healthFill.style.backgroundColor = new StyleColor(target.characterType == BaseCharacterStats.CharacterType.Fighter ? new Color(0, 1, 0) : new Color(1, 0, 0));
         healthFill.style.display = DisplayStyle.Flex;
         healthFill.style.opacity = 1;
         healthFill.style.position = Position.Absolute;
@@ -100,11 +99,10 @@ public class UIManager : MonoBehaviour
         healthFill.style.top = 0;
     }
 
-    public void ShowPopup(CharacterStats character, string message)
+    public void ShowPopup(BaseCharacterStats character, string message)
     {
         if (character == null || mainCamera == null || root == null)
         {
-            Debug.LogError($"ShowPopup failed: character={character?.name ?? "null"}, mainCamera={mainCamera}, root={root}");
             return;
         }
 
@@ -118,7 +116,6 @@ public class UIManager : MonoBehaviour
         // Clamp to canvas bounds
         panelPos.x = Mathf.Clamp(panelPos.x - 50, 0, 1920); // Offset left for centering
         panelPos.y = Mathf.Clamp(panelPos.y - 20, 0, 540); // Offset up for above sprite
-        Debug.Log($"ShowPopup: Creating popup for {character.name} at worldPos={worldPos}, screenPos={screenPos}, panelPos={panelPos}, screenSize={Screen.width}x{Screen.height}");
         Label popup = new Label
         {
             text = message,
