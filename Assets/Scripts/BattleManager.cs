@@ -91,6 +91,7 @@ public class BattleManager : MonoBehaviour
         if (uiManager != null)
         {
             uiManager.UpdateUnitUI(attacker, target);
+            uiManager.ShowPopup(target, "Attack Landed!");
         }
 
         if (attacker.TryInfect())

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 public class UIManager : MonoBehaviour
 {
@@ -76,54 +77,71 @@ public class UIManager : MonoBehaviour
 
         VisualElement panel = unitPanels[target];
         Label hpLabel = panel.Q<Label>($"{panel.name}_HP");
+        if (hpLabel == null)
+        {
+            return;
+        }
+
+        hpLabel.text = $"HP: {Mathf.Round(target.health)}/{target.maxHealth}";
         VisualElement healthFill = panel.Q<VisualElement>($"{panel.name}_HealthFill");
-
-        if (hpLabel != null)
+        if (healthFill == null)
         {
-            hpLabel.text = $"HP: {Mathf.Round(target.health)}/{target.maxHealth}";
+            return;
         }
 
-        if (healthFill != null)
-        {
-            float healthPercent = target.health / target.maxHealth;
-            healthFill.style.width = new StyleLength(new Length(healthPercent * 200, LengthUnit.Pixel));
-            healthFill.style.height = new StyleLength(new Length(30, LengthUnit.Pixel));
-            healthFill.style.backgroundColor = new StyleColor(target.Type == CharacterStats.CharacterType.Fighter ? new Color(0, 1, 0) : new Color(1, 0, 0));
-            healthFill.style.display = DisplayStyle.Flex;
-            healthFill.style.opacity = 1;
-            healthFill.style.position = Position.Absolute;
-            healthFill.style.left = 0;
-            healthFill.style.top = 0;
-        }
+        float healthPercent = target.health / target.maxHealth;
+        healthFill.style.width = new StyleLength(new Length(healthPercent * 200, LengthUnit.Pixel));
+        healthFill.style.height = new StyleLength(new Length(30, LengthUnit.Pixel));
+        healthFill.style.backgroundColor = new StyleColor(target.Type == CharacterStats.CharacterType.Fighter ? new Color(0, 1, 0) : new Color(1, 0, 0));
+        healthFill.style.display = DisplayStyle.Flex;
+        healthFill.style.opacity = 1;
+        healthFill.style.position = Position.Absolute;
+        healthFill.style.left = 0;
+        healthFill.style.top = 0;
     }
 
     public void ShowPopup(CharacterStats character, string message)
     {
-        if (character == null || mainCamera == null || canvasRectTransform == null) return;
+        if (character == null || mainCamera == null || root == null)
+        {
+            Debug.LogError($"ShowPopup failed: character={character?.name ?? "null"}, mainCamera={mainCamera}, root={root}");
+            return;
+        }
 
         Vector3 worldPos = character.transform.position + Vector3.up * 1.5f;
         Vector2 screenPos = mainCamera.WorldToScreenPoint(worldPos);
-        Vector2 canvasPos;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvasRectTransform, screenPos, mainCamera, out canvasPos))
+        // Normalize screen position to [0,1], flip Y, scale to canvas (1920x540)
+        Vector2 panelPos = new Vector2(
+            (screenPos.x / Screen.width) * 1920,
+            ((Screen.height - screenPos.y) / Screen.height) * 540
+        );
+        // Clamp to canvas bounds
+        panelPos.x = Mathf.Clamp(panelPos.x - 50, 0, 1920); // Offset left for centering
+        panelPos.y = Mathf.Clamp(panelPos.y - 20, 0, 540); // Offset up for above sprite
+        Debug.Log($"ShowPopup: Creating popup for {character.name} at worldPos={worldPos}, screenPos={screenPos}, panelPos={panelPos}, screenSize={Screen.width}x{Screen.height}");
+        Label popup = new Label
         {
-            Label popup = new Label
-            {
-                text = message,
-                style = {
-                    position = Position.Absolute,
-                    left = canvasPos.x,
-                    top = canvasPos.y,
-                    color = uiConfig.TextColor,
-                    unityTextOutlineColor = uiConfig.TextOutlineColor,
-                    fontSize = 16,
-                    unityFont = uiConfig.PixelFont,
-                    unityTextAlign = TextAnchor.MiddleCenter
-                }
-            };
-            root.Add(popup);
-            StartCoroutine(AnimatePopup(popup));
-        }
+            text = message,
+            style = {
+                position = Position.Absolute,
+                left = panelPos.x,
+                top = panelPos.y,
+                color = uiConfig != null ? uiConfig.TextColor : Color.white,
+                unityTextOutlineColor = uiConfig != null ? uiConfig.TextOutlineColor : Color.black,
+                fontSize = 16,
+                unityFont = uiConfig != null && uiConfig.PixelFont != null ? uiConfig.PixelFont : null,
+                unityTextAlign = TextAnchor.MiddleCenter,
+                backgroundColor = new StyleColor(Color.black),
+                paddingLeft = 10,
+                paddingRight = 10,
+                paddingTop = 5,
+                paddingBottom = 5,
+                unityBackgroundImageTintColor = new StyleColor(Color.white),
+                display = DisplayStyle.Flex
+            }
+        };
+        root.Add(popup);
+        StartCoroutine(AnimatePopup(popup));
     }
 
     private IEnumerator AnimatePopup(VisualElement popup)
