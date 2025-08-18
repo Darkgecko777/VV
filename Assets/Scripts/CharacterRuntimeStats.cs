@@ -3,8 +3,8 @@ using UnityEngine.Events;
 
 public class CharacterRuntimeStats : MonoBehaviour
 {
-    [SerializeField] private ScriptableObject characterSO; // HeroSO or MonsterSO
-    [SerializeField] private CharacterStatsData stats; // Runtime copy of stats
+    [SerializeField] private ScriptableObject characterSO;
+    [SerializeField] private CharacterStatsData stats;
     public UnityEvent<CharacterRuntimeStats> OnInfected = new UnityEvent<CharacterRuntimeStats>();
 
     public CharacterStatsData Stats => stats;
@@ -26,14 +26,12 @@ public class CharacterRuntimeStats : MonoBehaviour
         if (characterSO is HeroSO heroSO)
         {
             heroSO.ApplyStats(this);
-            stats = heroSO.Stats;
         }
         else if (characterSO is MonsterSO monsterSO)
         {
             monsterSO.ApplyStats(this);
-            stats = monsterSO.Stats;
         }
-        gameObject.AddComponent<SpriteAnimation>(); // For jiggle animations
+        gameObject.AddComponent<SpriteAnimation>();
     }
 
     public void SetStats(CharacterStatsData newStats)
@@ -45,7 +43,7 @@ public class CharacterRuntimeStats : MonoBehaviour
     {
         if (characterSO is MonsterSO monsterSO && monsterSO.CheckDodge())
         {
-            return false; // Wraith dodge
+            return false;
         }
         if (characterSO is HeroSO heroSO)
         {
@@ -97,13 +95,11 @@ public class CharacterRuntimeStats : MonoBehaviour
         if (characterSO is HeroSO heroSO)
         {
             heroSO.ApplyStats(this);
-            stats = heroSO.Stats;
             return;
         }
         if (characterSO is MonsterSO monsterSO)
         {
             monsterSO.ApplyStats(this);
-            stats = monsterSO.Stats;
         }
     }
 

@@ -3,29 +3,21 @@ using UnityEngine.Events;
 
 public class TimeKeeper : MonoBehaviour
 {
-    [SerializeField] private float tickRate = 0.8f; // Default: Standard (0.8s)
-    private float[] tickRates = { 0.8f, 0.4f, 0.2f }; // Standard, Fast, Fastest
-    private int currentSpeedIndex = 0; // 0 = Standard, 1 = Fast, 2 = Fastest
-    private int currentTick = 0;
-    private float timer = 0f;
+    [SerializeField] private float tickRate = 0.5f; // Time between ticks in seconds
     public UnityEvent<int> OnTick = new UnityEvent<int>();
+    private float timer = 0f;
+    private int currentTick = 0;
+    private bool isRunning = false;
 
-    public void SetSpeed(int speedIndex)
+    void Start()
     {
-        if (speedIndex >= 0 && speedIndex < tickRates.Length)
-        {
-            currentSpeedIndex = speedIndex;
-            tickRate = tickRates[speedIndex];
-        }
-    }
-
-    public float GetTickRate()
-    {
-        return tickRate;
+        StartCombat();
     }
 
     void Update()
     {
+        if (!isRunning) return;
+
         timer += Time.deltaTime;
         if (timer >= tickRate)
         {
@@ -35,8 +27,19 @@ public class TimeKeeper : MonoBehaviour
         }
     }
 
-    public int GetCurrentTick()
+    public void StartCombat()
     {
-        return currentTick;
+        isRunning = true;
+    }
+
+    public void StopCombat()
+    {
+        Debug.Log("TimeKeeper: Stopping combat");
+        isRunning = false;
+    }
+
+    public float GetTickRate()
+    {
+        return tickRate;
     }
 }

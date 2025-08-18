@@ -1,7 +1,7 @@
 #BattleUI_Root {
     background-color: #1A1A1A;
     position: absolute;
-    top: 540px; /* Restored to bottom half */
+    top: 540px;
     width: 1920px;
     height: 540px;
     flex-direction: row;
@@ -81,5 +81,14 @@
     font-size: 16px;
     margin-bottom: 2px;
     font-family: "Press Start 2P";
+    opacity: 1;
+}
+
+.battle-log {
+    color: #FFFFFF;
+    font-size: 14px;
+    font-family: "Press Start 2P";
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px;
     opacity: 1;
 }

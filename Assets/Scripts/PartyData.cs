@@ -105,7 +105,6 @@ public class PartyData : MonoBehaviour
             return;
         }
 
-        // Replace hero at slot (default Scout, slot 3) with Cultist
         GameObject newCultist = new GameObject("Cultist");
         newCultist.transform.position = positions.heroPositions[slot];
         var cultistStats = newCultist.AddComponent<CharacterRuntimeStats>();
@@ -120,7 +119,6 @@ public class PartyData : MonoBehaviour
         cultistStats.SetStats(cultistData);
         cultistStats.Initialize();
         heroStats[slot] = cultistStats;
-        // Destroy old hero GameObject (handled in scene cleanup if needed)
     }
 
     public CharacterRuntimeStats FindLowestHealthAlly()

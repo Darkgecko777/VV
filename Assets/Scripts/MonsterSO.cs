@@ -4,7 +4,7 @@ using UnityEngine;
 public class MonsterSO : ScriptableObject
 {
     [SerializeField] protected CharacterStatsData stats;
-    [SerializeField] protected Sprite sprite; // Aseprite placeholder
+    [SerializeField] protected Sprite sprite;
     protected const float bogRotMoraleDrain = 5f;
 
     public CharacterStatsData Stats => stats;
@@ -15,9 +15,9 @@ public class MonsterSO : ScriptableObject
         CharacterStatsData newStats = stats;
         float rankMultiplier = newStats.rank switch
         {
-            1 => 0.8f, // Rank 1: 80% base stats
-            3 => 1.2f, // Rank 3: 120% base stats
-            _ => 1.0f  // Rank 2: 100% base stats
+            1 => 0.8f,
+            3 => 1.2f,
+            _ => 1.0f
         };
 
         newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;
@@ -26,7 +26,7 @@ public class MonsterSO : ScriptableObject
         newStats.defense = Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier;
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
-        newStats.bogRotSpreadChance = 0.25f; // Monster default
+        newStats.bogRotSpreadChance = 0.25f;
         target.SetStats(newStats);
     }
 
@@ -77,7 +77,6 @@ public class MonsterSO : ScriptableObject
 
     public virtual bool CheckDodge()
     {
-        // Placeholder for Wraith-specific dodge (overridden in WraithSO)
         return false;
     }
 }

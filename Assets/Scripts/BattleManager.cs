@@ -18,14 +18,16 @@ public class BattleManager : MonoBehaviour
         if (partyData == null || encounterData == null || uiManager == null || timeKeeper == null)
         {
             Debug.LogError("BattleManager: Missing required references!");
+            Debug.Log($"PartyData: {(partyData != null ? partyData.name : "null")}, EncounterData: {(encounterData != null ? encounterData.name : "null")}, UIManager: {(uiManager != null ? uiManager.name : "null")}, TimeKeeper: {(timeKeeper != null ? timeKeeper.name : "null")}");
             return;
         }
 
         heroes = partyData.GetHeroes();
         monsters = encounterData.SpawnMonsters();
-        if (heroes.Count != 4 || monsters.Count == 0)
+
+        if (heroes.Count != 4 || monsters.Count != 4)
         {
-            Debug.LogError("BattleManager: Invalid hero or monster count!");
+            Debug.LogError($"BattleManager: Invalid hero or monster count! Heroes: {heroes.Count}, Monsters: {monsters.Count}");
             return;
         }
 
@@ -33,7 +35,7 @@ public class BattleManager : MonoBehaviour
         {
             if (hero == null || hero.Stats.characterType == CharacterStatsData.CharacterType.Ghoul || hero.Stats.characterType == CharacterStatsData.CharacterType.Wraith)
             {
-                Debug.LogError("BattleManager: Invalid hero type!");
+                Debug.LogError($"BattleManager: Invalid hero type! {hero?.gameObject.name ?? "null"}");
                 return;
             }
         }
@@ -41,7 +43,7 @@ public class BattleManager : MonoBehaviour
         {
             if (monster == null || (monster.Stats.characterType != CharacterStatsData.CharacterType.Ghoul && monster.Stats.characterType != CharacterStatsData.CharacterType.Wraith))
             {
-                Debug.LogError("BattleManager: Invalid monster type!");
+                Debug.LogError($"BattleManager: Invalid monster type! {monster?.gameObject.name ?? "null"}");
                 return;
             }
         }
@@ -52,21 +54,33 @@ public class BattleManager : MonoBehaviour
 
     private void ProcessTick(int currentTick)
     {
-        if (!isBattleActive) return;
+        if (!isBattleActive)
+        {
+            Debug.Log("BattleManager: Tick ignored, battle not active");
+            return;
+        }
 
         // Process monsters first
         ProcessGroupActions(monsters, heroes, currentTick, true);
-        if (!AreAnyAlive(heroes) || CheckRetreat(heroes))
+        bool heroesAlive = AreAnyAlive(heroes);
+        bool heroesRetreat = CheckRetreat(heroes);
+        if (!heroesAlive || heroesRetreat)
         {
             isBattleActive = false;
+            timeKeeper.StopCombat();
+            Debug.Log($"BattleManager: Battle ended - heroes defeated: {!heroesAlive}, retreated: {heroesRetreat}");
             return;
         }
 
         // Process heroes
         ProcessGroupActions(heroes, monsters, currentTick, false);
-        if (!AreAnyAlive(monsters) || CheckRetreat(monsters))
+        bool monstersAlive = AreAnyAlive(monsters);
+        bool monstersRetreat = CheckRetreat(monsters);
+        if (!monstersAlive || monstersRetreat)
         {
             isBattleActive = false;
+            timeKeeper.StopCombat();
+            Debug.Log($"BattleManager: Battle ended - monsters defeated: {!monstersAlive}, retreated: {monstersRetreat}");
             return;
         }
     }
@@ -78,13 +92,12 @@ public class BattleManager : MonoBehaviour
             var attacker = attackers[i];
             if (attacker != null && attacker.Stats.health > 0 && currentTick % (attacker.Stats.slowTickDelay + (int)attacker.Stats.speed) == 0)
             {
-                // Apply special abilities for heroes only
                 if (!isMonsterGroup && attacker.CharacterSO is HeroSO heroSO)
                 {
-                    heroSO.ApplySpecialAbility(attacker, partyData); // Call HeroSO's ApplySpecialAbility
+                    heroSO.ApplySpecialAbility(attacker, partyData);
+                    uiManager.LogMessage($"{attacker.Stats.characterType} used special ability");
                 }
 
-                // Check for cultist murder condition
                 if (!isMonsterGroup && attacker.IsCultist)
                 {
                     var aliveHeroes = partyData.CheckDeadStatus();
@@ -95,13 +108,14 @@ public class BattleManager : MonoBehaviour
                         {
                             uiManager.ShowPopup(otherHero, "Cultist Murdered Ally!");
                             uiManager.LogMessage("Cultist Murdered Ally!");
-                            isBattleActive = false; // End battle with loot
+                            isBattleActive = false;
+                            timeKeeper.StopCombat();
+                            Debug.Log("BattleManager: Battle ended - cultist murder");
                             return;
                         }
                     }
                 }
 
-                // Perform attack
                 CharacterRuntimeStats target = GetRandomAliveTarget(targets);
                 if (target != null)
                 {
@@ -118,7 +132,7 @@ public class BattleManager : MonoBehaviour
         if (attackerAnim != null) attackerAnim.Jiggle(true);
         if (targetAnim != null) targetAnim.Jiggle(false);
 
-        bool isDead = target.TakeDamage(attacker.Stats.attack); // Includes dodge check for Wraith
+        bool isDead = target.TakeDamage(attacker.Stats.attack);
         uiManager.UpdateUnitUI(attacker, target);
         uiManager.ShowPopup(target, isDead ? "Unit Defeated!" : "Attack Landed!");
         uiManager.LogMessage(isDead ? $"{target.Stats.characterType} Defeated!" : $"{attacker.Stats.characterType} attacked {target.Stats.characterType}!");

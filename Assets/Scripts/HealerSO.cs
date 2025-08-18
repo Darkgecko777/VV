@@ -9,29 +9,34 @@ public class HealerSO : HeroSO
         characterType = CharacterStatsData.CharacterType.Healer,
         minHealth = 50f,
         maxHealth = 70f,
+        health = 50f,
         minAttack = 5f,
         maxAttack = 10f,
+        attack = 5f,
         minDefense = 5f,
         maxDefense = 8f,
+        defense = 5f,
         morale = 100f,
         sanity = 100f,
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
         isCultist = false,
-        rank = 2, // Default Rank 2 (100% stats)
-        bogRotSpreadChance = 0.15f // 0.20f if isCultist
+        rank = 2,
+        bogRotSpreadChance = 0.15f
     };
 
     void OnEnable()
     {
-        // Ensure stats are initialized with Healer defaults
         defaultStats.characterType = CharacterStatsData.CharacterType.Healer;
         defaultStats.minHealth = 50f;
         defaultStats.maxHealth = 70f;
+        defaultStats.health = defaultStats.minHealth;
         defaultStats.minAttack = 5f;
         defaultStats.maxAttack = 10f;
+        defaultStats.attack = 5f;
         defaultStats.minDefense = 5f;
         defaultStats.maxDefense = 8f;
+        defaultStats.defense = 5f;
         defaultStats.morale = 100f;
         defaultStats.sanity = 100f;
         defaultStats.speed = CharacterStatsData.Speed.Normal;
@@ -47,9 +52,9 @@ public class HealerSO : HeroSO
         CharacterStatsData newStats = defaultStats;
         float rankMultiplier = newStats.rank switch
         {
-            1 => 0.8f, // Rank 1: 80% base stats
-            3 => 1.2f, // Rank 3: 120% base stats
-            _ => 1.0f  // Rank 2: 100% base stats
+            1 => 0.8f,
+            3 => 1.2f,
+            _ => 1.0f
         };
 
         newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;
@@ -64,7 +69,6 @@ public class HealerSO : HeroSO
 
     public override void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
     {
-        // Heal lowest-HP ally by 5 HP if alive
         if (partyData != null)
         {
             CharacterRuntimeStats lowestAlly = partyData.FindLowestHealthAlly();

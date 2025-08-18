@@ -23,14 +23,17 @@ public class UIManager : MonoBehaviour
         if (root == null || canvasRectTransform == null || uiConfig == null || mainCamera == null || partyData == null || encounterData == null)
         {
             Debug.LogError("UIManager: Missing required components or references!");
+            Debug.Log($"Root: {(root != null ? "set" : "null")}, Canvas: {(canvasRectTransform != null ? "set" : "null")}, UIConfig: {(uiConfig != null ? uiConfig.name : "null")}, Camera: {(mainCamera != null ? "set" : "null")}, PartyData: {(partyData != null ? partyData.name : "null")}, EncounterData: {(encounterData != null ? encounterData.name : "null")}");
             return;
         }
 
         unitPanels = new Dictionary<CharacterRuntimeStats, VisualElement>();
-        SetupUnitPanels(partyData.GetHeroes(), "HeroesContainer", "Hero");
-        SetupUnitPanels(encounterData.SpawnMonsters(), "MonstersContainer", "Monster");
+        List<CharacterRuntimeStats> heroes = partyData.GetHeroes();
+        List<CharacterRuntimeStats> monsters = encounterData.SpawnMonsters(); // Store monsters once
+        SetupUnitPanels(heroes, "HeroesContainer", "Hero");
+        SetupUnitPanels(monsters, "MonstersContainer", "Monster");
 
-        foreach (var hero in partyData.GetHeroes())
+        foreach (var hero in heroes)
         {
             if (hero != null && hero.Stats.characterType != CharacterStatsData.CharacterType.Ghoul && hero.Stats.characterType != CharacterStatsData.CharacterType.Wraith)
             {
@@ -38,7 +41,7 @@ public class UIManager : MonoBehaviour
                 UpdateUnitUI(null, hero);
             }
         }
-        foreach (var monster in encounterData.SpawnMonsters())
+        foreach (var monster in monsters)
         {
             if (monster != null && (monster.Stats.characterType == CharacterStatsData.CharacterType.Ghoul || monster.Stats.characterType == CharacterStatsData.CharacterType.Wraith))
             {
@@ -47,13 +50,14 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        // Setup battle log
         battleLog = root.Q<Label>("BattleLog");
-        if (battleLog != null)
+        if (battleLog == null)
         {
-            battleLog.style.display = DisplayStyle.Flex;
-            battleLog.text = "";
+            Debug.LogError("UIManager: BattleLog label not found in UI Document!");
+            return;
         }
+        battleLog.style.display = DisplayStyle.Flex;
+        battleLog.text = "";
     }
 
     private void SetupUnitPanels(List<CharacterRuntimeStats> characters, string containerName, string panelPrefix)
@@ -74,6 +78,14 @@ public class UIManager : MonoBehaviour
                 {
                     unitPanels[characters[i]] = panel;
                 }
+                else
+                {
+                    Debug.LogError($"UIManager: Panel {panelName} not found in {containerName}!");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"UIManager: Character at index {i} in {containerName} is null!");
             }
         }
     }
@@ -82,6 +94,7 @@ public class UIManager : MonoBehaviour
     {
         if (target == null || !unitPanels.ContainsKey(target))
         {
+            Debug.LogWarning($"UIManager: Cannot update UI for {target?.gameObject.name ?? "null"} - not in unitPanels!");
             return;
         }
 
@@ -89,9 +102,14 @@ public class UIManager : MonoBehaviour
         Label hpLabel = panel.Q<Label>($"{panel.name}_HP");
         VisualElement healthBar = panel.Q<VisualElement>($"{panel.name}_HealthBar");
         VisualElement healthFill = healthBar?.Q<VisualElement>($"{panel.name}_HealthFill");
+        Label atkLabel = panel.Q<Label>($"{panel.name}_ATK");
+        Label defLabel = panel.Q<Label>($"{panel.name}_DEF");
+        Label moraleLabel = panel.Q<Label>($"{panel.name}_Morale");
+        Label sanityLabel = panel.Q<Label>($"{panel.name}_Sanity");
 
-        if (hpLabel == null || healthFill == null)
+        if (hpLabel == null || healthFill == null || atkLabel == null || defLabel == null || moraleLabel == null)
         {
+            Debug.LogError($"UIManager: Missing UI elements in {panel.name}! HP: {(hpLabel != null ? "set" : "null")}, HealthFill: {(healthFill != null ? "set" : "null")}, ATK: {(atkLabel != null ? "set" : "null")}, DEF: {(defLabel != null ? "set" : "null")}, Morale: {(moraleLabel != null ? "set" : "null")}");
             return;
         }
 
@@ -109,12 +127,31 @@ public class UIManager : MonoBehaviour
         healthFill.style.position = Position.Absolute;
         healthFill.style.left = 0;
         healthFill.style.top = 0;
+
+        atkLabel.text = $"ATK: {Mathf.Round(target.Stats.attack)}";
+        defLabel.text = $"DEF: {Mathf.Round(target.Stats.defense)}";
+        moraleLabel.text = $"Morale: {Mathf.Round(target.Stats.morale)}";
+
+        if (sanityLabel != null)
+        {
+            sanityLabel.text = $"Sanity: {Mathf.Round(target.Stats.sanity)}";
+        }
+        else if (target.Stats.characterType == CharacterStatsData.CharacterType.Ghoul ||
+                 target.Stats.characterType == CharacterStatsData.CharacterType.Wraith)
+        {
+            Debug.Log($"UIManager: Skipping Sanity label for {target.Stats.characterType} (monster)");
+        }
+        else
+        {
+            Debug.LogWarning($"UIManager: Sanity label not found for {panel.name} (hero)");
+        }
     }
 
     public void ShowPopup(CharacterRuntimeStats character, string message)
     {
         if (character == null || mainCamera == null || root == null)
         {
+            Debug.LogWarning("UIManager: Cannot show popup - missing character, camera, or root!");
             return;
         }
 
@@ -150,7 +187,6 @@ public class UIManager : MonoBehaviour
         root.Add(popup);
         StartCoroutine(AnimatePopup(popup));
 
-        // Log to battle log
         LogMessage(message);
     }
 
@@ -182,12 +218,15 @@ public class UIManager : MonoBehaviour
         if (battleLog != null)
         {
             battleLog.text += $"{message}\n";
-            // Limit log to last 10 messages (adjustable)
             string[] lines = battleLog.text.Split('\n');
             if (lines.Length > 10)
             {
                 battleLog.text = string.Join("\n", lines, lines.Length - 10, 10);
             }
+        }
+        else
+        {
+            Debug.LogWarning("UIManager: BattleLog label not found, unable to log message!");
         }
     }
 }

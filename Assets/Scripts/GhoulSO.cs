@@ -9,29 +9,34 @@ public class GhoulSO : MonsterSO
         characterType = CharacterStatsData.CharacterType.Ghoul,
         minHealth = 50f,
         maxHealth = 70f,
+        health = 50f,
         minAttack = 12f,
         maxAttack = 18f,
+        attack = 12f,
         minDefense = 3f,
         maxDefense = 8f,
+        defense = 3f,
         morale = 80f,
         sanity = 0f,
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
-        isCultist = false, // Monsters don't use cultist mechanics
-        rank = 2, // Default Rank 2 (100% stats)
+        isCultist = false,
+        rank = 2,
         bogRotSpreadChance = 0.25f
     };
 
     void OnEnable()
     {
-        // Ensure stats are initialized with Ghoul defaults
         defaultStats.characterType = CharacterStatsData.CharacterType.Ghoul;
         defaultStats.minHealth = 50f;
         defaultStats.maxHealth = 70f;
+        defaultStats.health = defaultStats.minHealth;
         defaultStats.minAttack = 12f;
         defaultStats.maxAttack = 18f;
+        defaultStats.attack = 12f;
         defaultStats.minDefense = 3f;
         defaultStats.maxDefense = 8f;
+        defaultStats.defense = 3f;
         defaultStats.morale = 80f;
         defaultStats.sanity = 0f;
         defaultStats.speed = CharacterStatsData.Speed.Normal;
@@ -47,9 +52,9 @@ public class GhoulSO : MonsterSO
         CharacterStatsData newStats = defaultStats;
         float rankMultiplier = newStats.rank switch
         {
-            1 => 0.8f, // Rank 1: 80% base stats
-            3 => 1.2f, // Rank 3: 120% base stats
-            _ => 1.0f  // Rank 2: 100% base stats
+            1 => 0.8f,
+            3 => 1.2f,
+            _ => 1.0f
         };
 
         newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;

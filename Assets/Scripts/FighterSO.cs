@@ -9,17 +9,20 @@ public class FighterSO : HeroSO
         characterType = CharacterStatsData.CharacterType.Fighter,
         minHealth = 80f,
         maxHealth = 100f,
+        health = 80f, // Initialize to minHealth
         minAttack = 15f,
         maxAttack = 20f,
+        attack = 15f,
         minDefense = 5f,
         maxDefense = 10f,
+        defense = 5f,
         morale = 100f,
         sanity = 100f,
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
         isCultist = false,
-        rank = 2, // Default Rank 2 (100% stats)
-        bogRotSpreadChance = 0.15f // 0.20f if isCultist
+        rank = 2,
+        bogRotSpreadChance = 0.15f
     };
 
     void OnEnable()
@@ -27,10 +30,13 @@ public class FighterSO : HeroSO
         defaultStats.characterType = CharacterStatsData.CharacterType.Fighter;
         defaultStats.minHealth = 80f;
         defaultStats.maxHealth = 100f;
+        defaultStats.health = defaultStats.minHealth; // Ensure initial health
         defaultStats.minAttack = 15f;
         defaultStats.maxAttack = 20f;
+        defaultStats.attack = 15f;
         defaultStats.minDefense = 5f;
         defaultStats.maxDefense = 10f;
+        defaultStats.defense = 5f;
         defaultStats.morale = 100f;
         defaultStats.sanity = 100f;
         defaultStats.speed = CharacterStatsData.Speed.Normal;
@@ -46,9 +52,9 @@ public class FighterSO : HeroSO
         CharacterStatsData newStats = defaultStats;
         float rankMultiplier = newStats.rank switch
         {
-            1 => 0.8f, // Rank 1: 80% base stats
-            3 => 1.2f, // Rank 3: 120% base stats
-            _ => 1.0f  // Rank 2: 100% base stats
+            1 => 0.8f,
+            3 => 1.2f,
+            _ => 1.0f
         };
 
         newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;
@@ -63,11 +69,10 @@ public class FighterSO : HeroSO
 
     public override void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
     {
-        // Placeholder: +3 ATK when HP < 30%
         if (target.Stats.health < target.Stats.maxHealth * 0.3f)
         {
             CharacterStatsData updatedStats = target.Stats;
-            updatedStats.attack += 3f; // Temporary ATK boost
+            updatedStats.attack += 3f;
             target.SetStats(updatedStats);
         }
     }
