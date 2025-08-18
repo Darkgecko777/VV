@@ -4,29 +4,41 @@ using System.Collections.Generic;
 [CreateAssetMenu(fileName = "EncounterData", menuName = "VirulentVentures/EncounterData", order = 10)]
 public class EncounterData : ScriptableObject
 {
-    [SerializeField] private List<MonsterSO> monsters; // 1-4 Ghouls/Wraiths
+    [SerializeField] private MonsterSO ghoulSO; // Single GhoulSO reference
+    [SerializeField] private MonsterSO wraithSO; // Single WraithSO reference
     [SerializeField] private bool isCombatNode = true; // Always true for prototype
+    [SerializeField] private CharacterPositions positions = CharacterPositions.Default();
 
-    public List<MonsterSO> Monsters => monsters;
     public bool IsCombatNode => isCombatNode;
 
     public List<CharacterRuntimeStats> SpawnMonsters()
     {
         List<CharacterRuntimeStats> monsterStats = new List<CharacterRuntimeStats>();
-        if (monsters == null || monsters.Count == 0)
+        if (ghoulSO == null || wraithSO == null)
         {
-            Debug.LogError("EncounterData: No monsters assigned!");
+            return monsterStats;
+        }
+        if (positions.monsterPositions.Length != 4)
+        {
             return monsterStats;
         }
 
-        for (int i = 0; i < monsters.Count; i++)
+        // Fixed composition: 2 Ghouls, 2 Wraiths
+        MonsterSO[] monsterComposition = new MonsterSO[] { ghoulSO, ghoulSO, wraithSO, wraithSO };
+
+        for (int i = 0; i < monsterComposition.Length; i++)
         {
-            if (monsters[i] != null)
+            if (monsterComposition[i] != null)
             {
-                GameObject monsterObj = new GameObject(monsters[i].Stats.characterType.ToString());
+                GameObject monsterObj = new GameObject(monsterComposition[i].Stats.characterType.ToString());
+                monsterObj.transform.position = positions.monsterPositions[i];
                 var runtimeStats = monsterObj.AddComponent<CharacterRuntimeStats>();
-                runtimeStats.SetStats(monsters[i].Stats); // Apply MonsterSO stats
-                monsterObj.AddComponent<SpriteAnimation>(); // For jiggle animations
+                var renderer = monsterObj.AddComponent<SpriteRenderer>();
+                renderer.sprite = monsterComposition[i].Sprite;
+                renderer.sortingLayerName = "Characters";
+                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
+                runtimeStats.SetCharacterSO(monsterComposition[i]);
+                runtimeStats.Initialize();
                 monsterStats.Add(runtimeStats);
             }
         }
@@ -34,18 +46,10 @@ public class EncounterData : ScriptableObject
         return monsterStats;
     }
 
-    // Initialize encounter with random 1-4 Ghouls/Wraiths (for testing)
+    // Initialize encounter with fixed 2 Ghouls, 2 Wraiths (for testing)
     public void InitializeRandomEncounter(MonsterSO ghoulSO, MonsterSO wraithSO)
     {
-        monsters = new List<MonsterSO>();
-        int monsterCount = Random.Range(1, 5); // 1-4 monsters
-        for (int i = 0; i < monsterCount; i++)
-        {
-            MonsterSO monster = Random.value < 0.5f ? ghoulSO : wraithSO;
-            if (monster != null)
-            {
-                monsters.Add(monster);
-            }
-        }
+        this.ghoulSO = ghoulSO;
+        this.wraithSO = wraithSO;
     }
 }

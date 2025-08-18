@@ -9,13 +9,18 @@ public class CharacterRuntimeStats : MonoBehaviour
 
     public CharacterStatsData Stats => stats;
     public bool IsCultist => characterSO is HeroSO heroSO && heroSO.Stats.isCultist;
-    public ScriptableObject CharacterSO => characterSO; // Public getter for BattleManager
+    public ScriptableObject CharacterSO => characterSO;
 
-    void Awake()
+    public void SetCharacterSO(ScriptableObject so)
+    {
+        characterSO = so;
+    }
+
+    public void Initialize()
     {
         if (characterSO == null)
         {
-            Debug.LogError("CharacterRuntimeStats: No characterSO assigned!");
+            Debug.LogError($"CharacterRuntimeStats: No characterSO assigned on {gameObject.name}!");
             return;
         }
         if (characterSO is HeroSO heroSO)
