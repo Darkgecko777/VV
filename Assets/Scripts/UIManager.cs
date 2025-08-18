@@ -6,12 +6,13 @@ using System.Collections.Generic;
 public class UIManager : MonoBehaviour
 {
     [SerializeField] private UIConfig uiConfig;
-    [SerializeField] private List<BaseCharacterStats> fighters;
-    [SerializeField] private List<BaseCharacterStats> ghouls;
+    [SerializeField] private PartyData partyData;
+    [SerializeField] private EncounterData encounterData;
     private VisualElement root;
     private RectTransform canvasRectTransform;
     private Camera mainCamera;
-    private Dictionary<BaseCharacterStats, VisualElement> unitPanels;
+    private Dictionary<CharacterRuntimeStats, VisualElement> unitPanels;
+    private Label battleLog;
 
     void Start()
     {
@@ -19,38 +20,48 @@ public class UIManager : MonoBehaviour
         canvasRectTransform = GetComponent<RectTransform>();
         mainCamera = Camera.main;
 
-        if (root == null || canvasRectTransform == null || uiConfig == null || mainCamera == null)
+        if (root == null || canvasRectTransform == null || uiConfig == null || mainCamera == null || partyData == null || encounterData == null)
         {
+            Debug.LogError("UIManager: Missing required components or references!");
             return;
         }
 
-        unitPanels = new Dictionary<BaseCharacterStats, VisualElement>();
-        SetupUnitPanels(fighters, "HeroesContainer", "Hero");
-        SetupUnitPanels(ghouls, "MonstersContainer", "Monster");
+        unitPanels = new Dictionary<CharacterRuntimeStats, VisualElement>();
+        SetupUnitPanels(partyData.GetHeroes(), "HeroesContainer", "Hero");
+        SetupUnitPanels(encounterData.SpawnMonsters(), "MonstersContainer", "Monster");
 
-        foreach (var fighter in fighters)
+        foreach (var hero in partyData.GetHeroes())
         {
-            if (fighter != null && fighter.characterType == BaseCharacterStats.CharacterType.Fighter)
+            if (hero != null && hero.Stats.characterType != CharacterStatsData.CharacterType.Ghoul && hero.Stats.characterType != CharacterStatsData.CharacterType.Wraith)
             {
-                fighter.OnInfected.AddListener((target) => ShowPopup(fighter, "Hero Infected!"));
-                UpdateUnitUI(null, fighter);
+                hero.OnInfected.AddListener((target) => ShowPopup(hero, $"{hero.Stats.characterType} Infected!"));
+                UpdateUnitUI(null, hero);
             }
         }
-        foreach (var ghoul in ghouls)
+        foreach (var monster in encounterData.SpawnMonsters())
         {
-            if (ghoul != null && ghoul.characterType == BaseCharacterStats.CharacterType.Ghoul)
+            if (monster != null && (monster.Stats.characterType == CharacterStatsData.CharacterType.Ghoul || monster.Stats.characterType == CharacterStatsData.CharacterType.Wraith))
             {
-                ghoul.OnInfected.AddListener((target) => ShowPopup(ghoul, "Ghoul Infected!"));
-                UpdateUnitUI(null, ghoul);
+                monster.OnInfected.AddListener((target) => ShowPopup(monster, $"{monster.Stats.characterType} Infected!"));
+                UpdateUnitUI(null, monster);
             }
+        }
+
+        // Setup battle log
+        battleLog = root.Q<Label>("BattleLog");
+        if (battleLog != null)
+        {
+            battleLog.style.display = DisplayStyle.Flex;
+            battleLog.text = "";
         }
     }
 
-    private void SetupUnitPanels(List<BaseCharacterStats> characters, string containerName, string panelPrefix)
+    private void SetupUnitPanels(List<CharacterRuntimeStats> characters, string containerName, string panelPrefix)
     {
         VisualElement container = root.Q<VisualElement>(containerName);
         if (container == null)
         {
+            Debug.LogError($"UIManager: {containerName} not found in UI Document!");
             return;
         }
         for (int i = 0; i < characters.Count; i++)
@@ -67,7 +78,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    public void UpdateUnitUI(BaseCharacterStats attacker, BaseCharacterStats target)
+    public void UpdateUnitUI(CharacterRuntimeStats attacker, CharacterRuntimeStats target)
     {
         if (target == null || !unitPanels.ContainsKey(target))
         {
@@ -84,11 +95,15 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        hpLabel.text = $"HP: {Mathf.Round(target.health)}/{target.maxHealth}";
-        float healthPercent = target.health / target.maxHealth;
+        hpLabel.text = $"HP: {Mathf.Round(target.Stats.health)}/{target.Stats.maxHealth}";
+        float healthPercent = target.Stats.health / target.Stats.maxHealth;
         healthFill.style.width = new StyleLength(new Length(healthPercent * 200, LengthUnit.Pixel));
         healthFill.style.height = new StyleLength(new Length(30, LengthUnit.Pixel));
-        healthFill.style.backgroundColor = new StyleColor(target.characterType == BaseCharacterStats.CharacterType.Fighter ? new Color(0, 1, 0) : new Color(1, 0, 0));
+        healthFill.style.backgroundColor = new StyleColor(
+            target.Stats.characterType == CharacterStatsData.CharacterType.Ghoul ||
+            target.Stats.characterType == CharacterStatsData.CharacterType.Wraith ?
+            new Color(1, 0, 0) : new Color(0, 1, 0)
+        );
         healthFill.style.display = DisplayStyle.Flex;
         healthFill.style.opacity = 1;
         healthFill.style.position = Position.Absolute;
@@ -96,7 +111,7 @@ public class UIManager : MonoBehaviour
         healthFill.style.top = 0;
     }
 
-    public void ShowPopup(BaseCharacterStats character, string message)
+    public void ShowPopup(CharacterRuntimeStats character, string message)
     {
         if (character == null || mainCamera == null || root == null)
         {
@@ -134,6 +149,9 @@ public class UIManager : MonoBehaviour
         };
         root.Add(popup);
         StartCoroutine(AnimatePopup(popup));
+
+        // Log to battle log
+        LogMessage(message);
     }
 
     private IEnumerator AnimatePopup(VisualElement popup)
@@ -157,5 +175,19 @@ public class UIManager : MonoBehaviour
             yield return null;
         }
         root.Remove(popup);
+    }
+
+    public void LogMessage(string message)
+    {
+        if (battleLog != null)
+        {
+            battleLog.text += $"{message}\n";
+            // Limit log to last 10 messages (adjustable)
+            string[] lines = battleLog.text.Split('\n');
+            if (lines.Length > 10)
+            {
+                battleLog.text = string.Join("\n", lines, lines.Length - 10, 10);
+            }
+        }
     }
 }

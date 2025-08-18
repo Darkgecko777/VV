@@ -1,0 +1,27 @@
+using UnityEngine;
+
+[System.Serializable]
+public struct CharacterStatsData
+{
+    public enum CharacterType { Fighter, Healer, TreasureHunter, Scout, Mage, Ghoul, Wraith }
+    public enum Speed { VerySlow = 5, Slow = 4, Normal = 3, Fast = 2, VeryFast = 1 }
+
+    public CharacterType characterType;
+    public Speed speed;
+    public float minHealth;
+    public float maxHealth;
+    public float health;
+    public float minAttack;
+    public float maxAttack;
+    public float attack;
+    public float minDefense;
+    public float maxDefense;
+    public float defense;
+    public float morale;
+    public float sanity;
+    public bool isInfected;
+    public bool isCultist;
+    public int slowTickDelay;
+    public int rank; // 1-3 for stat scaling
+    public float bogRotSpreadChance; // 0.15f heroes, 0.20f cultists, 0.25f monsters
+}
