@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21e5c33fe7638aa40a2391f554f49313, type: 3}
   m_Name: CombatMonsters
   m_EditorClassIdentifier: 
-  monsters:
-  - {fileID: 11400000, guid: 8cf65c390e1460646a2aaa95a6629a88, type: 2}
-  - {fileID: 11400000, guid: 9bdb1f54eabd3d0408e8086058b5485e, type: 2}
+  ghoulSO: {fileID: 11400000, guid: 8cf65c390e1460646a2aaa95a6629a88, type: 2}
+  wraithSO: {fileID: 11400000, guid: 9bdb1f54eabd3d0408e8086058b5485e, type: 2}
   isCombatNode: 1
   positions:
     heroPositions:

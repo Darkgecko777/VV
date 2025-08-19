@@ -17,13 +17,13 @@ MonoBehaviour:
     speed: 3
     minHealth: 60
     maxHealth: 80
-    health: 0
+    health: 60
     minAttack: 10
     maxAttack: 15
-    attack: 0
+    attack: 10
     minDefense: 3
     maxDefense: 7
-    defense: 0
+    defense: 3
     morale: 100
     sanity: 100
     isInfected: 0
@@ -31,19 +31,19 @@ MonoBehaviour:
     slowTickDelay: 0
     rank: 2
     bogRotSpreadChance: 0.15
-  sprite: {fileID: -4724940214750161510, guid: 683b38f0ea3ccce4b9af3fe9b17a9ef6, type: 3}
+  sprite: {fileID: -5705666034287103667, guid: 683b38f0ea3ccce4b9af3fe9b17a9ef6, type: 3}
   defaultStats:
     characterType: 2
     speed: 3
     minHealth: 60
     maxHealth: 80
-    health: 0
+    health: 60
     minAttack: 10
     maxAttack: 15
-    attack: 0
+    attack: 10
     minDefense: 3
     maxDefense: 7
-    defense: 0
+    defense: 3
     morale: 100
     sanity: 100
     isInfected: 0

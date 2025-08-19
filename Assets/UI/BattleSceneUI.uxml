@@ -1,10 +1,10 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/UI/BattleScene.uss?fileID=7433441132597879392&amp;guid=025818c6f34a64446aa6a9bc11b5a889&amp;type=3#BattleScene" />
     <ui:VisualElement name="BattleUI_Root" style="position: absolute; top: 540px; width: 1920px; height: 540px;">
-        <ui:VisualElement name="HeroesContainer" style="position: absolute; left: 0px; width: 960px; height: 540px;">
+        <ui:VisualElement name="HeroesContainer" style="position: absolute; left: 10px; top: 10px; width: 630px; height: 520px;">
             <ui:VisualElement name="Hero1" class="unit-panel">
-                <ui:VisualElement name="Hero1_HealthBar" class="health-bar" style="width: 200px; height: 30px;">
-                    <ui:VisualElement name="Hero1_HealthFill" class="health-fill-hero" style="width: 200px; height: 30px;" />
+                <ui:VisualElement name="Hero1_HealthBar" class="health-bar" style="width: 180px; height: 30px;">
+                    <ui:VisualElement name="Hero1_HealthFill" class="health-fill-hero" style="width: 180px; height: 30px;" />
                 </ui:VisualElement>
                 <ui:Label name="Hero1_HP" text="HP: 100/100" class="stat-label" />
                 <ui:Label name="Hero1_ATK" text="ATK: 10" class="stat-label" />
@@ -13,8 +13,8 @@
                 <ui:Label name="Hero1_Sanity" text="Sanity: 100" class="stat-label" />
             </ui:VisualElement>
             <ui:VisualElement name="Hero2" class="unit-panel">
-                <ui:VisualElement name="Hero2_HealthBar" class="health-bar" style="width: 200px; height: 30px;">
-                    <ui:VisualElement name="Hero2_HealthFill" class="health-fill-hero" style="width: 200px; height: 30px;" />
+                <ui:VisualElement name="Hero2_HealthBar" class="health-bar" style="width: 180px; height: 30px;">
+                    <ui:VisualElement name="Hero2_HealthFill" class="health-fill-hero" style="width: 180px; height: 30px;" />
                 </ui:VisualElement>
                 <ui:Label name="Hero2_HP" text="HP: 100/100" class="stat-label" />
                 <ui:Label name="Hero2_ATK" text="ATK: 10" class="stat-label" />
@@ -23,8 +23,8 @@
                 <ui:Label name="Hero2_Sanity" text="Sanity: 100" class="stat-label" />
             </ui:VisualElement>
             <ui:VisualElement name="Hero3" class="unit-panel">
-                <ui:VisualElement name="Hero3_HealthBar" class="health-bar" style="width: 200px; height: 30px;">
-                    <ui:VisualElement name="Hero3_HealthFill" class="health-fill-hero" style="width: 200px; height: 30px;" />
+                <ui:VisualElement name="Hero3_HealthBar" class="health-bar" style="width: 180px; height: 30px;">
+                    <ui:VisualElement name="Hero3_HealthFill" class="health-fill-hero" style="width: 180px; height: 30px;" />
                 </ui:VisualElement>
                 <ui:Label name="Hero3_HP" text="HP: 100/100" class="stat-label" />
                 <ui:Label name="Hero3_ATK" text="ATK: 10" class="stat-label" />
@@ -33,8 +33,8 @@
                 <ui:Label name="Hero3_Sanity" text="Sanity: 100" class="stat-label" />
             </ui:VisualElement>
             <ui:VisualElement name="Hero4" class="unit-panel">
-                <ui:VisualElement name="Hero4_HealthBar" class="health-bar" style="width: 200px; height: 30px;">
-                    <ui:VisualElement name="Hero4_HealthFill" class="health-fill-hero" style="width: 200px; height: 30px;" />
+                <ui:VisualElement name="Hero4_HealthBar" class="health-bar" style="width: 180px; height: 30px;">
+                    <ui:VisualElement name="Hero4_HealthFill" class="health-fill-hero" style="width: 180px; height: 30px;" />
                 </ui:VisualElement>
                 <ui:Label name="Hero4_HP" text="HP: 100/100" class="stat-label" />
                 <ui:Label name="Hero4_ATK" text="ATK: 10" class="stat-label" />
@@ -43,10 +43,13 @@
                 <ui:Label name="Hero4_Sanity" text="Sanity: 100" class="stat-label" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="MonstersContainer" style="position: absolute; left: 960px; width: 960px; height: 540px;">
+        <ui:VisualElement name="CombatLogContainer" style="position: absolute; left: 650px; top: 10px; width: 630px; height: 520px;">
+            <ui:Label name="CombatLog" text="" class="combat-log" style="width: 610px; height: 500px;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="MonstersContainer" style="position: absolute; left: 1290px; top: 10px; width: 630px; height: 520px;">
             <ui:VisualElement name="Monster1" class="unit-panel">
-                <ui:VisualElement name="Monster1_HealthBar" class="health-bar" style="width: 200px; height: 30px;">
-                    <ui:VisualElement name="Monster1_HealthFill" class="health-fill-monster" style="width: 200px; height: 30px;" />
+                <ui:VisualElement name="Monster1_HealthBar" class="health-bar" style="width: 180px; height: 30px;">
+                    <ui:VisualElement name="Monster1_HealthFill" class="health-fill-monster" style="width: 180px; height: 30px;" />
                 </ui:VisualElement>
                 <ui:Label name="Monster1_HP" text="HP: 100/100" class="stat-label" />
                 <ui:Label name="Monster1_ATK" text="ATK: 12" class="stat-label" />
@@ -54,8 +57,8 @@
                 <ui:Label name="Monster1_Morale" text="Morale: 80" class="stat-label" />
             </ui:VisualElement>
             <ui:VisualElement name="Monster2" class="unit-panel">
-                <ui:VisualElement name="Monster2_HealthBar" class="health-bar" style="width: 200px; height: 30px;">
-                    <ui:VisualElement name="Monster2_HealthFill" class="health-fill-monster" style="width: 200px; height: 30px;" />
+                <ui:VisualElement name="Monster2_HealthBar" class="health-bar" style="width: 180px; height: 30px;">
+                    <ui:VisualElement name="Monster2_HealthFill" class="health-fill-monster" style="width: 180px; height: 30px;" />
                 </ui:VisualElement>
                 <ui:Label name="Monster2_HP" text="HP: 100/100" class="stat-label" />
                 <ui:Label name="Monster2_ATK" text="ATK: 12" class="stat-label" />
@@ -63,8 +66,8 @@
                 <ui:Label name="Monster2_Morale" text="Morale: 80" class="stat-label" />
             </ui:VisualElement>
             <ui:VisualElement name="Monster3" class="unit-panel">
-                <ui:VisualElement name="Monster3_HealthBar" class="health-bar" style="width: 200px; height: 30px;">
-                    <ui:VisualElement name="Monster3_HealthFill" class="health-fill-monster" style="width: 200px; height: 30px;" />
+                <ui:VisualElement name="Monster3_HealthBar" class="health-bar" style="width: 180px; height: 30px;">
+                    <ui:VisualElement name="Monster3_HealthFill" class="health-fill-monster" style="width: 180px; height: 30px;" />
                 </ui:VisualElement>
                 <ui:Label name="Monster3_HP" text="HP: 100/100" class="stat-label" />
                 <ui:Label name="Monster3_ATK" text="ATK: 12" class="stat-label" />
@@ -72,8 +75,8 @@
                 <ui:Label name="Monster3_Morale" text="Morale: 80" class="stat-label" />
             </ui:VisualElement>
             <ui:VisualElement name="Monster4" class="unit-panel">
-                <ui:VisualElement name="Monster4_HealthBar" class="health-bar" style="width: 200px; height: 30px;">
-                    <ui:VisualElement name="Monster4_HealthFill" class="health-fill-monster" style="width: 200px; height: 30px;" />
+                <ui:VisualElement name="Monster4_HealthBar" class="health-bar" style="width: 180px; height: 30px;">
+                    <ui:VisualElement name="Monster4_HealthFill" class="health-fill-monster" style="width: 180px; height: 30px;" />
                 </ui:VisualElement>
                 <ui:Label name="Monster4_HP" text="HP: 100/100" class="stat-label" />
                 <ui:Label name="Monster4_ATK" text="ATK: 12" class="stat-label" />
@@ -81,6 +84,5 @@
                 <ui:Label name="Monster4_Morale" text="Morale: 80" class="stat-label" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:Label name="BattleLog" text="" class="battle-log" style="position: absolute; bottom: 10px; left: 10px; width: 1900px; height: 100px; color: #FFFFFF; font-size: 14px; font-family: Press Start 2P;" />
     </ui:VisualElement>
 </ui:UXML>
