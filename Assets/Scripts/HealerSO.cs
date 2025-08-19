@@ -7,17 +7,17 @@ public class HealerSO : HeroSO
     private CharacterStatsData defaultStats = new CharacterStatsData
     {
         characterType = CharacterStatsData.CharacterType.Healer,
-        minHealth = 50f,
-        maxHealth = 70f,
-        health = 50f,
-        minAttack = 5f,
-        maxAttack = 10f,
-        attack = 5f,
-        minDefense = 5f,
-        maxDefense = 8f,
-        defense = 5f,
-        morale = 100f,
-        sanity = 100f,
+        minHealth = 50,
+        maxHealth = 70,
+        health = 50,
+        minAttack = 5,
+        maxAttack = 10,
+        attack = 5,
+        minDefense = 5,
+        maxDefense = 8,
+        defense = 5,
+        morale = 100,
+        sanity = 100,
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
         isCultist = false,
@@ -28,17 +28,17 @@ public class HealerSO : HeroSO
     void OnEnable()
     {
         defaultStats.characterType = CharacterStatsData.CharacterType.Healer;
-        defaultStats.minHealth = 50f;
-        defaultStats.maxHealth = 70f;
+        defaultStats.minHealth = 50;
+        defaultStats.maxHealth = 70;
         defaultStats.health = defaultStats.minHealth;
-        defaultStats.minAttack = 5f;
-        defaultStats.maxAttack = 10f;
-        defaultStats.attack = 5f;
-        defaultStats.minDefense = 5f;
-        defaultStats.maxDefense = 8f;
-        defaultStats.defense = 5f;
-        defaultStats.morale = 100f;
-        defaultStats.sanity = 100f;
+        defaultStats.minAttack = 5;
+        defaultStats.maxAttack = 10;
+        defaultStats.attack = 5;
+        defaultStats.minDefense = 5;
+        defaultStats.maxDefense = 8;
+        defaultStats.defense = 5;
+        defaultStats.morale = 100;
+        defaultStats.sanity = 100;
         defaultStats.speed = CharacterStatsData.Speed.Normal;
         defaultStats.isInfected = false;
         defaultStats.isCultist = false;
@@ -57,10 +57,10 @@ public class HealerSO : HeroSO
             _ => 1.0f
         };
 
-        newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;
+        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
         newStats.health = newStats.maxHealth;
-        newStats.attack = Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier;
-        newStats.defense = Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier;
+        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
+        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
         newStats.bogRotSpreadChance = newStats.isCultist ? 0.20f : 0.15f;
@@ -75,7 +75,7 @@ public class HealerSO : HeroSO
             if (lowestAlly != null && lowestAlly.Stats.health > 0)
             {
                 CharacterStatsData allyStats = lowestAlly.Stats;
-                allyStats.health = Mathf.Min(allyStats.health + 5f, allyStats.maxHealth);
+                allyStats.health = Mathf.Min(allyStats.health + 5, allyStats.maxHealth);
                 lowestAlly.SetStats(allyStats);
             }
         }

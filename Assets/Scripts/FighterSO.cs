@@ -7,17 +7,17 @@ public class FighterSO : HeroSO
     private CharacterStatsData defaultStats = new CharacterStatsData
     {
         characterType = CharacterStatsData.CharacterType.Fighter,
-        minHealth = 80f,
-        maxHealth = 100f,
-        health = 80f, // Initialize to minHealth
-        minAttack = 15f,
-        maxAttack = 20f,
-        attack = 15f,
-        minDefense = 5f,
-        maxDefense = 10f,
-        defense = 5f,
-        morale = 100f,
-        sanity = 100f,
+        minHealth = 80,
+        maxHealth = 100,
+        health = 80,
+        minAttack = 15,
+        maxAttack = 20,
+        attack = 15,
+        minDefense = 5,
+        maxDefense = 10,
+        defense = 5,
+        morale = 100,
+        sanity = 100,
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
         isCultist = false,
@@ -28,17 +28,17 @@ public class FighterSO : HeroSO
     void OnEnable()
     {
         defaultStats.characterType = CharacterStatsData.CharacterType.Fighter;
-        defaultStats.minHealth = 80f;
-        defaultStats.maxHealth = 100f;
-        defaultStats.health = defaultStats.minHealth; // Ensure initial health
-        defaultStats.minAttack = 15f;
-        defaultStats.maxAttack = 20f;
-        defaultStats.attack = 15f;
-        defaultStats.minDefense = 5f;
-        defaultStats.maxDefense = 10f;
-        defaultStats.defense = 5f;
-        defaultStats.morale = 100f;
-        defaultStats.sanity = 100f;
+        defaultStats.minHealth = 80;
+        defaultStats.maxHealth = 100;
+        defaultStats.health = defaultStats.minHealth;
+        defaultStats.minAttack = 15;
+        defaultStats.maxAttack = 20;
+        defaultStats.attack = 15;
+        defaultStats.minDefense = 5;
+        defaultStats.maxDefense = 10;
+        defaultStats.defense = 5;
+        defaultStats.morale = 100;
+        defaultStats.sanity = 100;
         defaultStats.speed = CharacterStatsData.Speed.Normal;
         defaultStats.isInfected = false;
         defaultStats.isCultist = false;
@@ -57,10 +57,10 @@ public class FighterSO : HeroSO
             _ => 1.0f
         };
 
-        newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;
+        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
         newStats.health = newStats.maxHealth;
-        newStats.attack = Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier;
-        newStats.defense = Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier;
+        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
+        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
         newStats.bogRotSpreadChance = newStats.isCultist ? 0.20f : 0.15f;
@@ -69,10 +69,10 @@ public class FighterSO : HeroSO
 
     public override void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
     {
-        if (target.Stats.health < target.Stats.maxHealth * 0.3f)
+        if (target.Stats.health < Mathf.RoundToInt(target.Stats.maxHealth * 0.3f))
         {
             CharacterStatsData updatedStats = target.Stats;
-            updatedStats.attack += 3f;
+            updatedStats.attack += 3;
             target.SetStats(updatedStats);
         }
     }

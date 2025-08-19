@@ -99,8 +99,10 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        hpLabel.text = $"HP: {Mathf.Round(target.Stats.health)}/{target.Stats.maxHealth}";
-        float healthPercent = target.Stats.health / target.Stats.maxHealth;
+        int currentHealth = (int)Mathf.Round(target.Stats.health);
+        int maxHealth = (int)Mathf.Round(target.Stats.maxHealth);
+        hpLabel.text = $"HP: {currentHealth}/{maxHealth}";
+        float healthPercent = (float)currentHealth / maxHealth;
         healthFill.style.width = new StyleLength(new Length(healthPercent * 180, LengthUnit.Pixel));
         healthFill.style.height = new StyleLength(new Length(30, LengthUnit.Pixel));
         healthFill.style.backgroundColor = new StyleColor(
@@ -114,13 +116,13 @@ public class UIManager : MonoBehaviour
         healthFill.style.left = 0;
         healthFill.style.top = 0;
 
-        atkLabel.text = $"ATK: {Mathf.Round(target.Stats.attack)}";
-        defLabel.text = $"DEF: {Mathf.Round(target.Stats.defense)}";
-        moraleLabel.text = $"Morale: {Mathf.Round(target.Stats.morale)}";
+        atkLabel.text = $"ATK: {(int)Mathf.Round(target.Stats.attack)}";
+        defLabel.text = $"DEF: {(int)Mathf.Round(target.Stats.defense)}";
+        moraleLabel.text = $"Morale: {(int)Mathf.Round(target.Stats.morale)}";
 
         if (sanityLabel != null)
         {
-            sanityLabel.text = $"Sanity: {Mathf.Round(target.Stats.sanity)}";
+            sanityLabel.text = $"Sanity: {(int)Mathf.Round(target.Stats.sanity)}";
         }
     }
 

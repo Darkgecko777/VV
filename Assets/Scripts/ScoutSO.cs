@@ -7,17 +7,17 @@ public class ScoutSO : HeroSO
     private CharacterStatsData defaultStats = new CharacterStatsData
     {
         characterType = CharacterStatsData.CharacterType.Scout,
-        minHealth = 50f,
-        maxHealth = 70f,
-        health = 50f,
-        minAttack = 12f,
-        maxAttack = 18f,
-        attack = 12f,
-        minDefense = 3f,
-        maxDefense = 6f,
-        defense = 3f,
-        morale = 100f,
-        sanity = 100f,
+        minHealth = 50,
+        maxHealth = 70,
+        health = 50,
+        minAttack = 12,
+        maxAttack = 18,
+        attack = 12,
+        minDefense = 3,
+        maxDefense = 6,
+        defense = 3,
+        morale = 100,
+        sanity = 100,
         speed = CharacterStatsData.Speed.Fast,
         isInfected = false,
         isCultist = false,
@@ -28,17 +28,17 @@ public class ScoutSO : HeroSO
     void OnEnable()
     {
         defaultStats.characterType = CharacterStatsData.CharacterType.Scout;
-        defaultStats.minHealth = 50f;
-        defaultStats.maxHealth = 70f;
+        defaultStats.minHealth = 50;
+        defaultStats.maxHealth = 70;
         defaultStats.health = defaultStats.minHealth;
-        defaultStats.minAttack = 12f;
-        defaultStats.maxAttack = 18f;
-        defaultStats.attack = 12f;
-        defaultStats.minDefense = 3f;
-        defaultStats.maxDefense = 6f;
-        defaultStats.defense = 3f;
-        defaultStats.morale = 100f;
-        defaultStats.sanity = 100f;
+        defaultStats.minAttack = 12;
+        defaultStats.maxAttack = 18;
+        defaultStats.attack = 12;
+        defaultStats.minDefense = 3;
+        defaultStats.maxDefense = 6;
+        defaultStats.defense = 3;
+        defaultStats.morale = 100;
+        defaultStats.sanity = 100;
         defaultStats.speed = CharacterStatsData.Speed.Fast;
         defaultStats.isInfected = false;
         defaultStats.isCultist = false;
@@ -57,10 +57,10 @@ public class ScoutSO : HeroSO
             _ => 1.0f
         };
 
-        newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;
+        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
         newStats.health = newStats.maxHealth;
-        newStats.attack = Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier;
-        newStats.defense = Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier;
+        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
+        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
         newStats.bogRotSpreadChance = newStats.isCultist ? 0.20f : 0.15f;
@@ -70,7 +70,7 @@ public class ScoutSO : HeroSO
     public override void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
     {
         CharacterStatsData updatedStats = target.Stats;
-        updatedStats.defense += 2f;
+        updatedStats.defense += 2;
         target.SetStats(updatedStats);
     }
 }

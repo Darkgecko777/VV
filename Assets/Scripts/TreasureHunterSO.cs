@@ -7,17 +7,17 @@ public class TreasureHunterSO : HeroSO
     private CharacterStatsData defaultStats = new CharacterStatsData
     {
         characterType = CharacterStatsData.CharacterType.TreasureHunter,
-        minHealth = 60f,
-        maxHealth = 80f,
-        health = 60f,
-        minAttack = 10f,
-        maxAttack = 15f,
-        attack = 10f,
-        minDefense = 3f,
-        maxDefense = 7f,
-        defense = 3f,
-        morale = 100f,
-        sanity = 100f,
+        minHealth = 60,
+        maxHealth = 80,
+        health = 60,
+        minAttack = 10,
+        maxAttack = 15,
+        attack = 10,
+        minDefense = 3,
+        maxDefense = 7,
+        defense = 3,
+        morale = 100,
+        sanity = 100,
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
         isCultist = false,
@@ -28,17 +28,17 @@ public class TreasureHunterSO : HeroSO
     void OnEnable()
     {
         defaultStats.characterType = CharacterStatsData.CharacterType.TreasureHunter;
-        defaultStats.minHealth = 60f;
-        defaultStats.maxHealth = 80f;
+        defaultStats.minHealth = 60;
+        defaultStats.maxHealth = 80;
         defaultStats.health = defaultStats.minHealth;
-        defaultStats.minAttack = 10f;
-        defaultStats.maxAttack = 15f;
-        defaultStats.attack = 10f;
-        defaultStats.minDefense = 3f;
-        defaultStats.maxDefense = 7f;
-        defaultStats.defense = 3f;
-        defaultStats.morale = 100f;
-        defaultStats.sanity = 100f;
+        defaultStats.minAttack = 10;
+        defaultStats.maxAttack = 15;
+        defaultStats.attack = 10;
+        defaultStats.minDefense = 3;
+        defaultStats.maxDefense = 7;
+        defaultStats.defense = 3;
+        defaultStats.morale = 100;
+        defaultStats.sanity = 100;
         defaultStats.speed = CharacterStatsData.Speed.Normal;
         defaultStats.isInfected = false;
         defaultStats.isCultist = false;
@@ -57,10 +57,10 @@ public class TreasureHunterSO : HeroSO
             _ => 1.0f
         };
 
-        newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;
+        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
         newStats.health = newStats.maxHealth;
-        newStats.attack = Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier;
-        newStats.defense = Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier;
+        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
+        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
         newStats.bogRotSpreadChance = newStats.isCultist ? 0.20f : 0.15f;
@@ -77,7 +77,7 @@ public class TreasureHunterSO : HeroSO
                 if (ally.Stats.health > 0)
                 {
                     CharacterStatsData allyStats = ally.Stats;
-                    allyStats.morale = Mathf.Min(allyStats.morale + 3f, 100f);
+                    allyStats.morale = Mathf.Min(allyStats.morale + 3, 100);
                     ally.SetStats(allyStats);
                 }
             }

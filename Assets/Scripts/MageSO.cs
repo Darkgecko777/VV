@@ -7,17 +7,17 @@ public class MageSO : HeroSO
     private CharacterStatsData defaultStats = new CharacterStatsData
     {
         characterType = CharacterStatsData.CharacterType.Mage,
-        minHealth = 40f,
-        maxHealth = 60f,
-        health = 40f,
-        minAttack = 15f,
-        maxAttack = 25f,
-        attack = 15f,
-        minDefense = 0f,
-        maxDefense = 5f,
-        defense = 0f,
-        morale = 100f,
-        sanity = 100f,
+        minHealth = 40,
+        maxHealth = 60,
+        health = 40,
+        minAttack = 15,
+        maxAttack = 25,
+        attack = 15,
+        minDefense = 0,
+        maxDefense = 5,
+        defense = 0,
+        morale = 100,
+        sanity = 100,
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
         isCultist = false,
@@ -28,17 +28,17 @@ public class MageSO : HeroSO
     void OnEnable()
     {
         defaultStats.characterType = CharacterStatsData.CharacterType.Mage;
-        defaultStats.minHealth = 40f;
-        defaultStats.maxHealth = 60f;
+        defaultStats.minHealth = 40;
+        defaultStats.maxHealth = 60;
         defaultStats.health = defaultStats.minHealth;
-        defaultStats.minAttack = 15f;
-        defaultStats.maxAttack = 25f;
-        defaultStats.attack = 15f;
-        defaultStats.minDefense = 0f;
-        defaultStats.maxDefense = 5f;
-        defaultStats.defense = 0f;
-        defaultStats.morale = 100f;
-        defaultStats.sanity = 100f;
+        defaultStats.minAttack = 15;
+        defaultStats.maxAttack = 25;
+        defaultStats.attack = 15;
+        defaultStats.minDefense = 0;
+        defaultStats.maxDefense = 5;
+        defaultStats.defense = 0;
+        defaultStats.morale = 100;
+        defaultStats.sanity = 100;
         defaultStats.speed = CharacterStatsData.Speed.Normal;
         defaultStats.isInfected = false;
         defaultStats.isCultist = false;
@@ -57,10 +57,10 @@ public class MageSO : HeroSO
             _ => 1.0f
         };
 
-        newStats.maxHealth = Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier;
+        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
         newStats.health = newStats.maxHealth;
-        newStats.attack = Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier;
-        newStats.defense = Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier;
+        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
+        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
         newStats.bogRotSpreadChance = newStats.isCultist ? 0.20f : 0.15f;
@@ -70,7 +70,7 @@ public class MageSO : HeroSO
     public override void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
     {
         CharacterStatsData updatedStats = target.Stats;
-        updatedStats.attack += 5f;
+        updatedStats.attack += 5;
         target.SetStats(updatedStats);
     }
 }

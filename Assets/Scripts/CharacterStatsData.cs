@@ -8,17 +8,17 @@ public struct CharacterStatsData
 
     public CharacterType characterType;
     public Speed speed;
-    public float minHealth;
-    public float maxHealth;
-    public float health;
-    public float minAttack;
-    public float maxAttack;
-    public float attack;
-    public float minDefense;
-    public float maxDefense;
-    public float defense;
-    public float morale;
-    public float sanity;
+    public int minHealth;
+    public int maxHealth;
+    public int health;
+    public int minAttack;
+    public int maxAttack;
+    public int attack;
+    public int minDefense;
+    public int maxDefense;
+    public int defense;
+    public int morale;
+    public int sanity;
     public bool isInfected;
     public bool isCultist;
     public int slowTickDelay;

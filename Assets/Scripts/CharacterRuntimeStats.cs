@@ -20,7 +20,6 @@ public class CharacterRuntimeStats : MonoBehaviour
     {
         if (characterSO == null)
         {
-            Debug.LogError($"CharacterRuntimeStats: No characterSO assigned on {gameObject.name}!");
             return;
         }
         if (characterSO is HeroSO heroSO)
