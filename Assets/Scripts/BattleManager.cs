@@ -19,7 +19,6 @@ public class BattleManager : MonoBehaviour
     {
         if (partyData == null || encounterData == null || uiManager == null)
         {
-            Debug.LogError($"BattleManager: Missing required components! PartyData: {partyData != null}, EncounterData: {encounterData != null}, UIManager: {uiManager != null}");
             return;
         }
 
@@ -28,13 +27,11 @@ public class BattleManager : MonoBehaviour
 
         if (heroes == null || monsters == null)
         {
-            Debug.LogError($"BattleManager: Heroes or Monsters list is null! Heroes: {heroes == null}, Monsters: {monsters == null}");
             return;
         }
 
         if (heroes.Count != 4 || monsters.Count != 4)
         {
-            Debug.LogError($"BattleManager: Invalid hero or monster count! Heroes: {heroes?.Count ?? 0}, Monsters: {monsters?.Count ?? 0}");
             return;
         }
 
@@ -42,7 +39,6 @@ public class BattleManager : MonoBehaviour
         {
             if (hero == null || hero.Stats.characterType == CharacterStatsData.CharacterType.Ghoul || hero.Stats.characterType == CharacterStatsData.CharacterType.Wraith)
             {
-                Debug.LogWarning($"BattleManager: Invalid hero: {hero?.gameObject.name ?? "null"} (Type: {hero?.Stats.characterType.ToString() ?? "null"})");
                 return;
             }
         }
@@ -50,7 +46,6 @@ public class BattleManager : MonoBehaviour
         {
             if (monster == null || (monster.Stats.characterType != CharacterStatsData.CharacterType.Ghoul && monster.Stats.characterType != CharacterStatsData.CharacterType.Wraith))
             {
-                Debug.LogWarning($"BattleManager: Invalid monster: {monster?.gameObject.name ?? "null"} (Type: {monster?.Stats.characterType.ToString() ?? "null"})");
                 return;
             }
         }
@@ -85,7 +80,6 @@ public class BattleManager : MonoBehaviour
                 yield return new WaitForSeconds(0.5f / combatSpeed); // Base delay, adjustable later
             }
         }
-        uiManager.LogMessage($"Battle ended - heroes alive: {AreAnyAlive(heroes)}, heroes retreated: {CheckRetreat(heroes)}, monsters alive: {AreAnyAlive(monsters)}");
     }
 
     private List<(CharacterRuntimeStats, int)> BuildInitiativeQueue()
@@ -118,7 +112,6 @@ public class BattleManager : MonoBehaviour
         if (isHero && attacker.CharacterSO is HeroSO heroSO)
         {
             heroSO.ApplySpecialAbility(attacker, partyData);
-            uiManager.LogMessage($"{attacker.Stats.characterType} used special ability");
         }
 
         if (isHero && attacker.IsCultist)
@@ -129,8 +122,6 @@ public class BattleManager : MonoBehaviour
                 var otherHero = aliveHeroes.Find(h => h != attacker);
                 if (otherHero != null && attacker.CheckMurderCondition(otherHero, aliveHeroes.Count))
                 {
-                    uiManager.ShowPopup(otherHero, "Cultist Murdered Ally!");
-                    uiManager.LogMessage("Cultist Murdered Ally!");
                     isBattleActive = false;
                     yield break;
                 }
@@ -146,12 +137,6 @@ public class BattleManager : MonoBehaviour
 
     private IEnumerator PerformAttack(CharacterRuntimeStats attacker, CharacterRuntimeStats target, bool isHero)
     {
-        if (target == null)
-        {
-            Debug.LogWarning($"BattleManager: Null target in PerformAttack for attacker {attacker?.gameObject.name ?? "null"}");
-            yield break;
-        }
-
         SpriteAnimation attackerAnim = attacker.GetComponent<SpriteAnimation>();
         SpriteAnimation targetAnim = target.GetComponent<SpriteAnimation>();
         if (attackerAnim != null) attackerAnim.Jiggle(true);

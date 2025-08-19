@@ -17,7 +17,6 @@ public class EncounterData : ScriptableObject
     {
         if (cachedMonsters != null && cachedMonsters.Count == 4 && cachedMonsters.All(m => m != null && m.gameObject != null))
         {
-            Debug.Log("EncounterData: Reusing cached monsters");
             return cachedMonsters;
         }
 
@@ -54,7 +53,6 @@ public class EncounterData : ScriptableObject
             runtimeStats.SetCharacterSO(monsterComposition[i]);
             runtimeStats.Initialize();
             cachedMonsters.Add(runtimeStats);
-            Debug.Log($"EncounterData: Spawned {monsterComposition[i].Stats.characterType} as {monsterObj.name} at position {i}");
         }
 
         return cachedMonsters;
