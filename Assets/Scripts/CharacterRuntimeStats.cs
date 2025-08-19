@@ -1,11 +1,9 @@
 using UnityEngine;
-using UnityEngine.Events;
 
 public class CharacterRuntimeStats : MonoBehaviour
 {
     [SerializeField] private ScriptableObject characterSO;
     [SerializeField] private CharacterStatsData stats;
-    public UnityEvent<CharacterRuntimeStats> OnInfected = new UnityEvent<CharacterRuntimeStats>();
 
     public CharacterStatsData Stats => stats;
     public bool IsCultist => characterSO is HeroSO heroSO && heroSO.Stats.isCultist;
@@ -100,25 +98,6 @@ public class CharacterRuntimeStats : MonoBehaviour
         {
             monsterSO.ApplyStats(this);
         }
-    }
-
-    public bool TryInfect()
-    {
-        bool infected = false;
-        if (characterSO is HeroSO heroSO)
-        {
-            infected = heroSO.TryInfect(ref stats, stats.morale);
-        }
-        else if (characterSO is MonsterSO monsterSO)
-        {
-            infected = monsterSO.TryInfect(ref stats, stats.morale);
-        }
-        if (infected)
-        {
-            OnInfected.Invoke(this);
-            SetStats(stats);
-        }
-        return infected;
     }
 
     public bool CheckMurderCondition(CharacterRuntimeStats other, int aliveCount)

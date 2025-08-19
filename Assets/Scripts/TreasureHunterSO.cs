@@ -21,8 +21,7 @@ public class TreasureHunterSO : HeroSO
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
         isCultist = false,
-        rank = 2,
-        bogRotSpreadChance = 0.15f
+        rank = 2
     };
 
     void OnEnable()
@@ -43,7 +42,6 @@ public class TreasureHunterSO : HeroSO
         defaultStats.isInfected = false;
         defaultStats.isCultist = false;
         defaultStats.rank = 2;
-        defaultStats.bogRotSpreadChance = 0.15f;
         stats = defaultStats;
     }
 
@@ -63,7 +61,6 @@ public class TreasureHunterSO : HeroSO
         newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
-        newStats.bogRotSpreadChance = newStats.isCultist ? 0.20f : 0.15f;
         target.SetStats(newStats);
     }
 

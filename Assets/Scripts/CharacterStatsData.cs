@@ -23,5 +23,4 @@ public struct CharacterStatsData
     public bool isCultist;
     public int slowTickDelay;
     public int rank; // 1-3 for stat scaling
-    public float bogRotSpreadChance; // 0.15f heroes, 0.20f cultists, 0.25f monsters
 }

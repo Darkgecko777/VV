@@ -64,8 +64,8 @@ public class PartyData : MonoBehaviour
         treasureHunterStats.Initialize();
         heroStats.Add(treasureHunterStats);
 
-        // Setup Scout (or Cultist if flagged)
-        GameObject scoutObj = new GameObject(allowCultist ? "Cultist" : "Scout");
+        // Setup Scout
+        GameObject scoutObj = new GameObject("Scout");
         scoutObj.transform.position = positions.heroPositions[3];
         var scoutStats = scoutObj.AddComponent<CharacterRuntimeStats>();
         var scoutRenderer = scoutObj.AddComponent<SpriteRenderer>();
@@ -77,7 +77,6 @@ public class PartyData : MonoBehaviour
         {
             CharacterStatsData scoutData = scout.Stats;
             scoutData.isCultist = true;
-            scoutData.bogRotSpreadChance = 0.20f;
             scoutStats.SetStats(scoutData);
         }
         scoutStats.Initialize();
@@ -115,7 +114,6 @@ public class PartyData : MonoBehaviour
         cultistStats.SetCharacterSO(cultistSO);
         CharacterStatsData cultistData = cultistSO.Stats;
         cultistData.isCultist = true;
-        cultistData.bogRotSpreadChance = 0.20f;
         cultistStats.SetStats(cultistData);
         cultistStats.Initialize();
         heroStats[slot] = cultistStats;

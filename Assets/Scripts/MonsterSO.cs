@@ -5,7 +5,6 @@ public class MonsterSO : ScriptableObject
 {
     [SerializeField] protected CharacterStatsData stats;
     [SerializeField] protected Sprite sprite;
-    protected const int bogRotMoraleDrain = 5;
 
     public CharacterStatsData Stats => stats;
     public Sprite Sprite => sprite;
@@ -26,7 +25,6 @@ public class MonsterSO : ScriptableObject
         newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
-        newStats.bogRotSpreadChance = 0.25f;
         target.SetStats(newStats);
     }
 
@@ -61,18 +59,6 @@ public class MonsterSO : ScriptableObject
         stats.defense = Mathf.RoundToInt(Random.Range(stats.minDefense, stats.maxDefense) * rankMultiplier);
         stats.isInfected = false;
         stats.slowTickDelay = 0;
-        stats.bogRotSpreadChance = 0.25f;
-    }
-
-    public virtual bool TryInfect(ref CharacterStatsData stats, float currentMorale)
-    {
-        if (Random.value <= stats.bogRotSpreadChance)
-        {
-            stats.isInfected = true;
-            stats.morale = Mathf.Max(stats.morale - bogRotMoraleDrain, 0);
-            return true;
-        }
-        return false;
     }
 
     public virtual bool CheckDodge()

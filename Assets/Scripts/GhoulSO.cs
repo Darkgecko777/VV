@@ -21,8 +21,7 @@ public class GhoulSO : MonsterSO
         speed = CharacterStatsData.Speed.Normal,
         isInfected = false,
         isCultist = false,
-        rank = 2,
-        bogRotSpreadChance = 0.25f
+        rank = 2
     };
 
     void OnEnable()
@@ -43,7 +42,6 @@ public class GhoulSO : MonsterSO
         defaultStats.isInfected = false;
         defaultStats.isCultist = false;
         defaultStats.rank = 2;
-        defaultStats.bogRotSpreadChance = 0.25f;
         stats = defaultStats;
     }
 
@@ -63,7 +61,6 @@ public class GhoulSO : MonsterSO
         newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
         newStats.isInfected = false;
         newStats.slowTickDelay = 0;
-        newStats.bogRotSpreadChance = 0.25f;
         target.SetStats(newStats);
     }
 }
