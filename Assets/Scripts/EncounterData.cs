@@ -39,7 +39,7 @@ namespace VirulentVentures
                 GameObject monsterObj = new GameObject($"Monster{i + 1}_{monsterSOs[i].Stats.Type.Id}");
                 monsterObj.transform.position = positions.monsterPositions[i];
                 var renderer = monsterObj.AddComponent<SpriteRenderer>();
-                renderer.sprite = monsterSOs[i].Sprite;
+                //renderer.sprite = monsterSOs[i].Sprite;
                 renderer.sortingLayerName = "Characters";
                 renderer.transform.localScale = new Vector3(2f, 2f, 1f);
                 var monsterStats = new MonsterStats(monsterSOs[i], positions.monsterPositions[i]);

@@ -1,0 +1,28 @@
+.portrait {
+    border-width: 2px;
+    border-color: black;
+    unity-background-scale-mode: scale-to-fit;
+}
+
+.node-box {
+    border-width: 2px;
+    border-color: black;
+    border-radius: 10px;
+}
+
+.node-label {
+    color: white;
+    font-size: 12px;
+    text-align: center;
+}
+
+.button {
+    width: 150px;
+    height: 50px;
+    background-color: darkgreen;
+    color: white;
+}
+
+.dropdown {
+    width: 150px;
+}

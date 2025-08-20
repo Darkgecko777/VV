@@ -26,6 +26,11 @@ namespace VirulentVentures
 
         public HeroStats(HeroSO heroSO, Vector3 position)
         {
+            if (heroSO == null || heroSO.Stats == null || heroSO.Stats.Type == null || string.IsNullOrEmpty(heroSO.Stats.Type.Id))
+            {
+                Debug.LogError($"HeroStats Constructor: Invalid HeroSO or Stats.Type.Id for position {position}! This will break sprite lookup.");
+                return;
+            }
             _heroSO = heroSO;
             _position = position;
             var stats = heroSO.Stats;
@@ -47,8 +52,19 @@ namespace VirulentVentures
         }
 
         public ScriptableObject SO => _heroSO;
-        public CharacterTypeSO Type => _heroSO.Stats.Type;
-        public CharacterStatsData.Speed CharacterSpeed => _heroSO.Stats.CharacterSpeed;
+        public CharacterTypeSO Type
+        {
+            get
+            {
+                if (_heroSO?.Stats?.Type == null)
+                {
+                    Debug.LogWarning($"HeroStats.Type: Missing CharacterTypeSO for {_heroSO?.name}");
+                    return null;
+                }
+                return _heroSO.Stats.Type;
+            }
+        }
+        public CharacterStatsData.Speed CharacterSpeed => _heroSO?.Stats.CharacterSpeed ?? CharacterStatsData.Speed.Normal;
         public int Health { get => _health; set => _health = value; }
         public int MaxHealth { get => _maxHealth; set => _maxHealth = value; }
         public int MinHealth { get => _minHealth; set => _minHealth = value; }

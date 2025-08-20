@@ -59,7 +59,7 @@ namespace VirulentVentures
                 GameObject heroObj = new GameObject(heroStats[i].Type.Id);
                 heroObj.transform.position = heroStats[i].Position;
                 var renderer = heroObj.AddComponent<SpriteRenderer>();
-                renderer.sprite = heroStats[i].SO as HeroSO ? (heroStats[i].SO as HeroSO).Sprite : null;
+                //renderer.sprite = heroStats[i].SO as HeroSO ? (heroStats[i].SO as HeroSO).Sprite : null;
                 renderer.sortingLayerName = "Characters";
                 renderer.transform.localScale = new Vector3(2f, 2f, 1f);
                 units.Add((heroStats[i], heroObj));
@@ -72,7 +72,7 @@ namespace VirulentVentures
                 GameObject monsterObj = new GameObject(monsterStats[i].Type.Id);
                 monsterObj.transform.position = monsterStats[i].Position;
                 var renderer = monsterObj.AddComponent<SpriteRenderer>();
-                renderer.sprite = monsterStats[i].SO as MonsterSO ? (monsterStats[i].SO as MonsterSO).Sprite : null;
+                //renderer.sprite = monsterStats[i].SO as MonsterSO ? (monsterStats[i].SO as MonsterSO).Sprite : null;
                 renderer.sortingLayerName = "Characters";
                 renderer.transform.localScale = new Vector3(2f, 2f, 1f);
                 units.Add((monsterStats[i], monsterObj));
