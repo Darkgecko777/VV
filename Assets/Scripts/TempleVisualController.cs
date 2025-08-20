@@ -28,11 +28,28 @@ namespace VirulentVentures
             return true;
         }
 
+        public void InitializeEmptyPortraits()
+        {
+            if (portraitContainer == null)
+            {
+                Debug.LogWarning("TempleVisualController.InitializeEmptyPortraits: portraitContainer is null!");
+                return;
+            }
+
+            portraitContainer.Clear();
+            for (int i = 0; i < 4; i++)
+            {
+                VisualElement portrait = new VisualElement();
+                portrait.AddToClassList("portrait");
+                portraitContainer.Add(portrait);
+            }
+        }
+
         public void UpdatePartyVisuals(PartyData partyData)
         {
             if (partyData == null || portraitContainer == null)
             {
-                Debug.LogWarning($"TempleVisualController: Invalid partyData or portraitContainer!");
+                Debug.LogWarning($"TempleVisualController.UpdatePartyVisuals: Invalid partyData={partyData != null}, portraitContainer={portraitContainer != null}");
                 return;
             }
 
@@ -70,7 +87,7 @@ namespace VirulentVentures
         {
             if (expeditionData == null || nodeContainer == null)
             {
-                Debug.LogWarning($"TempleVisualController: Invalid expeditionData or nodeContainer!");
+                Debug.LogWarning($"TempleVisualController.UpdateNodeVisuals: Invalid expeditionData={expeditionData != null}, nodeContainer={nodeContainer != null}");
                 return;
             }
 
@@ -83,6 +100,7 @@ namespace VirulentVentures
                 nodeBox.AddToClassList(nodes[i].IsCombat ? "node-combat" : "node-noncombat");
                 Color nodeColor = visualConfig.GetNodeColor(nodes[i].NodeType);
                 nodeBox.style.backgroundColor = new StyleColor(nodeColor);
+                Debug.Log($"TempleVisualController.UpdateNodeVisuals: Node {i}, Type={nodes[i].NodeType}, Color={nodeColor}");
 
                 Label nodeLabel = new Label($"Node {i + 1}");
                 nodeLabel.AddToClassList("node-label");

@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodeData: []
   currentNodeIndex: 0
+  party: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}

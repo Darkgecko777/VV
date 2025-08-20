@@ -31,4 +31,4 @@ MonoBehaviour:
     slowTickDelay: 0
     speed: 0
     isCultist: 0
-  specialAbility: {fileID: 11400000, guid: aaece3f18bbd6e749ad378d30670dbd9, type: 2}
+  specialAbility: {fileID: 11400000, guid: a9fdeefe4095cbe4e8b402fb1607632d, type: 2}

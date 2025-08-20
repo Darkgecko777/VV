@@ -18,7 +18,8 @@ namespace VirulentVentures
         public bool IsTransitioning => isTransitioning;
         public event Action<List<NodeData>, int> OnNodeUpdated;
         public event Action OnExpeditionGenerated;
-        public event Action OnCombatStarted; // Changed to System.Action
+        public event Action OnCombatStarted;
+        public event Action OnSceneTransitionCompleted; // New event for transition completion
 
         void Awake()
         {
@@ -64,6 +65,7 @@ namespace VirulentVentures
 
         public void GenerateExpedition()
         {
+            if (isTransitioning) return;
             expeditionData.Reset();
             partyData.Reset();
 
@@ -89,10 +91,80 @@ namespace VirulentVentures
 
             expeditionData.SetNodes(nodes);
             expeditionData.SetParty(partyData);
-
             partyData.InitializeParty();
             SaveProgress();
             OnExpeditionGenerated?.Invoke();
+        }
+
+        public void TransitionToTemplePlanningScene()
+        {
+            if (isTransitioning)
+            {
+                Debug.LogWarning("ExpeditionManager: Already transitioning!");
+                return;
+            }
+            isTransitioning = true;
+            SceneManager.LoadSceneAsync("TemplePlanningScene").completed += _ =>
+            {
+                isTransitioning = false;
+                OnSceneTransitionCompleted?.Invoke();
+            };
+        }
+
+        public void TransitionToExpeditionScene()
+        {
+            if (isTransitioning)
+            {
+                Debug.LogWarning("ExpeditionManager: Already transitioning!");
+                return;
+            }
+            if (!expeditionData.IsValid())
+            {
+                Debug.LogWarning("ExpeditionManager: Cannot transition to ExpeditionScene, invalid expedition data!");
+                return;
+            }
+            isTransitioning = true;
+            SceneManager.LoadSceneAsync("ExpeditionScene").completed += _ =>
+            {
+                isTransitioning = false;
+                OnSceneTransitionCompleted?.Invoke();
+            };
+        }
+
+        public void TransitionToBattleScene()
+        {
+            if (isTransitioning)
+            {
+                Debug.LogWarning("ExpeditionManager: Already transitioning!");
+                return;
+            }
+            if (!expeditionData.IsValid() || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
+            {
+                Debug.LogWarning("ExpeditionManager: Cannot transition to BattleScene, invalid state!");
+                return;
+            }
+            isTransitioning = true;
+            SceneManager.LoadSceneAsync("BattleScene", LoadSceneMode.Additive).completed += _ =>
+            {
+                OnCombatStarted?.Invoke();
+                isTransitioning = false;
+                OnSceneTransitionCompleted?.Invoke();
+            };
+        }
+
+        public void UnloadBattleScene()
+        {
+            if (isTransitioning)
+            {
+                Debug.LogWarning("ExpeditionManager: Already transitioning!");
+                return;
+            }
+            isTransitioning = true;
+            SceneManager.UnloadSceneAsync("BattleScene").completed += _ =>
+            {
+                isTransitioning = false;
+                OnSceneTransitionCompleted?.Invoke();
+            };
         }
 
         public void ProcessCurrentNode()
@@ -108,9 +180,13 @@ namespace VirulentVentures
 
             if (node.IsCombat)
             {
-                isTransitioning = true;
-                OnCombatStarted?.Invoke();
-                SceneManager.LoadScene("BattleScene", LoadSceneMode.Additive);
+                TransitionToBattleScene();
+            }
+            else
+            {
+                // Non-combat node logic (e.g., apply ambient virus effects)
+                // For now, auto-advance to next node
+                OnContinueClicked();
             }
         }
 
@@ -122,23 +198,13 @@ namespace VirulentVentures
             ProcessCurrentNode();
         }
 
-        public void SaveProgress()
-        {
-            string json = JsonUtility.ToJson(expeditionData);
-            PlayerPrefs.SetString("ExpeditionSave", json);
-            string partyJson = JsonUtility.ToJson(partyData);
-            PlayerPrefs.SetString("PartySave", partyJson);
-            PlayerPrefs.Save();
-        }
-
-        private void EndExpedition()
+        public void EndExpedition()
         {
             expeditionData.Reset();
             partyData.Reset();
             PlayerPrefs.DeleteKey("ExpeditionSave");
             PlayerPrefs.DeleteKey("PartySave");
-            isTransitioning = true;
-            SceneManager.LoadScene("TemplePlanningScene");
+            TransitionToTemplePlanningScene();
         }
 
         private List<MonsterStats> GenerateRandomMonsters()
@@ -153,6 +219,15 @@ namespace VirulentVentures
                 monsters.Add(stats);
             }
             return monsters;
+        }
+
+        public void SaveProgress()
+        {
+            string json = JsonUtility.ToJson(expeditionData);
+            PlayerPrefs.SetString("ExpeditionSave", json);
+            string partyJson = JsonUtility.ToJson(partyData);
+            PlayerPrefs.SetString("PartySave", partyJson);
+            PlayerPrefs.Save();
         }
 
         public void SetTransitioning(bool state)

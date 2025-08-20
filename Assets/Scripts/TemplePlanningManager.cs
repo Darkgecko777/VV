@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
 namespace VirulentVentures
@@ -26,7 +25,7 @@ namespace VirulentVentures
         void Start()
         {
             uiController.InitializeUI(availableViruses, expeditionData);
-            visualController.UpdatePartyVisuals(partyData);
+            visualController.InitializeEmptyPortraits();
             UpdateLaunchButtonState();
         }
 
@@ -69,7 +68,7 @@ namespace VirulentVentures
                 Debug.LogWarning("TemplePlanningManager: Cannot launch expedition, invalid or not generated!");
                 return;
             }
-            SceneManager.LoadScene("ExpeditionScene");
+            ExpeditionManager.Instance.TransitionToExpeditionScene();
         }
 
         public void SeedVirus(string virusID, int nodeIndex)

@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/UI/TemplePlanningScene.uss" />
+    <Style src="project://database/Assets/UI/TemplePlanningSceneUI.uss" />
     <ui:VisualElement name="TempleUI_Root" style="width: 1920px; height: 1080px;">
         <ui:VisualElement name="PortraitContainer" style="position: absolute; top: 50px; left: 50px; width: 1820px; height: 100px; flex-direction: row;">
             <!-- Dynamic portraits populated by script -->

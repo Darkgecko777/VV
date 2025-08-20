@@ -24,13 +24,17 @@ namespace VirulentVentures
         [System.Serializable]
         public struct NodeVisuals
         {
-            public string nodeType; // e.g., "Combat", "NonCombat", "Active", "Passed"
+            public string nodeType; // e.g., "Combat", "NonCombat"
             public Color highlightColor;
         }
 
         public List<CharacterVisuals> characterVisuals;
         public List<EnemyVisuals> enemyVisuals;
-        public List<NodeVisuals> nodeVisuals;
+        public List<NodeVisuals> nodeVisuals = new List<NodeVisuals>
+        {
+            new NodeVisuals { nodeType = "Combat", highlightColor = new Color(0.8f, 0.2f, 0.2f) }, // Reddish for Combat
+            new NodeVisuals { nodeType = "NonCombat", highlightColor = new Color(0.2f, 0.4f, 0.8f) } // Bluish for NonCombat
+        };
 
         public Sprite GetPortrait(string characterID, int rank)
         {
@@ -63,7 +67,12 @@ namespace VirulentVentures
         public Color GetNodeColor(string nodeType)
         {
             var visual = nodeVisuals.Find(v => v.nodeType == nodeType);
-            return visual.highlightColor != default ? visual.highlightColor : Color.white;
+            if (visual.highlightColor == default)
+            {
+                Debug.LogWarning($"VisualConfig.GetNodeColor: No color found for nodeType {nodeType}, returning white");
+                return Color.white;
+            }
+            return visual.highlightColor;
         }
     }
 }

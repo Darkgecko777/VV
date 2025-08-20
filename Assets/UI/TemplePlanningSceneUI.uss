@@ -2,12 +2,26 @@
     border-width: 2px;
     border-color: black;
     unity-background-scale-mode: scale-to-fit;
+    width: 100px;
+    height: 100px;
+    margin-right: 10px;
 }
 
 .node-box {
     border-width: 2px;
     border-color: black;
     border-radius: 10px;
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+}
+
+.node-combat {
+    background-color: rgba(204, 51, 51, 0.8); /* Reddish, matches VisualConfig Combat */
+}
+
+.node-noncombat {
+    background-color: rgba(51, 102, 204, 0.8); /* Bluish, matches VisualConfig NonCombat */
 }
 
 .node-label {
@@ -25,4 +39,8 @@
 
 .dropdown {
     width: 150px;
+}
+
+#PortraitContainer, #NodeContainer {
+    display: flex;
 }
