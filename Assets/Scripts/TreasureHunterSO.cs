@@ -1,81 +1,70 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "TreasureHunterSO", menuName = "VirulentVentures/TreasureHunterSO", order = 4)]
-public class TreasureHunterSO : HeroSO
+namespace VirulentVentures
 {
-    [SerializeField]
-    private CharacterStatsData defaultStats = new CharacterStatsData
+    [CreateAssetMenu(fileName = "TreasureHunterSO", menuName = "VirulentVentures/TreasureHunterSO", order = 4)]
+    public class TreasureHunterSO : HeroSO
     {
-        characterType = CharacterStatsData.CharacterType.TreasureHunter,
-        minHealth = 60,
-        maxHealth = 80,
-        health = 60,
-        minAttack = 10,
-        maxAttack = 15,
-        attack = 10,
-        minDefense = 3,
-        maxDefense = 7,
-        defense = 3,
-        morale = 100,
-        sanity = 100,
-        speed = CharacterStatsData.Speed.Normal,
-        isInfected = false,
-        isCultist = false,
-        rank = 2
-    };
-
-    void OnEnable()
-    {
-        defaultStats.characterType = CharacterStatsData.CharacterType.TreasureHunter;
-        defaultStats.minHealth = 60;
-        defaultStats.maxHealth = 80;
-        defaultStats.health = defaultStats.minHealth;
-        defaultStats.minAttack = 10;
-        defaultStats.maxAttack = 15;
-        defaultStats.attack = 10;
-        defaultStats.minDefense = 3;
-        defaultStats.maxDefense = 7;
-        defaultStats.defense = 3;
-        defaultStats.morale = 100;
-        defaultStats.sanity = 100;
-        defaultStats.speed = CharacterStatsData.Speed.Normal;
-        defaultStats.isInfected = false;
-        defaultStats.isCultist = false;
-        defaultStats.rank = 2;
-        stats = defaultStats;
-    }
-
-    public override void ApplyStats(CharacterRuntimeStats target)
-    {
-        CharacterStatsData newStats = defaultStats;
-        float rankMultiplier = newStats.rank switch
+        [SerializeField]
+        private CharacterStatsData defaultStats = new CharacterStatsData
         {
-            1 => 0.8f,
-            3 => 1.2f,
-            _ => 1.0f
+            Type = null, // Set in Inspector with TreasureHunter CharacterTypeSO
+            MinHealth = 60,
+            MaxHealth = 80,
+            Health = 60,
+            MinAttack = 10,
+            MaxAttack = 15,
+            Attack = 10,
+            MinDefense = 3,
+            MaxDefense = 7,
+            Defense = 3,
+            Morale = 100,
+            Sanity = 100,
+            CharacterSpeed = CharacterStatsData.Speed.Normal,
+            IsInfected = false,
+            IsCultist = false,
+            Rank = 2
         };
 
-        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
-        newStats.health = newStats.maxHealth;
-        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
-        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
-        newStats.isInfected = false;
-        newStats.slowTickDelay = 0;
-        target.SetStats(newStats);
-    }
-
-    public override void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
-    {
-        if (partyData != null)
+        private void OnValidate()
         {
-            CharacterRuntimeStats[] allies = partyData.FindAllies();
-            foreach (var ally in allies)
+            SetStats(defaultStats);
+        }
+
+        public override void ApplyStats(HeroStats target)
+        {
+            CharacterStatsData newStats = defaultStats;
+            int rankMultiplier = newStats.Rank switch
             {
-                if (ally.Stats.health > 0)
+                1 => 80,
+                3 => 120,
+                _ => 100
+            };
+
+            target.Health = (newStats.MaxHealth * rankMultiplier) / 100;
+            target.MaxHealth = target.Health;
+            target.MinHealth = (newStats.MinHealth * rankMultiplier) / 100;
+            target.Attack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.MinAttack = (newStats.MinAttack * rankMultiplier) / 100;
+            target.MaxAttack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.Defense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.MinDefense = (newStats.MinDefense * rankMultiplier) / 100;
+            target.MaxDefense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.IsInfected = false;
+            target.SlowTickDelay = 0;
+        }
+
+        public override void ApplySpecialAbility(HeroStats target, PartyData partyData)
+        {
+            if (partyData != null)
+            {
+                HeroStats[] allies = partyData.FindAllies();
+                foreach (var ally in allies)
                 {
-                    CharacterStatsData allyStats = ally.Stats;
-                    allyStats.morale = Mathf.Min(allyStats.morale + 3, 100);
-                    ally.SetStats(allyStats);
+                    if (ally.Health > 0)
+                    {
+                        ally.Morale = Mathf.Min(ally.Morale + 3, 100);
+                    }
                 }
             }
         }

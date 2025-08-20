@@ -1,71 +1,62 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "WraithSO", menuName = "VirulentVentures/WraithSO", order = 9)]
-public class WraithSO : MonsterSO
+namespace VirulentVentures
 {
-    [SerializeField]
-    private CharacterStatsData defaultStats = new CharacterStatsData
+    [CreateAssetMenu(fileName = "WraithSO", menuName = "VirulentVentures/WraithSO", order = 9)]
+    public class WraithSO : MonsterSO
     {
-        characterType = CharacterStatsData.CharacterType.Wraith,
-        minHealth = 40,
-        maxHealth = 60,
-        health = 40,
-        minAttack = 15,
-        maxAttack = 25,
-        attack = 15,
-        minDefense = 0,
-        maxDefense = 5,
-        defense = 0,
-        morale = 60,
-        sanity = 0,
-        speed = CharacterStatsData.Speed.Fast,
-        isInfected = false,
-        isCultist = false,
-        rank = 2
-    };
-
-    void OnEnable()
-    {
-        defaultStats.characterType = CharacterStatsData.CharacterType.Wraith;
-        defaultStats.minHealth = 40;
-        defaultStats.maxHealth = 60;
-        defaultStats.health = defaultStats.minHealth;
-        defaultStats.minAttack = 15;
-        defaultStats.maxAttack = 25;
-        defaultStats.attack = 15;
-        defaultStats.minDefense = 0;
-        defaultStats.maxDefense = 5;
-        defaultStats.defense = 0;
-        defaultStats.morale = 60;
-        defaultStats.sanity = 0;
-        defaultStats.speed = CharacterStatsData.Speed.Fast;
-        defaultStats.isInfected = false;
-        defaultStats.isCultist = false;
-        defaultStats.rank = 2;
-        stats = defaultStats;
-    }
-
-    public override void ApplyStats(CharacterRuntimeStats target)
-    {
-        CharacterStatsData newStats = defaultStats;
-        float rankMultiplier = newStats.rank switch
+        [SerializeField]
+        private CharacterStatsData defaultStats = new CharacterStatsData
         {
-            1 => 0.8f,
-            3 => 1.2f,
-            _ => 1.0f
+            Type = null, // Set in Inspector with Wraith CharacterTypeSO
+            MinHealth = 40,
+            MaxHealth = 60,
+            Health = 40,
+            MinAttack = 15,
+            MaxAttack = 25,
+            Attack = 15,
+            MinDefense = 0,
+            MaxDefense = 5,
+            Defense = 0,
+            Morale = 60,
+            Sanity = 0,
+            CharacterSpeed = CharacterStatsData.Speed.Fast,
+            IsInfected = false,
+            IsCultist = false,
+            Rank = 2
         };
 
-        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
-        newStats.health = newStats.maxHealth;
-        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
-        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
-        newStats.isInfected = false;
-        newStats.slowTickDelay = 0;
-        target.SetStats(newStats);
-    }
+        private void OnValidate()
+        {
+            SetStats(defaultStats);
+        }
 
-    public override bool CheckDodge()
-    {
-        return Random.value <= 0.2f;
+        public override void ApplyStats(MonsterStats target)
+        {
+            CharacterStatsData newStats = defaultStats;
+            int rankMultiplier = newStats.Rank switch
+            {
+                1 => 80,
+                3 => 120,
+                _ => 100
+            };
+
+            target.Health = (newStats.MaxHealth * rankMultiplier) / 100;
+            target.MaxHealth = target.Health;
+            target.MinHealth = (newStats.MinHealth * rankMultiplier) / 100;
+            target.Attack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.MinAttack = (newStats.MinAttack * rankMultiplier) / 100;
+            target.MaxAttack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.Defense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.MinDefense = (newStats.MinDefense * rankMultiplier) / 100;
+            target.MaxDefense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.IsInfected = false;
+            target.SlowTickDelay = 0;
+        }
+
+        public override bool CheckDodge()
+        {
+            return Random.value <= 0.2f;
+        }
     }
 }

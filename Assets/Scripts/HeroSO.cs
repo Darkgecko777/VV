@@ -1,84 +1,101 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "HeroSO", menuName = "VirulentVentures/HeroSO", order = 1)]
-public class HeroSO : ScriptableObject
+namespace VirulentVentures
 {
-    [SerializeField] protected CharacterStatsData stats;
-    [SerializeField] protected Sprite sprite; // Aseprite placeholder
-    protected const int lowMoraleThreshold = 50;
-
-    public CharacterStatsData Stats => stats;
-    public Sprite Sprite => sprite;
-
-    public virtual void ApplyStats(CharacterRuntimeStats target)
+    [CreateAssetMenu(fileName = "HeroSO", menuName = "VirulentVentures/HeroSO", order = 1)]
+    public class HeroSO : ScriptableObject
     {
-        CharacterStatsData newStats = stats;
-        float rankMultiplier = newStats.rank switch
+        [SerializeField] private CharacterStatsData stats;
+        [SerializeField] private Sprite sprite;
+        private const int lowMoraleThreshold = 50;
+
+        public CharacterStatsData Stats => stats;
+        public Sprite Sprite => sprite;
+
+        protected void SetStats(CharacterStatsData newStats)
         {
-            1 => 0.8f, // Rank 1: 80% base stats
-            3 => 1.2f, // Rank 3: 120% base stats
-            _ => 1.0f  // Rank 2: 100% base stats
-        };
+            stats = newStats;
+        }
 
-        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
-        newStats.health = newStats.maxHealth;
-        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
-        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
-        newStats.isInfected = false;
-        newStats.slowTickDelay = 0;
-        target.SetStats(newStats);
-    }
-
-    public virtual bool TakeDamage(ref CharacterStatsData stats, float damage)
-    {
-        int damageTaken = Mathf.Max(Mathf.RoundToInt(damage - stats.defense), 0);
-        stats.health = Mathf.Max(stats.health - damageTaken, 0);
-        return stats.health <= 0;
-    }
-
-    public virtual void ApplyMoraleDamage(ref CharacterStatsData stats, float amount)
-    {
-        stats.morale = Mathf.Max(stats.morale - Mathf.RoundToInt(amount), 0);
-    }
-
-    public virtual void ApplySlowEffect(ref CharacterStatsData stats, int tickDelay)
-    {
-        stats.slowTickDelay += tickDelay;
-    }
-
-    public virtual void ResetStats(ref CharacterStatsData stats)
-    {
-        float rankMultiplier = stats.rank switch
+        public virtual void ApplyStats(HeroStats target)
         {
-            1 => 0.8f,
-            3 => 1.2f,
-            _ => 1.0f
-        };
-        stats.maxHealth = Mathf.RoundToInt(Random.Range(stats.minHealth, stats.maxHealth) * rankMultiplier);
-        stats.health = stats.maxHealth;
-        stats.attack = Mathf.RoundToInt(Random.Range(stats.minAttack, stats.maxAttack) * rankMultiplier);
-        stats.defense = Mathf.RoundToInt(Random.Range(stats.minDefense, stats.maxDefense) * rankMultiplier);
-        stats.isInfected = false;
-        stats.slowTickDelay = 0;
-    }
+            CharacterStatsData newStats = stats;
+            int rankMultiplier = newStats.Rank switch
+            {
+                1 => 80,
+                3 => 120,
+                _ => 100
+            };
 
-    public virtual bool CheckMurderCondition(ref CharacterStatsData stats, CharacterRuntimeStats other, int aliveCount)
-    {
-        if (!stats.isCultist || aliveCount != 2 || other == null || other.IsCultist)
+            target.Health = (newStats.MaxHealth * rankMultiplier) / 100;
+            target.MaxHealth = target.Health;
+            target.MinHealth = (newStats.MinHealth * rankMultiplier) / 100;
+            target.Attack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.MinAttack = (newStats.MinAttack * rankMultiplier) / 100;
+            target.MaxAttack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.Defense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.MinDefense = (newStats.MinDefense * rankMultiplier) / 100;
+            target.MaxDefense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.IsInfected = false;
+            target.SlowTickDelay = 0;
+        }
+
+        public virtual bool TakeDamage(ref HeroStats stats, int damage)
         {
+            int damageTaken = Mathf.Max(damage - stats.Defense, 0);
+            stats.Health = Mathf.Max(stats.Health - damageTaken, 0);
+            return stats.Health <= 0;
+        }
+
+        public virtual void ApplyMoraleDamage(ref CharacterStatsData stats, int amount)
+        {
+            stats.Morale = Mathf.Max(stats.Morale - amount, 0);
+        }
+
+        public virtual void ApplySlowEffect(ref CharacterStatsData stats, int tickDelay)
+        {
+            stats.SlowTickDelay += tickDelay;
+        }
+
+        public virtual void ResetStats(ref CharacterStatsData stats)
+        {
+            int rankMultiplier = stats.Rank switch
+            {
+                1 => 80,
+                3 => 120,
+                _ => 100
+            };
+            stats.MaxHealth = (stats.MaxHealth * rankMultiplier) / 100;
+            stats.Health = stats.MaxHealth;
+            stats.MinHealth = (stats.MinHealth * rankMultiplier) / 100;
+            stats.Attack = (stats.MaxAttack * rankMultiplier) / 100;
+            stats.MinAttack = (stats.MinAttack * rankMultiplier) / 100;
+            stats.MaxAttack = (stats.MaxAttack * rankMultiplier) / 100;
+            stats.Defense = (stats.MaxDefense * rankMultiplier) / 100;
+            stats.MinDefense = (stats.MinDefense * rankMultiplier) / 100;
+            stats.MaxDefense = (stats.MaxDefense * rankMultiplier) / 100;
+            stats.IsInfected = false;
+            stats.SlowTickDelay = 0;
+        }
+
+        public virtual bool CheckMurderCondition(ref CharacterStatsData stats, HeroStats other, int aliveCount)
+        {
+            if (!stats.IsCultist || aliveCount != 2 || other == null || other.IsCultist)
+            {
+                return false;
+            }
+            int hpThreshold = other.MaxHealth / 5; // 20% HP
+            if (other.Health <= hpThreshold)
+            {
+                other.Health = 0;
+                return true;
+            }
             return false;
         }
-        int hpThreshold = Mathf.RoundToInt(other.Stats.maxHealth * 0.2f); // 20% HP
-        if (other.Stats.health <= hpThreshold)
-        {
-            other.TakeDamage(other.Stats.health); // Instant kill
-            return true; // Signals murder, ends battle with loot
-        }
-        return false;
-    }
 
-    public virtual void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
-    {
-        // Placeholder for derived classes (e.g., FighterSO, HealerSO)
+        public virtual void ApplySpecialAbility(HeroStats target, PartyData partyData)
+        {
+            // Placeholder
+        }
     }
 }

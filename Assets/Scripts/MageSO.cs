@@ -1,73 +1,62 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "MageSO", menuName = "VirulentVentures/MageSO", order = 6)]
-public class MageSO : HeroSO
+namespace VirulentVentures
 {
-    [SerializeField]
-    private CharacterStatsData defaultStats = new CharacterStatsData
+    [CreateAssetMenu(fileName = "MageSO", menuName = "VirulentVentures/MageSO", order = 6)]
+    public class MageSO : HeroSO
     {
-        characterType = CharacterStatsData.CharacterType.Mage,
-        minHealth = 40,
-        maxHealth = 60,
-        health = 40,
-        minAttack = 15,
-        maxAttack = 25,
-        attack = 15,
-        minDefense = 0,
-        maxDefense = 5,
-        defense = 0,
-        morale = 100,
-        sanity = 100,
-        speed = CharacterStatsData.Speed.Normal,
-        isInfected = false,
-        isCultist = false,
-        rank = 2
-    };
-
-    void OnEnable()
-    {
-        defaultStats.characterType = CharacterStatsData.CharacterType.Mage;
-        defaultStats.minHealth = 40;
-        defaultStats.maxHealth = 60;
-        defaultStats.health = defaultStats.minHealth;
-        defaultStats.minAttack = 15;
-        defaultStats.maxAttack = 25;
-        defaultStats.attack = 15;
-        defaultStats.minDefense = 0;
-        defaultStats.maxDefense = 5;
-        defaultStats.defense = 0;
-        defaultStats.morale = 100;
-        defaultStats.sanity = 100;
-        defaultStats.speed = CharacterStatsData.Speed.Normal;
-        defaultStats.isInfected = false;
-        defaultStats.isCultist = false;
-        defaultStats.rank = 2;
-        stats = defaultStats;
-    }
-
-    public override void ApplyStats(CharacterRuntimeStats target)
-    {
-        CharacterStatsData newStats = defaultStats;
-        float rankMultiplier = newStats.rank switch
+        [SerializeField]
+        private CharacterStatsData defaultStats = new CharacterStatsData
         {
-            1 => 0.8f,
-            3 => 1.2f,
-            _ => 1.0f
+            Type = null, // Set in Inspector with Mage CharacterTypeSO
+            MinHealth = 40,
+            MaxHealth = 60,
+            Health = 40,
+            MinAttack = 15,
+            MaxAttack = 25,
+            Attack = 15,
+            MinDefense = 0,
+            MaxDefense = 5,
+            Defense = 0,
+            Morale = 100,
+            Sanity = 100,
+            CharacterSpeed = CharacterStatsData.Speed.Normal,
+            IsInfected = false,
+            IsCultist = false,
+            Rank = 2
         };
 
-        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
-        newStats.health = newStats.maxHealth;
-        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
-        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
-        newStats.isInfected = false;
-        newStats.slowTickDelay = 0;
-        target.SetStats(newStats);
-    }
+        private void OnValidate()
+        {
+            SetStats(defaultStats);
+        }
 
-    public override void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
-    {
-        CharacterStatsData updatedStats = target.Stats;
-        updatedStats.attack += 5;
-        target.SetStats(updatedStats);
+        public override void ApplyStats(HeroStats target)
+        {
+            CharacterStatsData newStats = defaultStats;
+            int rankMultiplier = newStats.Rank switch
+            {
+                1 => 80,
+                3 => 120,
+                _ => 100
+            };
+
+            target.Health = (newStats.MaxHealth * rankMultiplier) / 100;
+            target.MaxHealth = target.Health;
+            target.MinHealth = (newStats.MinHealth * rankMultiplier) / 100;
+            target.Attack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.MinAttack = (newStats.MinAttack * rankMultiplier) / 100;
+            target.MaxAttack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.Defense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.MinDefense = (newStats.MinDefense * rankMultiplier) / 100;
+            target.MaxDefense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.IsInfected = false;
+            target.SlowTickDelay = 0;
+        }
+
+        public override void ApplySpecialAbility(HeroStats target, PartyData partyData)
+        {
+            target.Attack += 5;
+        }
     }
 }

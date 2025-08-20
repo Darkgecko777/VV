@@ -1,174 +1,196 @@
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Linq;
 
-public class BattleManager : MonoBehaviour
+namespace VirulentVentures
 {
-    [SerializeField] private PartyData partyData;
-    [SerializeField] private EncounterData encounterData;
-    [SerializeField] private UIManager uiManager;
-    private List<CharacterRuntimeStats> heroes;
-    private List<CharacterRuntimeStats> monsters;
-    private bool isBattleActive = false;
-    private const int retreatMoraleThreshold = 20;
-    private float combatSpeed = 1f; // Placeholder for animation speed multiplier
-    private int roundNumber = 0;
-
-    void Start()
+    public class BattleManager : MonoBehaviour
     {
-        if (partyData == null || encounterData == null || uiManager == null)
-        {
-            return;
-        }
+        [SerializeField] private PartyData partyData;
+        [SerializeField] private ExpeditionData expeditionData;
+        [SerializeField] private ExpeditionManager expeditionManager;
+        [SerializeField] private BattleUIManager uiManager;
+        private List<(ICombatUnit unit, GameObject go)> units;
+        private bool isBattleActive = false;
+        private const int retreatMoraleThreshold = 20;
+        private float combatSpeed = 1f;
+        private int roundNumber = 0;
 
-        heroes = partyData.GetHeroes();
-        monsters = encounterData.SpawnMonsters();
-
-        if (heroes == null || monsters == null)
+        void Start()
         {
-            return;
-        }
-
-        if (heroes.Count != 4 || monsters.Count != 4)
-        {
-            return;
-        }
-
-        foreach (var hero in heroes)
-        {
-            if (hero == null || hero.Stats.characterType == CharacterStatsData.CharacterType.Ghoul || hero.Stats.characterType == CharacterStatsData.CharacterType.Wraith)
+            if (partyData == null || expeditionData == null || expeditionManager == null || uiManager == null)
             {
+                Debug.LogError($"BattleManager: Missing references! PartyData: {partyData != null}, ExpeditionData: {expeditionData != null}, ExpeditionManager: {expeditionManager != null}, UIManager: {uiManager != null}");
                 return;
             }
-        }
-        foreach (var monster in monsters)
-        {
-            if (monster == null || (monster.Stats.characterType != CharacterStatsData.CharacterType.Ghoul && monster.Stats.characterType != CharacterStatsData.CharacterType.Wraith))
+
+            if (expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
             {
+                Debug.LogError($"BattleManager: Invalid node index {expeditionData.CurrentNodeIndex}, node count: {expeditionData.NodeData.Count}");
+                EndBattle();
                 return;
             }
+
+            var heroStats = partyData.GetHeroes();
+            var monsterStats = expeditionData.NodeData[expeditionData.CurrentNodeIndex].Monsters;
+
+            if (heroStats == null || monsterStats == null)
+            {
+                Debug.LogError($"BattleManager: Null data! Heroes: {heroStats != null}, Monsters: {monsterStats != null}");
+                EndBattle();
+                return;
+            }
+
+            if (heroStats.Count == 0 || monsterStats.Count == 0)
+            {
+                Debug.LogError($"BattleManager: Empty data! Heroes count: {heroStats.Count}, Monsters count: {monsterStats.Count}");
+                EndBattle();
+                return;
+            }
+
+            units = new List<(ICombatUnit, GameObject)>();
+
+            // Create hero GameObjects dynamically
+            for (int i = 0; i < heroStats.Count; i++)
+            {
+                if (heroStats[i].Health <= 0) continue;
+                GameObject heroObj = new GameObject(heroStats[i].Type.Id);
+                heroObj.transform.position = heroStats[i].Position;
+                var renderer = heroObj.AddComponent<SpriteRenderer>();
+                renderer.sprite = heroStats[i].SO as HeroSO ? (heroStats[i].SO as HeroSO).Sprite : null;
+                renderer.sortingLayerName = "Characters";
+                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
+                units.Add((heroStats[i], heroObj));
+            }
+
+            // Create monster GameObjects dynamically
+            for (int i = 0; i < monsterStats.Count; i++)
+            {
+                if (monsterStats[i].Health <= 0) continue;
+                GameObject monsterObj = new GameObject(monsterStats[i].Type.Id);
+                monsterObj.transform.position = monsterStats[i].Position;
+                var renderer = monsterObj.AddComponent<SpriteRenderer>();
+                renderer.sprite = monsterStats[i].SO as MonsterSO ? (monsterStats[i].SO as MonsterSO).Sprite : null;
+                renderer.sortingLayerName = "Characters";
+                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
+                units.Add((monsterStats[i], monsterObj));
+            }
+
+            uiManager.InitializeUI(units);
+            isBattleActive = true;
+            StartCoroutine(CombatLoop());
         }
 
-        StartCoroutine(ProcessCombat());
-    }
-
-    private IEnumerator ProcessCombat()
-    {
-        isBattleActive = true;
-        while (isBattleActive)
+        private IEnumerator CombatLoop()
         {
-            roundNumber++;
-            List<(CharacterRuntimeStats unit, int init)> queue = BuildInitiativeQueue();
-            foreach (var (unit, initValue) in queue)
+            while (isBattleActive)
             {
-                if (!isBattleActive) break;
-                if (unit != null && unit.Stats.health > 0)
+                roundNumber++;
+                uiManager.LogMessage($"Round {roundNumber} begins!");
+
+                List<ICombatUnit> heroes = units.Where(u => u.unit is HeroStats && u.unit.Health > 0).Select(u => u.unit).ToList();
+                List<ICombatUnit> monsters = units.Where(u => u.unit is MonsterStats && u.unit.Health > 0).Select(u => u.unit).ToList();
+
+                if (!AreAnyAlive(heroes) || !AreAnyAlive(monsters) || CheckRetreat(heroes))
                 {
-                    bool isHero = heroes.Contains(unit);
-                    yield return StartCoroutine(ProcessUnitAction(unit, isHero));
-                    if (isHero && unit.Stats.speed == CharacterStatsData.Speed.VeryFast && roundNumber % 2 == 0)
-                    {
-                        yield return StartCoroutine(ProcessUnitAction(unit, isHero)); // Bonus action for VeryFast
-                    }
-                    if (!AreAnyAlive(heroes) || CheckRetreat(heroes) || !AreAnyAlive(monsters) || CheckRetreat(monsters))
-                    {
-                        isBattleActive = false;
-                        break;
-                    }
-                }
-                yield return new WaitForSeconds(0.5f / combatSpeed); // Base delay, adjustable later
-            }
-        }
-    }
-
-    private List<(CharacterRuntimeStats, int)> BuildInitiativeQueue()
-    {
-        List<(CharacterRuntimeStats, int)> queue = new List<(CharacterRuntimeStats, int)>();
-        foreach (var hero in heroes)
-        {
-            if (hero != null && hero.Stats.health > 0)
-            {
-                int init = 20 - (int)hero.Stats.speed + Random.Range(1, 7);
-                queue.Add((hero, init));
-            }
-        }
-        foreach (var monster in monsters)
-        {
-            if (monster != null && monster.Stats.health > 0)
-            {
-                int init = 20 - (int)monster.Stats.speed + Random.Range(1, 7);
-                queue.Add((monster, init));
-            }
-        }
-        return queue.OrderByDescending(x => x.Item2).ToList();
-    }
-
-    private IEnumerator ProcessUnitAction(CharacterRuntimeStats attacker, bool isHero)
-    {
-        if (attacker == null || attacker.Stats.health <= 0) yield break;
-
-        List<CharacterRuntimeStats> targets = isHero ? monsters : heroes;
-        if (isHero && attacker.CharacterSO is HeroSO heroSO)
-        {
-            heroSO.ApplySpecialAbility(attacker, partyData);
-        }
-
-        if (isHero && attacker.IsCultist)
-        {
-            var aliveHeroes = partyData.CheckDeadStatus();
-            if (aliveHeroes.Count == 2)
-            {
-                var otherHero = aliveHeroes.Find(h => h != attacker);
-                if (otherHero != null && attacker.CheckMurderCondition(otherHero, aliveHeroes.Count))
-                {
-                    isBattleActive = false;
+                    EndBattle();
                     yield break;
                 }
+
+                List<(ICombatUnit, int)> initiativeQueue = BuildInitiativeQueue(heroes.Concat(monsters).ToList());
+
+                foreach (var (unit, init) in initiativeQueue)
+                {
+                    if (unit.Health <= 0) continue;
+                    yield return ProcessUnitAction(unit, heroes, monsters);
+                }
+
+                yield return new WaitForSeconds(1f / combatSpeed);
             }
         }
 
-        CharacterRuntimeStats target = GetRandomAliveTarget(targets);
-        if (target != null)
+        private List<(ICombatUnit, int)> BuildInitiativeQueue(List<ICombatUnit> characters)
         {
-            yield return StartCoroutine(PerformAttack(attacker, target, isHero));
+            List<(ICombatUnit, int)> queue = new List<(ICombatUnit, int)>();
+            foreach (var unit in characters)
+            {
+                int init = 20 - (int)unit.CharacterSpeed + Random.Range(1, 7);
+                queue.Add((unit, init));
+            }
+            queue.Sort((a, b) => a.Item2.CompareTo(b.Item2));
+            return queue;
         }
-    }
 
-    private IEnumerator PerformAttack(CharacterRuntimeStats attacker, CharacterRuntimeStats target, bool isHero)
-    {
-        SpriteAnimation attackerAnim = attacker.GetComponent<SpriteAnimation>();
-        SpriteAnimation targetAnim = target.GetComponent<SpriteAnimation>();
-        if (attackerAnim != null) attackerAnim.Jiggle(true);
-        if (targetAnim != null) targetAnim.Jiggle(false);
+        private IEnumerator ProcessUnitAction(ICombatUnit attacker, List<ICombatUnit> heroes, List<ICombatUnit> monsters)
+        {
+            bool isHero = attacker is HeroStats;
+            List<ICombatUnit> targets = isHero ? monsters : heroes;
+            ICombatUnit target = GetRandomAliveTarget(targets);
+            if (target == null) yield break;
 
-        int damage = Mathf.Max(attacker.Stats.attack - target.Stats.defense, 0);
-        bool isDead = target.TakeDamage(damage);
-        uiManager.UpdateUnitUI(attacker, target);
-        uiManager.ShowPopup(target, isDead ? "Unit Defeated!" : $"{attacker.Stats.characterType} hits {target.Stats.characterType} for {damage} damage!");
-        uiManager.LogMessage(isDead ? $"{target.Stats.characterType} Defeated!" : $"{attacker.Stats.characterType} hits {target.Stats.characterType} for {damage} damage!");
+            bool dodged = target is MonsterStats monsterStats && monsterStats.SO is MonsterSO monsterSO && monsterSO.CheckDodge();
+            if (dodged)
+            {
+                uiManager.LogMessage($"{target.Type.Id} dodges the attack!");
+                yield break;
+            }
 
-        yield return new WaitForSeconds(0.5f / combatSpeed); // Adjustable delay
-    }
+            int damage = attacker.Attack;
+            bool killed = false;
+            if (target is HeroStats heroStats && heroStats.SO is HeroSO heroSO)
+            {
+                killed = heroSO.TakeDamage(ref heroStats, damage);
+            }
+            else if (target is MonsterStats targetMonsterStats && targetMonsterStats.SO is MonsterSO targetMonsterSO)
+            {
+                killed = targetMonsterSO.TakeDamage(ref targetMonsterStats, damage);
+            }
 
-    private CharacterRuntimeStats GetRandomAliveTarget(List<CharacterRuntimeStats> targets)
-    {
-        List<CharacterRuntimeStats> aliveTargets = targets.FindAll(t => t != null && t.Stats.health > 0);
-        return aliveTargets.Count > 0 ? aliveTargets[Random.Range(0, aliveTargets.Count)] : null;
-    }
+            if (killed)
+            {
+                uiManager.LogMessage($"{attacker.Type.Id} kills {target.Type.Id}!");
+                uiManager.UpdateUnitPanel(target);
+            }
+            else
+            {
+                uiManager.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage!");
+            }
 
-    private bool AreAnyAlive(List<CharacterRuntimeStats> characters)
-    {
-        return characters.Exists(c => c != null && c.Stats.health > 0);
-    }
+            uiManager.UpdateUnitPanel(target);
+            uiManager.ShowDamagePopup(target, damage.ToString());
 
-    private bool CheckRetreat(List<CharacterRuntimeStats> characters)
-    {
-        return characters.Exists(c => c != null && c.Stats.morale <= retreatMoraleThreshold);
-    }
+            yield return new WaitForSeconds(0.5f / combatSpeed);
+        }
 
-    public void SetCombatSpeed(float speed)
-    {
-        combatSpeed = Mathf.Clamp(speed, 0.5f, 4f); // Placeholder: 0.5x to 4x speed
+        private ICombatUnit GetRandomAliveTarget(List<ICombatUnit> targets)
+        {
+            List<ICombatUnit> aliveTargets = targets.FindAll(t => t.Health > 0);
+            return aliveTargets.Count > 0 ? aliveTargets[Random.Range(0, aliveTargets.Count)] : null;
+        }
+
+        private bool AreAnyAlive(List<ICombatUnit> characters)
+        {
+            return characters.Exists(c => c.Health > 0);
+        }
+
+        private bool CheckRetreat(List<ICombatUnit> characters)
+        {
+            return characters.Exists(c => c.Morale <= retreatMoraleThreshold);
+        }
+
+        public void SetCombatSpeed(float speed)
+        {
+            combatSpeed = Mathf.Clamp(speed, 0.5f, 4f);
+        }
+
+        private void EndBattle()
+        {
+            isBattleActive = false;
+            expeditionManager.SaveProgress();
+            expeditionManager.SetTransitioning(true);
+            StartCoroutine(uiManager.FadeToExpedition(() => SceneManager.LoadScene("Expedition")));
+        }
     }
 }

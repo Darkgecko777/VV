@@ -1,79 +1,68 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "HealerSO", menuName = "VirulentVentures/HealerSO", order = 3)]
-public class HealerSO : HeroSO
+namespace VirulentVentures
 {
-    [SerializeField]
-    private CharacterStatsData defaultStats = new CharacterStatsData
+    [CreateAssetMenu(fileName = "HealerSO", menuName = "VirulentVentures/HealerSO", order = 3)]
+    public class HealerSO : HeroSO
     {
-        characterType = CharacterStatsData.CharacterType.Healer,
-        minHealth = 50,
-        maxHealth = 70,
-        health = 50,
-        minAttack = 5,
-        maxAttack = 10,
-        attack = 5,
-        minDefense = 5,
-        maxDefense = 8,
-        defense = 5,
-        morale = 100,
-        sanity = 100,
-        speed = CharacterStatsData.Speed.Normal,
-        isInfected = false,
-        isCultist = false,
-        rank = 2
-    };
-
-    void OnEnable()
-    {
-        defaultStats.characterType = CharacterStatsData.CharacterType.Healer;
-        defaultStats.minHealth = 50;
-        defaultStats.maxHealth = 70;
-        defaultStats.health = defaultStats.minHealth;
-        defaultStats.minAttack = 5;
-        defaultStats.maxAttack = 10;
-        defaultStats.attack = 5;
-        defaultStats.minDefense = 5;
-        defaultStats.maxDefense = 8;
-        defaultStats.defense = 5;
-        defaultStats.morale = 100;
-        defaultStats.sanity = 100;
-        defaultStats.speed = CharacterStatsData.Speed.Normal;
-        defaultStats.isInfected = false;
-        defaultStats.isCultist = false;
-        defaultStats.rank = 2;
-        stats = defaultStats;
-    }
-
-    public override void ApplyStats(CharacterRuntimeStats target)
-    {
-        CharacterStatsData newStats = defaultStats;
-        float rankMultiplier = newStats.rank switch
+        [SerializeField]
+        private CharacterStatsData defaultStats = new CharacterStatsData
         {
-            1 => 0.8f,
-            3 => 1.2f,
-            _ => 1.0f
+            Type = null, // Set in Inspector with Healer CharacterTypeSO
+            MinHealth = 50,
+            MaxHealth = 70,
+            Health = 50,
+            MinAttack = 5,
+            MaxAttack = 10,
+            Attack = 5,
+            MinDefense = 5,
+            MaxDefense = 8,
+            Defense = 5,
+            Morale = 100,
+            Sanity = 100,
+            CharacterSpeed = CharacterStatsData.Speed.Normal,
+            IsInfected = false,
+            IsCultist = false,
+            Rank = 2
         };
 
-        newStats.maxHealth = Mathf.RoundToInt(Random.Range(newStats.minHealth, newStats.maxHealth) * rankMultiplier);
-        newStats.health = newStats.maxHealth;
-        newStats.attack = Mathf.RoundToInt(Random.Range(newStats.minAttack, newStats.maxAttack) * rankMultiplier);
-        newStats.defense = Mathf.RoundToInt(Random.Range(newStats.minDefense, newStats.maxDefense) * rankMultiplier);
-        newStats.isInfected = false;
-        newStats.slowTickDelay = 0;
-        target.SetStats(newStats);
-    }
-
-    public override void ApplySpecialAbility(CharacterRuntimeStats target, PartyData partyData)
-    {
-        if (partyData != null)
+        private void OnValidate()
         {
-            CharacterRuntimeStats lowestAlly = partyData.FindLowestHealthAlly();
-            if (lowestAlly != null && lowestAlly.Stats.health > 0)
+            SetStats(defaultStats);
+        }
+
+        public override void ApplyStats(HeroStats target)
+        {
+            CharacterStatsData newStats = defaultStats;
+            int rankMultiplier = newStats.Rank switch
             {
-                CharacterStatsData allyStats = lowestAlly.Stats;
-                allyStats.health = Mathf.Min(allyStats.health + 5, allyStats.maxHealth);
-                lowestAlly.SetStats(allyStats);
+                1 => 80,
+                3 => 120,
+                _ => 100
+            };
+
+            target.Health = (newStats.MaxHealth * rankMultiplier) / 100;
+            target.MaxHealth = target.Health;
+            target.MinHealth = (newStats.MinHealth * rankMultiplier) / 100;
+            target.Attack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.MinAttack = (newStats.MinAttack * rankMultiplier) / 100;
+            target.MaxAttack = (newStats.MaxAttack * rankMultiplier) / 100;
+            target.Defense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.MinDefense = (newStats.MinDefense * rankMultiplier) / 100;
+            target.MaxDefense = (newStats.MaxDefense * rankMultiplier) / 100;
+            target.IsInfected = false;
+            target.SlowTickDelay = 0;
+        }
+
+        public override void ApplySpecialAbility(HeroStats target, PartyData partyData)
+        {
+            if (partyData != null)
+            {
+                HeroStats lowestAlly = partyData.FindLowestHealthAlly();
+                if (lowestAlly != null && lowestAlly.Health > 0)
+                {
+                    lowestAlly.Health = Mathf.Min(lowestAlly.Health + 5, lowestAlly.MaxHealth);
+                }
             }
         }
     }

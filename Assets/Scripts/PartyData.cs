@@ -1,142 +1,119 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
-public class PartyData : MonoBehaviour
+namespace VirulentVentures
 {
-    [SerializeField] private HeroSO fighter;
-    [SerializeField] private HeroSO healer;
-    [SerializeField] private HeroSO treasureHunter;
-    [SerializeField] private HeroSO scout;
-    [SerializeField] private bool allowCultist = false; // Placeholder for temple role swap
-    [SerializeField] private CharacterPositions positions = CharacterPositions.Default();
-    private List<CharacterRuntimeStats> heroStats = new List<CharacterRuntimeStats>();
-
-    void Awake()
+    [CreateAssetMenu(fileName = "PartyData", menuName = "VirulentVentures/PartyData", order = 12)]
+    public class PartyData : ScriptableObject
     {
-        InitializeParty();
-    }
+        [SerializeField] private List<CharacterTypeSO> heroTypes = new List<CharacterTypeSO>();
+        [SerializeField] private List<HeroSO> heroSOs = new List<HeroSO>();
+        [SerializeField] private bool allowCultist = false;
+        [SerializeField] private CharacterPositions positions = CharacterPositions.Default();
+        [SerializeField] private List<HeroStats> heroStats = new List<HeroStats>();
 
-    public void InitializeParty()
-    {
-        heroStats.Clear();
-        if (fighter == null || healer == null || treasureHunter == null || scout == null)
+        public List<HeroStats> HeroStats => heroStats;
+
+        public void InitializeParty()
         {
-            return;
-        }
-        if (positions.heroPositions.Length != 4)
-        {
-            return;
-        }
+            heroStats.Clear();
 
-        // Setup Fighter
-        GameObject fighterObj = new GameObject("Fighter");
-        fighterObj.transform.position = positions.heroPositions[0];
-        var fighterStats = fighterObj.AddComponent<CharacterRuntimeStats>();
-        var fighterRenderer = fighterObj.AddComponent<SpriteRenderer>();
-        fighterRenderer.sprite = fighter.Sprite;
-        fighterRenderer.sortingLayerName = "Characters";
-        fighterRenderer.transform.localScale = new Vector3(2f, 2f, 1f);
-        fighterStats.SetCharacterSO(fighter);
-        fighterStats.Initialize();
-        heroStats.Add(fighterStats);
-
-        // Setup Healer
-        GameObject healerObj = new GameObject("Healer");
-        healerObj.transform.position = positions.heroPositions[1];
-        var healerStats = healerObj.AddComponent<CharacterRuntimeStats>();
-        var healerRenderer = healerObj.AddComponent<SpriteRenderer>();
-        healerRenderer.sprite = healer.Sprite;
-        healerRenderer.sortingLayerName = "Characters";
-        healerRenderer.transform.localScale = new Vector3(2f, 2f, 1f);
-        healerStats.SetCharacterSO(healer);
-        healerStats.Initialize();
-        heroStats.Add(healerStats);
-
-        // Setup Treasure Hunter
-        GameObject treasureHunterObj = new GameObject("TreasureHunter");
-        treasureHunterObj.transform.position = positions.heroPositions[2];
-        var treasureHunterStats = treasureHunterObj.AddComponent<CharacterRuntimeStats>();
-        var treasureHunterRenderer = treasureHunterObj.AddComponent<SpriteRenderer>();
-        treasureHunterRenderer.sprite = treasureHunter.Sprite;
-        treasureHunterRenderer.sortingLayerName = "Characters";
-        treasureHunterRenderer.transform.localScale = new Vector3(2f, 2f, 1f);
-        treasureHunterStats.SetCharacterSO(treasureHunter);
-        treasureHunterStats.Initialize();
-        heroStats.Add(treasureHunterStats);
-
-        // Setup Scout
-        GameObject scoutObj = new GameObject("Scout");
-        scoutObj.transform.position = positions.heroPositions[3];
-        var scoutStats = scoutObj.AddComponent<CharacterRuntimeStats>();
-        var scoutRenderer = scoutObj.AddComponent<SpriteRenderer>();
-        scoutRenderer.sprite = scout.Sprite;
-        scoutRenderer.sortingLayerName = "Characters";
-        scoutRenderer.transform.localScale = new Vector3(2f, 2f, 1f);
-        scoutStats.SetCharacterSO(scout);
-        if (allowCultist)
-        {
-            CharacterStatsData scoutData = scout.Stats;
-            scoutData.isCultist = true;
-            scoutStats.SetStats(scoutData);
-        }
-        scoutStats.Initialize();
-        heroStats.Add(scoutStats);
-    }
-
-    public List<CharacterRuntimeStats> GetHeroes()
-    {
-        return heroStats;
-    }
-
-    public List<CharacterRuntimeStats> CheckDeadStatus()
-    {
-        return heroStats.FindAll(h => h != null && h.Stats.health > 0);
-    }
-
-    public void ReplaceWithCultist(int slot, HeroSO cultistSO)
-    {
-        if (slot < 0 || slot >= heroStats.Count)
-        {
-            return;
-        }
-        if (cultistSO == null)
-        {
-            return;
-        }
-
-        GameObject newCultist = new GameObject("Cultist");
-        newCultist.transform.position = positions.heroPositions[slot];
-        var cultistStats = newCultist.AddComponent<CharacterRuntimeStats>();
-        var cultistRenderer = newCultist.AddComponent<SpriteRenderer>();
-        cultistRenderer.sprite = cultistSO.Sprite;
-        cultistRenderer.sortingLayerName = "Characters";
-        cultistRenderer.transform.localScale = new Vector3(2f, 2f, 1f);
-        cultistStats.SetCharacterSO(cultistSO);
-        CharacterStatsData cultistData = cultistSO.Stats;
-        cultistData.isCultist = true;
-        cultistStats.SetStats(cultistData);
-        cultistStats.Initialize();
-        heroStats[slot] = cultistStats;
-    }
-
-    public CharacterRuntimeStats FindLowestHealthAlly()
-    {
-        CharacterRuntimeStats lowestAlly = null;
-        float lowestHealth = float.MaxValue;
-        foreach (var hero in heroStats)
-        {
-            if (hero != null && hero.Stats.health > 0 && hero.Stats.health < lowestHealth)
+            if (heroSOs == null || heroTypes == null || heroSOs.Count != heroTypes.Count)
             {
-                lowestAlly = hero;
-                lowestHealth = hero.Stats.health;
+                Debug.LogError($"PartyData: Invalid hero setup! HeroSOs: {heroSOs?.Count ?? 0}, HeroTypes: {heroTypes?.Count ?? 0}");
+                return;
+            }
+
+            if (heroSOs.Count < 1 || heroSOs.Count > 4)
+            {
+                Debug.LogError($"PartyData: Hero count must be 1-4, got {heroSOs.Count}");
+                return;
+            }
+
+            if (positions.heroPositions == null || positions.heroPositions.Length < heroSOs.Count)
+            {
+                Debug.LogError($"PartyData: Invalid hero positions! Length: {positions.heroPositions?.Length ?? 0}, Required: {heroSOs.Count}");
+                return;
+            }
+
+            for (int i = 0; i < heroSOs.Count; i++)
+            {
+                if (heroSOs[i] == null || heroTypes[i] == null)
+                {
+                    Debug.LogError($"PartyData: Null reference at index {i}! HeroSO: {heroSOs[i] != null}, HeroType: {heroTypes[i] != null}");
+                    continue;
+                }
+
+                if (heroSOs[i].Stats.Type != heroTypes[i])
+                {
+                    Debug.LogWarning($"PartyData: Mismatch between HeroSO type {heroSOs[i].Stats.Type?.Id} and HeroTypes[{i}] {heroTypes[i].Id}");
+                }
+
+                var heroStat = new HeroStats(heroSOs[i], positions.heroPositions[i]);
+                if (allowCultist && heroTypes[i].CanBeCultist && i == heroSOs.Count - 1)
+                {
+                    heroStat.IsCultist = true;
+                }
+                heroStats.Add(heroStat);
             }
         }
-        return lowestAlly;
-    }
 
-    public CharacterRuntimeStats[] FindAllies()
-    {
-        List<CharacterRuntimeStats> allies = heroStats.FindAll(h => h != null && h.Stats.health > 0);
-        return allies.ToArray();
+        public List<HeroStats> GetHeroes()
+        {
+            return heroStats;
+        }
+
+        public List<HeroStats> CheckDeadStatus()
+        {
+            return heroStats.FindAll(h => h.Health > 0);
+        }
+
+        public void ReplaceWithCultist(int slot, HeroSO cultistSO)
+        {
+            if (slot < 0 || slot >= heroStats.Count)
+            {
+                Debug.LogError($"PartyData: Invalid slot {slot} for cultist replacement");
+                return;
+            }
+            if (cultistSO == null)
+            {
+                Debug.LogError("PartyData: Null cultistSO");
+                return;
+            }
+            if (!cultistSO.Stats.Type.CanBeCultist)
+            {
+                Debug.LogError($"PartyData: HeroSO type {cultistSO.Stats.Type.Id} cannot be a cultist");
+                return;
+            }
+
+            var cultistStats = new HeroStats(cultistSO, positions.heroPositions[slot]) { IsCultist = true };
+            heroStats[slot] = cultistStats;
+        }
+
+        public HeroStats FindLowestHealthAlly()
+        {
+            HeroStats lowestAlly = null;
+            int lowestHealth = int.MaxValue;
+            foreach (var hero in heroStats)
+            {
+                if (hero.Health > 0 && hero.Health < lowestHealth)
+                {
+                    lowestAlly = hero;
+                    lowestHealth = hero.Health;
+                }
+            }
+            return lowestAlly;
+        }
+
+        public HeroStats[] FindAllies()
+        {
+            return heroStats.FindAll(h => h.Health > 0).ToArray();
+        }
+
+        public void Reset()
+        {
+            heroStats.Clear();
+        }
     }
 }

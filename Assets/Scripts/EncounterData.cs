@@ -1,68 +1,63 @@
-using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEngine;
 
-[CreateAssetMenu(fileName = "EncounterData", menuName = "VirulentVentures/EncounterData", order = 10)]
-public class EncounterData : ScriptableObject
+namespace VirulentVentures
 {
-    [SerializeField] private MonsterSO ghoulSO; // Single GhoulSO reference
-    [SerializeField] private MonsterSO wraithSO; // Single WraithSO reference
-    [SerializeField] private bool isCombatNode = true; // Always true for prototype
-    [SerializeField] private CharacterPositions positions = CharacterPositions.Default();
-    private List<CharacterRuntimeStats> cachedMonsters;
-
-    public bool IsCombatNode => isCombatNode;
-
-    public List<CharacterRuntimeStats> SpawnMonsters()
+    [CreateAssetMenu(fileName = "EncounterData", menuName = "VirulentVentures/EncounterData", order = 10)]
+    public class EncounterData : ScriptableObject
     {
-        if (cachedMonsters != null && cachedMonsters.Count == 4 && cachedMonsters.All(m => m != null && m.gameObject != null))
-        {
-            return cachedMonsters;
-        }
+        [SerializeField] private List<MonsterSO> monsterSOs = new List<MonsterSO>();
+        [SerializeField] private bool isCombatNode = true; // Always true for prototype
+        [SerializeField] private CharacterPositions positions = CharacterPositions.Default();
 
-        cachedMonsters = new List<CharacterRuntimeStats>();
+        public bool IsCombatNode => isCombatNode;
 
-        if (ghoulSO == null || wraithSO == null)
+        public List<MonsterStats> SpawnMonsters()
         {
-            Debug.LogError($"EncounterData: Missing SO references! GhoulSO: {ghoulSO != null}, WraithSO: {wraithSO != null}");
-            return cachedMonsters;
-        }
-        if (positions.monsterPositions == null || positions.monsterPositions.Length != 4)
-        {
-            Debug.LogError($"EncounterData: Invalid monster positions! Positions: {positions.monsterPositions != null}, Length: {positions.monsterPositions?.Length ?? 0}");
-            return cachedMonsters;
-        }
+            List<MonsterStats> monsters = new List<MonsterStats>();
 
-        // Fixed composition: 2 Ghouls, 2 Wraiths
-        MonsterSO[] monsterComposition = new MonsterSO[] { ghoulSO, ghoulSO, wraithSO, wraithSO };
-
-        for (int i = 0; i < monsterComposition.Length; i++)
-        {
-            if (monsterComposition[i] == null)
+            if (monsterSOs == null || monsterSOs.Count == 0 || monsterSOs.Count > 4)
             {
-                Debug.LogWarning($"EncounterData: Null MonsterSO or Stats at index {i}");
-                continue;
+                Debug.LogError($"EncounterData: Invalid monster setup! MonsterSOs count: {monsterSOs?.Count ?? 0}, must be 1-4");
+                return monsters;
             }
-            GameObject monsterObj = new GameObject($"Monster{i + 1}_{monsterComposition[i].Stats.characterType}");
-            monsterObj.transform.position = positions.monsterPositions[i];
-            var runtimeStats = monsterObj.AddComponent<CharacterRuntimeStats>();
-            var renderer = monsterObj.AddComponent<SpriteRenderer>();
-            renderer.sprite = monsterComposition[i].Sprite;
-            renderer.sortingLayerName = "Characters";
-            renderer.transform.localScale = new Vector3(2f, 2f, 1f);
-            runtimeStats.SetCharacterSO(monsterComposition[i]);
-            runtimeStats.Initialize();
-            cachedMonsters.Add(runtimeStats);
+
+            if (positions.monsterPositions == null || positions.monsterPositions.Length < monsterSOs.Count)
+            {
+                Debug.LogError($"EncounterData: Invalid monster positions! Length: {positions.monsterPositions?.Length ?? 0}, Required: {monsterSOs.Count}");
+                return monsters;
+            }
+
+            for (int i = 0; i < monsterSOs.Count; i++)
+            {
+                if (monsterSOs[i] == null)
+                {
+                    Debug.LogWarning($"EncounterData: Null MonsterSO at index {i}");
+                    continue;
+                }
+
+                GameObject monsterObj = new GameObject($"Monster{i + 1}_{monsterSOs[i].Stats.Type.Id}");
+                monsterObj.transform.position = positions.monsterPositions[i];
+                var renderer = monsterObj.AddComponent<SpriteRenderer>();
+                renderer.sprite = monsterSOs[i].Sprite;
+                renderer.sortingLayerName = "Characters";
+                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
+                var monsterStats = new MonsterStats(monsterSOs[i], positions.monsterPositions[i]);
+                monsterSOs[i].ApplyStats(monsterStats);
+                monsters.Add(monsterStats);
+            }
+
+            return monsters;
         }
 
-        return cachedMonsters;
-    }
-
-    // Initialize encounter with fixed 2 Ghouls, 2 Wraiths (for testing)
-    public void InitializeRandomEncounter(MonsterSO ghoulSO, MonsterSO wraithSO)
-    {
-        this.ghoulSO = ghoulSO;
-        this.wraithSO = wraithSO;
-        cachedMonsters = null; // Reset cache if reinitializing
+        public void InitializeEncounter(List<MonsterSO> monsterSOs)
+        {
+            if (monsterSOs == null || monsterSOs.Count < 1 || monsterSOs.Count > 4)
+            {
+                Debug.LogError($"EncounterData: Invalid monsterSOs count for initialization: {monsterSOs?.Count ?? 0}, must be 1-4");
+                return;
+            }
+            this.monsterSOs = monsterSOs;
+        }
     }
 }
