@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace VirulentVentures
 {
-    public class TemplePlanningManager : MonoBehaviour
+    public class TemplePlanningController : MonoBehaviour
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
@@ -20,6 +20,9 @@ namespace VirulentVentures
             uiController.OnGenerateClicked += GenerateExpedition;
             uiController.OnLaunchClicked += LaunchExpedition;
             uiController.OnSeedVirusClicked += SeedVirus;
+
+            // Log partyData state for debugging
+            Debug.Log($"TemplePlanningManager.Awake: partyData.heroSOs count: {partyData?.HeroStats?.Count ?? 0}");
         }
 
         void Start()
@@ -51,7 +54,7 @@ namespace VirulentVentures
                 return;
             }
 
-            partyData.InitializeParty();
+            partyData.GenerateHeroStats(CharacterPositions.Default().heroPositions); // Pass Vector2[] positions
             ExpeditionManager.Instance.GenerateExpedition();
             isExpeditionGenerated = expeditionData.IsValid();
 

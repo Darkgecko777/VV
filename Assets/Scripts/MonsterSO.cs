@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace VirulentVentures
 {
@@ -7,11 +8,33 @@ namespace VirulentVentures
     {
         [SerializeField] private CharacterTypeSO characterType; // For ID, isMonster, etc.
         [SerializeField] private CharacterStatsData stats;
-        [SerializeField] private MonsterAbilitySO specialAbility;
+        [SerializeField] private List<string> abilityIds = new List<string>(); // Replaces MonsterAbilitySO
 
         public CharacterTypeSO CharacterType => characterType;
         public CharacterStatsData Stats => stats;
-        public MonsterAbilitySO SpecialAbility => specialAbility;
+        public List<string> AbilityIds => abilityIds;
+
+        private void Awake()
+        {
+            // Initialize abilityIds based on characterType.Id if not set in Inspector
+            if (abilityIds.Count == 0 && characterType != null)
+            {
+                abilityIds.Add("BasicAttack"); // Common attack
+                switch (characterType.Id)
+                {
+                    case "Ghoul":
+                        abilityIds.Add("GhoulClaw");
+                        abilityIds.Add("GhoulRend");
+                        break;
+                    case "Wraith":
+                        abilityIds.Add("WraithStrike");
+                        break;
+                    default:
+                        abilityIds.Add("DefaultMonsterAbility");
+                        break;
+                }
+            }
+        }
 
         public void ApplyStats(MonsterStats target)
         {
@@ -39,6 +62,22 @@ namespace VirulentVentures
             target.MaxDefense = (stats.MaxDefense * rankMultiplier) / 100;
             target.IsInfected = false;
             target.SlowTickDelay = 0;
+        }
+
+        public void ApplySpecialAbility(MonsterStats target, PartyData partyData)
+        {
+            foreach (var abilityId in abilityIds)
+            {
+                AbilityData? ability = AbilityDatabase.GetMonsterAbility(abilityId);
+                if (ability.HasValue)
+                {
+                    ability.Value.Effect?.Invoke(target, partyData);
+                }
+                else
+                {
+                    Debug.LogWarning($"MonsterSO.ApplySpecialAbility: Ability {abilityId} not found for {name}");
+                }
+            }
         }
 
         public bool TakeDamage(ref MonsterStats stats, int damage)
@@ -81,7 +120,15 @@ namespace VirulentVentures
 
         public bool CheckDodge()
         {
-            return specialAbility != null && specialAbility.CheckDodge();
+            foreach (var abilityId in abilityIds)
+            {
+                AbilityData? ability = AbilityDatabase.GetMonsterAbility(abilityId);
+                if (ability.HasValue && ability.Value.CanDodge)
+                {
+                    return true; // Ethereal monster with dodge ability Hannah
+                }
+            }
+            return false;
         }
 
         private void OnValidate()
@@ -92,7 +139,7 @@ namespace VirulentVentures
             }
             if (stats.Type == null)
             {
-                stats.Type = characterType; // Sync stats.Type with characterType for VisualConfig
+                stats.Type = characterType; // Sync stats.Type with characterType
             }
         }
     }

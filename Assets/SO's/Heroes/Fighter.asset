@@ -31,4 +31,4 @@ MonoBehaviour:
     slowTickDelay: 0
     speed: 0
     isCultist: 0
-  specialAbility: {fileID: 11400000, guid: 50dd11f90ac256d45b6f926075c31ddd, type: 2}
+  abilityIds: []

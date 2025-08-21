@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Collections.Generic;
 
 namespace VirulentVentures
 {
@@ -7,6 +8,7 @@ namespace VirulentVentures
     {
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private ExpeditionData expeditionData;
+        [SerializeField] private VisualConfig visualConfig;
 
         private VisualElement nodeContainer;
         private Button continueButton;
@@ -21,9 +23,9 @@ namespace VirulentVentures
 
         void Start()
         {
-            UpdateNodeVisuals();
             ExpeditionManager.Instance.OnNodeUpdated += UpdateNodeVisuals;
             ExpeditionManager.Instance.OnSceneTransitionCompleted += UpdateNodeVisuals;
+            UpdateNodeVisuals(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
         }
 
         void OnDestroy()
@@ -34,18 +36,46 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || expeditionData == null)
+            if (uiDocument == null || expeditionData == null || visualConfig == null)
             {
-                Debug.LogError($"ExpeditionSceneManager: Missing references! UIDocument: {uiDocument != null}, ExpeditionData: {expeditionData != null}");
+                Debug.LogError($"ExpeditionSceneManager: Missing references! UIDocument: {uiDocument != null}, ExpeditionData: {expeditionData != null}, VisualConfig: {visualConfig != null}");
                 return false;
             }
             return true;
         }
 
-        private void UpdateNodeVisuals()
+        private void UpdateNodeVisuals(List<NodeData> nodes, int currentNodeIndex)
         {
-            // Placeholder: Update node visuals (similar to TempleVisualController.UpdateNodeVisuals)
-            Debug.Log($"ExpeditionSceneManager: Updating visuals for node {expeditionData.CurrentNodeIndex}, Total nodes: {expeditionData.NodeData.Count}");
+            if (nodeContainer == null)
+            {
+                Debug.LogWarning("ExpeditionSceneManager.UpdateNodeVisuals: nodeContainer is null!");
+                return;
+            }
+
+            nodeContainer.Clear();
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                VisualElement nodeBox = new VisualElement();
+                nodeBox.AddToClassList("node-box");
+                nodeBox.AddToClassList(nodes[i].IsCombat ? "node-combat" : "node-noncombat");
+                if (i == currentNodeIndex)
+                {
+                    nodeBox.AddToClassList("node-active");
+                }
+                Color nodeColor = visualConfig.GetNodeColor(nodes[i].NodeType);
+                nodeBox.style.backgroundColor = new StyleColor(nodeColor);
+
+                Label nodeLabel = new Label($"Node {i + 1}");
+                nodeLabel.AddToClassList("node-label");
+                nodeBox.Add(nodeLabel);
+
+                if (nodes[i].SeededViruses.Count > 0)
+                {
+                    nodeBox.tooltip = $"Seeded: {string.Join(", ", nodes[i].SeededViruses.ConvertAll(v => v.VirusID))}";
+                }
+
+                nodeContainer.Add(nodeBox);
+            }
         }
     }
 }

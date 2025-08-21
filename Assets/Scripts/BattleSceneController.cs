@@ -1,36 +1,59 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using System.Linq;
 
 namespace VirulentVentures
 {
-    public class BattleManager : MonoBehaviour
+    public class BattleSceneController : MonoBehaviour
     {
         [SerializeField] private PartyData partyData;
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private ExpeditionManager expeditionManager;
-        [SerializeField] private BattleUIManager uiManager;
+        [SerializeField] private BattleUIController uiController;
+        [SerializeField] private BattleVisualController visualController;
+
         private List<(ICombatUnit unit, GameObject go)> units;
         private bool isBattleActive = false;
         private const int retreatMoraleThreshold = 20;
         private float combatSpeed = 1f;
         private int roundNumber = 0;
 
+        void Awake()
+        {
+            if (!ValidateReferences()) return;
+            uiController.OnContinueClicked += EndBattle;
+        }
+
         void Start()
         {
-            if (partyData == null || expeditionData == null || expeditionManager == null || uiManager == null)
+            if (!ValidateReferences()) return;
+            StartCoroutine(RunBattle());
+        }
+
+        private bool ValidateReferences()
+        {
+            if (partyData == null || expeditionData == null || expeditionManager == null || uiController == null || visualController == null)
             {
-                Debug.LogError($"BattleManager: Missing references! PartyData: {partyData != null}, ExpeditionData: {expeditionData != null}, ExpeditionManager: {expeditionManager != null}, UIManager: {uiManager != null}");
-                return;
+                Debug.LogError($"BattleSceneController: Missing references! PartyData: {partyData != null}, ExpeditionData: {expeditionData != null}, ExpeditionManager: {expeditionManager != null}, UIController: {uiController != null}, VisualController: {visualController != null}");
+                return false;
+            }
+            return true;
+        }
+
+        private IEnumerator RunBattle()
+        {
+            if (isBattleActive)
+            {
+                Debug.LogWarning("BattleSceneController: Battle already active!");
+                yield break;
             }
 
             if (expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
             {
-                Debug.LogError($"BattleManager: Invalid node index {expeditionData.CurrentNodeIndex}, node count: {expeditionData.NodeData.Count}");
+                Debug.LogError($"BattleSceneController: Invalid node index {expeditionData.CurrentNodeIndex}, node count: {expeditionData.NodeData.Count}");
                 EndBattle();
-                return;
+                yield break;
             }
 
             var heroStats = partyData.GetHeroes();
@@ -38,63 +61,42 @@ namespace VirulentVentures
 
             if (heroStats == null || monsterStats == null)
             {
-                Debug.LogError($"BattleManager: Null data! Heroes: {heroStats != null}, Monsters: {monsterStats != null}");
+                Debug.LogError($"BattleSceneController: Null data! Heroes: {heroStats != null}, Monsters: {monsterStats != null}");
                 EndBattle();
-                return;
+                yield break;
             }
 
             if (heroStats.Count == 0 || monsterStats.Count == 0)
             {
-                Debug.LogError($"BattleManager: Empty data! Heroes count: {heroStats.Count}, Monsters count: {monsterStats.Count}");
+                Debug.LogError($"BattleSceneController: Empty data! Heroes count: {heroStats.Count}, Monsters count: {monsterStats.Count}");
                 EndBattle();
-                return;
+                yield break;
             }
 
-            units = new List<(ICombatUnit, GameObject)>();
-
-            // Create hero GameObjects dynamically
-            for (int i = 0; i < heroStats.Count; i++)
-            {
-                if (heroStats[i].Health <= 0) continue;
-                GameObject heroObj = new GameObject(heroStats[i].Type.Id);
-                heroObj.transform.position = heroStats[i].Position;
-                var renderer = heroObj.AddComponent<SpriteRenderer>();
-                //renderer.sprite = heroStats[i].SO as HeroSO ? (heroStats[i].SO as HeroSO).Sprite : null;
-                renderer.sortingLayerName = "Characters";
-                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
-                units.Add((heroStats[i], heroObj));
-            }
-
-            // Create monster GameObjects dynamically
-            for (int i = 0; i < monsterStats.Count; i++)
-            {
-                if (monsterStats[i].Health <= 0) continue;
-                GameObject monsterObj = new GameObject(monsterStats[i].Type.Id);
-                monsterObj.transform.position = monsterStats[i].Position;
-                var renderer = monsterObj.AddComponent<SpriteRenderer>();
-                //renderer.sprite = monsterStats[i].SO as MonsterSO ? (monsterStats[i].SO as MonsterSO).Sprite : null;
-                renderer.sortingLayerName = "Characters";
-                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
-                units.Add((monsterStats[i], monsterObj));
-            }
-
-            uiManager.InitializeUI(units);
             isBattleActive = true;
-            StartCoroutine(CombatLoop());
-        }
+            units = new List<(ICombatUnit, GameObject)>();
+            List<ICombatUnit> heroes = heroStats.Cast<ICombatUnit>().ToList();
+            List<ICombatUnit> monsters = monsterStats.Cast<ICombatUnit>().ToList();
 
-        private IEnumerator CombatLoop()
-        {
+            // Initialize visuals
+            visualController.InitializeUnits(heroStats, monsterStats);
+            uiController.InitializeUI(units);
+
             while (isBattleActive)
             {
                 roundNumber++;
-                uiManager.LogMessage($"Round {roundNumber} begins!");
+                uiController.LogMessage($"Round {roundNumber} begins!");
 
-                List<ICombatUnit> heroes = units.Where(u => u.unit is HeroStats && u.unit.Health > 0).Select(u => u.unit).ToList();
-                List<ICombatUnit> monsters = units.Where(u => u.unit is MonsterStats && u.unit.Health > 0).Select(u => u.unit).ToList();
-
-                if (!AreAnyAlive(heroes) || !AreAnyAlive(monsters) || CheckRetreat(heroes))
+                if (!AreAnyAlive(heroes) || CheckRetreat(heroes))
                 {
+                    uiController.LogMessage(AreAnyAlive(heroes) ? "Party retreats due to low morale!" : "Party defeated!");
+                    EndBattle();
+                    yield break;
+                }
+
+                if (!AreAnyAlive(monsters))
+                {
+                    uiController.LogMessage("Monsters defeated!");
                     EndBattle();
                     yield break;
                 }
@@ -133,7 +135,7 @@ namespace VirulentVentures
             bool dodged = target is MonsterStats monsterStats && monsterStats.SO is MonsterSO monsterSO && monsterSO.CheckDodge();
             if (dodged)
             {
-                uiManager.LogMessage($"{target.Type.Id} dodges the attack!");
+                uiController.LogMessage($"{target.Type.Id} dodges the attack!");
                 yield break;
             }
 
@@ -150,16 +152,17 @@ namespace VirulentVentures
 
             if (killed)
             {
-                uiManager.LogMessage($"{attacker.Type.Id} kills {target.Type.Id}!");
-                uiManager.UpdateUnitPanel(target);
+                uiController.LogMessage($"{attacker.Type.Id} kills {target.Type.Id}!");
+                visualController.UpdateUnitVisual(target);
+                uiController.UpdateUnitPanel(target);
             }
             else
             {
-                uiManager.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage!");
+                uiController.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage!");
             }
 
-            uiManager.UpdateUnitPanel(target);
-            uiManager.ShowDamagePopup(target, damage.ToString());
+            uiController.UpdateUnitPanel(target);
+            uiController.ShowDamagePopup(target, damage.ToString());
 
             yield return new WaitForSeconds(0.5f / combatSpeed);
         }
@@ -189,8 +192,18 @@ namespace VirulentVentures
         {
             isBattleActive = false;
             expeditionManager.SaveProgress();
-            expeditionManager.SetTransitioning(true);
-            StartCoroutine(uiManager.FadeToExpedition(() => SceneManager.LoadScene("Expedition")));
+            bool partyDead = partyData.CheckDeadStatus().Count == 0;
+            if (partyDead)
+            {
+                uiController.FadeToScene(() => expeditionManager.EndExpedition());
+            }
+            else
+            {
+                uiController.FadeToScene(() => {
+                    expeditionManager.UnloadBattleScene();
+                    expeditionManager.OnContinueClicked();
+                });
+            }
         }
     }
 }

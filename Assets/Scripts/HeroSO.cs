@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace VirulentVentures
 {
@@ -7,12 +8,36 @@ namespace VirulentVentures
     {
         [SerializeField] private CharacterTypeSO characterType; // For ID, isHero, etc.
         [SerializeField] private CharacterStatsData stats;
-        [SerializeField] private SpecialAbilitySO specialAbility;
+        [SerializeField] private List<string> abilityIds = new List<string>(); // Replaces SpecialAbilitySO
         private const int lowMoraleThreshold = 50;
 
         public CharacterTypeSO CharacterType => characterType;
         public CharacterStatsData Stats => stats;
-        public SpecialAbilitySO SpecialAbility => specialAbility;
+        public List<string> AbilityIds => abilityIds;
+
+        private void Awake()
+        {
+            // Initialize abilityIds based on characterType.Id if not set in Inspector
+            if (abilityIds.Count == 0 && characterType != null)
+            {
+                abilityIds.Add("BasicAttack"); // Common attack
+                switch (characterType.Id)
+                {
+                    case "Fighter":
+                        abilityIds.Add("FighterAttack");
+                        break;
+                    case "Healer":
+                        abilityIds.Add("HealerHeal");
+                        break;
+                    case "Scout":
+                        abilityIds.Add("ScoutDefend");
+                        break;
+                    case "TreasureHunter":
+                        abilityIds.Add("TreasureHunterBoost");
+                        break;
+                }
+            }
+        }
 
         public void ApplyStats(HeroStats target)
         {
@@ -44,9 +69,17 @@ namespace VirulentVentures
 
         public void ApplySpecialAbility(HeroStats target, PartyData partyData)
         {
-            if (specialAbility != null)
+            foreach (var abilityId in abilityIds)
             {
-                specialAbility.Apply(target, partyData);
+                AbilityData? ability = characterType.IsMonster ? AbilityDatabase.GetMonsterAbility(abilityId) : AbilityDatabase.GetHeroAbility(abilityId);
+                if (ability.HasValue)
+                {
+                    ability.Value.Effect?.Invoke(target, partyData);
+                }
+                else
+                {
+                    Debug.LogWarning($"HeroSO.ApplySpecialAbility: Ability {abilityId} not found for {name}");
+                }
             }
         }
 
@@ -112,10 +145,6 @@ namespace VirulentVentures
             if (stats.Type == null)
             {
                 stats.Type = characterType; // Sync stats.Type with characterType
-            }
-            if (specialAbility == null)
-            {
-                Debug.LogWarning($"HeroSO.OnValidate: SpecialAbility is missing for {name}!");
             }
         }
     }

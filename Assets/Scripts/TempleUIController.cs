@@ -8,7 +8,7 @@ namespace VirulentVentures
     public class TempleUIController : MonoBehaviour
     {
         [SerializeField] private UIDocument uiDocument;
-        [SerializeField] private TemplePlanningManager planningManager;
+        [SerializeField] private TemplePlanningController planningManager;
 
         private DropdownField virusDropdown;
         private DropdownField nodeDropdown;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,12 +7,13 @@ using System.Linq;
 
 namespace VirulentVentures
 {
-    public class BattleUIManager : MonoBehaviour
+    public class BattleUIController : MonoBehaviour
     {
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private PartyData partyData;
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private CanvasGroup fadeCanvasGroup;
+
         private VisualElement root;
         private RectTransform canvasRectTransform;
         private Camera mainCamera;
@@ -19,39 +21,54 @@ namespace VirulentVentures
         private Label combatLog;
         private float fadeDuration = 0.5f;
 
-        void Start()
+        public event Action OnContinueClicked;
+
+        void Awake()
         {
+            if (!ValidateReferences()) return;
             root = GetComponent<UIDocument>()?.rootVisualElement;
             canvasRectTransform = GetComponent<RectTransform>();
-            mainCamera = Camera.main;
-
-            if (root == null || canvasRectTransform == null || uiConfig == null || mainCamera == null || partyData == null || expeditionData == null || fadeCanvasGroup == null)
-            {
-                Debug.LogError($"BattleUIManager: Missing references! Root: {root != null}, CanvasRectTransform: {canvasRectTransform != null}, UIConfig: {uiConfig != null}, MainCamera: {mainCamera != null}, PartyData: {partyData != null}, ExpeditionData: {expeditionData != null}, FadeCanvasGroup: {fadeCanvasGroup != null}");
-                return;
-            }
-
-            if (expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
-            {
-                Debug.LogError($"BattleUIManager: Invalid node index {expeditionData.CurrentNodeIndex}, node count: {expeditionData.NodeData.Count}");
-                return;
-            }
-
-            unitPanels = new Dictionary<ICombatUnit, VisualElement>();
             combatLog = root.Q<Label>("CombatLog");
             if (combatLog == null)
             {
-                Debug.LogError("BattleUIManager: Missing CombatLog!");
+                Debug.LogError("BattleUIController: Missing CombatLog!");
                 return;
             }
             combatLog.style.display = DisplayStyle.Flex;
             combatLog.text = "";
-
             fadeCanvasGroup.alpha = 0;
+
+            // Bind ContinueButton
+            var continueButton = root.Q<Button>("ContinueButton");
+            if (continueButton != null)
+            {
+                continueButton.clicked += () => OnContinueClicked?.Invoke();
+            }
+            else
+            {
+                Debug.LogWarning("BattleUIController: ContinueButton not found!");
+            }
+        }
+
+        private bool ValidateReferences()
+        {
+            if (uiConfig == null || partyData == null || expeditionData == null || fadeCanvasGroup == null)
+            {
+                Debug.LogError($"BattleUIController: Missing references! UIConfig: {uiConfig != null}, PartyData: {partyData != null}, ExpeditionData: {expeditionData != null}, FadeCanvasGroup: {fadeCanvasGroup != null}");
+                return false;
+            }
+            return true;
         }
 
         public void InitializeUI(List<(ICombatUnit unit, GameObject go)> units)
         {
+            if (root == null || canvasRectTransform == null || mainCamera == null)
+            {
+                Debug.LogWarning($"BattleUIController: Invalid setup! Root: {root != null}, CanvasRectTransform: {canvasRectTransform != null}, MainCamera: {mainCamera != null}");
+                return;
+            }
+
+            unitPanels = new Dictionary<ICombatUnit, VisualElement>();
             SetupUnitPanels(units.Where(u => u.unit is HeroStats).Select(u => u.unit).ToList(), true);
             SetupUnitPanels(units.Where(u => u.unit is MonsterStats).Select(u => u.unit).ToList(), false);
         }
@@ -60,15 +77,15 @@ namespace VirulentVentures
         {
             if (statsList == null || statsList.Count == 0)
             {
-                Debug.LogWarning($"BattleUIManager: Empty { (isHero ? "hero" : "monster") } stats");
+                Debug.LogWarning($"BattleUIController: Empty {(isHero ? "hero" : "monster")} stats");
                 return;
             }
 
-            string containerName = isHero ? "HeroPanelContainer" : "MonsterPanelContainer";
+            string containerName = isHero ? "HeroesContainer" : "MonstersContainer";
             VisualElement container = root.Q<VisualElement>(containerName);
             if (container == null)
             {
-                Debug.LogError($"BattleUIManager: Missing {containerName}");
+                Debug.LogError($"BattleUIController: Missing {containerName}");
                 return;
             }
 
@@ -82,32 +99,34 @@ namespace VirulentVentures
                 panel.style.position = Position.Absolute;
 
                 Label typeLabel = new Label { text = unit.Type.Id, name = "TypeLabel" };
-                typeLabel.AddToClassList("unit-type");
+                typeLabel.AddToClassList("stat-label");
                 panel.Add(typeLabel);
 
-                ProgressBar healthBar = new ProgressBar { name = "HealthBar", value = 100 };
-                healthBar.AddToClassList("unit-bar");
+                ProgressBar healthBar = new ProgressBar { name = "HealthBar" };
+                healthBar.value = (float)unit.Health / unit.MaxHealth * 100;
+                healthBar.title = $"HP: {unit.Health}/{unit.MaxHealth}";
+                healthBar.AddToClassList(isHero ? "health-fill-hero" : "health-fill-monster");
                 panel.Add(healthBar);
 
-                ProgressBar moraleBar = new ProgressBar { name = "MoraleBar", value = 100 };
-                moraleBar.AddToClassList("unit-bar");
+                ProgressBar moraleBar = new ProgressBar { name = "MoraleBar" };
+                moraleBar.value = unit.Morale;
+                moraleBar.title = $"Morale: {unit.Morale}";
                 panel.Add(moraleBar);
 
                 container.Add(panel);
-                unitPanels.Add(unit, panel);
+                unitPanels[unit] = panel;
 
-                UpdatePanelPosition(panel, unit.Position, isHero);
-                UpdateUnitPanel(unit);
+                UpdateUnitPanelPosition(unit, panel, isHero);
             }
         }
 
-        private void UpdatePanelPosition(VisualElement panel, Vector3 worldPosition, bool isHero)
+        private void UpdateUnitPanelPosition(ICombatUnit unit, VisualElement panel, bool isHero)
         {
-            Vector2 screenPosition = mainCamera.WorldToScreenPoint(worldPosition);
+            Vector2 screenPosition = mainCamera.WorldToScreenPoint(unit.Position);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRectTransform, screenPosition, null, out Vector2 localPoint);
 
             panel.style.left = localPoint.x + (isHero ? -50 : 50);
-            panel.style.top = -localPoint.y + 50; // Adjust for UI orientation
+            panel.style.top = -localPoint.y + 50;
         }
 
         public void UpdateUnitPanel(ICombatUnit unit)
@@ -183,11 +202,16 @@ namespace VirulentVentures
             }
         }
 
-        public IEnumerator FadeToExpedition(System.Action onComplete)
+        public void FadeToScene(Action onComplete)
+        {
+            StartCoroutine(FadeToExpedition(onComplete));
+        }
+
+        private IEnumerator FadeToExpedition(Action onComplete)
         {
             if (fadeCanvasGroup == null)
             {
-                Debug.LogWarning("BattleUIManager: Missing fadeCanvasGroup!");
+                Debug.LogWarning("BattleUIController: Missing fadeCanvasGroup!");
                 onComplete?.Invoke();
                 yield break;
             }
@@ -201,6 +225,15 @@ namespace VirulentVentures
             }
             fadeCanvasGroup.alpha = 1;
             onComplete?.Invoke();
+        }
+
+        void Start()
+        {
+            mainCamera = Camera.main;
+            if (mainCamera == null)
+            {
+                Debug.LogError("BattleUIController: MainCamera not found!");
+            }
         }
     }
 }

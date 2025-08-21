@@ -19,7 +19,7 @@ namespace VirulentVentures
         public event Action<List<NodeData>, int> OnNodeUpdated;
         public event Action OnExpeditionGenerated;
         public event Action OnCombatStarted;
-        public event Action OnSceneTransitionCompleted; // New event for transition completion
+        public event Action<List<NodeData>, int> OnSceneTransitionCompleted;
 
         void Awake()
         {
@@ -32,6 +32,16 @@ namespace VirulentVentures
             {
                 Destroy(gameObject);
                 return;
+            }
+
+            // Validate partyData early
+            if (partyData == null || partyData.HeroStats == null)
+            {
+                Debug.LogError($"ExpeditionManager.Awake: partyData or HeroStats is null");
+            }
+            else
+            {
+                Debug.Log($"ExpeditionManager.Awake: partyData.heroSOs count: {partyData.HeroStats.Count}");
             }
         }
 
@@ -53,8 +63,9 @@ namespace VirulentVentures
                 expeditionData.SetParty(tempData.Party);
             }
 
+            // Only deserialize partyData if heroSOs is empty
             string partySaveData = PlayerPrefs.GetString("PartySave", "");
-            if (!string.IsNullOrEmpty(partySaveData))
+            if (!string.IsNullOrEmpty(partySaveData) && partyData != null && (partyData.HeroStats == null || partyData.HeroStats.Count == 0))
             {
                 JsonUtility.FromJsonOverwrite(partySaveData, partyData);
             }
@@ -91,7 +102,7 @@ namespace VirulentVentures
 
             expeditionData.SetNodes(nodes);
             expeditionData.SetParty(partyData);
-            partyData.InitializeParty();
+            partyData.GenerateHeroStats(CharacterPositions.Default().heroPositions); // Initialize party here
             SaveProgress();
             OnExpeditionGenerated?.Invoke();
         }
@@ -104,10 +115,11 @@ namespace VirulentVentures
                 return;
             }
             isTransitioning = true;
+            Debug.Log("ExpeditionManager: Transitioning to TemplePlanningScene");
             SceneManager.LoadSceneAsync("TemplePlanningScene").completed += _ =>
             {
                 isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke();
+                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             };
         }
 
@@ -124,10 +136,11 @@ namespace VirulentVentures
                 return;
             }
             isTransitioning = true;
+            Debug.Log("ExpeditionManager: Transitioning to ExpeditionScene");
             SceneManager.LoadSceneAsync("ExpeditionScene").completed += _ =>
             {
                 isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke();
+                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             };
         }
 
@@ -144,11 +157,12 @@ namespace VirulentVentures
                 return;
             }
             isTransitioning = true;
+            Debug.Log("ExpeditionManager: Transitioning to BattleScene");
             SceneManager.LoadSceneAsync("BattleScene", LoadSceneMode.Additive).completed += _ =>
             {
                 OnCombatStarted?.Invoke();
                 isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke();
+                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             };
         }
 
@@ -160,10 +174,11 @@ namespace VirulentVentures
                 return;
             }
             isTransitioning = true;
+            Debug.Log("ExpeditionManager: Unloading BattleScene");
             SceneManager.UnloadSceneAsync("BattleScene").completed += _ =>
             {
                 isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke();
+                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             };
         }
 
@@ -184,8 +199,6 @@ namespace VirulentVentures
             }
             else
             {
-                // Non-combat node logic (e.g., apply ambient virus effects)
-                // For now, auto-advance to next node
                 OnContinueClicked();
             }
         }

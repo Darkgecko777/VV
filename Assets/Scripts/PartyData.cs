@@ -7,56 +7,50 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "PartyData", menuName = "VirulentVentures/PartyData", order = 12)]
     public class PartyData : ScriptableObject
     {
-        [SerializeField] private List<CharacterTypeSO> heroTypes = new List<CharacterTypeSO>();
         [SerializeField] private List<HeroSO> heroSOs = new List<HeroSO>();
         [SerializeField] private bool allowCultist = false;
-        [SerializeField] private CharacterPositions positions = CharacterPositions.Default();
-        [SerializeField] private List<HeroStats> heroStats = new List<HeroStats>();
+        private List<HeroStats> heroStats = new List<HeroStats>();
 
         public List<HeroStats> HeroStats => heroStats;
 
-        public void InitializeParty()
+        public void GenerateHeroStats(Vector2[] positions = null)
         {
             heroStats.Clear();
 
-            if (heroSOs == null || heroTypes == null || heroSOs.Count != heroTypes.Count)
+            if (heroSOs == null || heroSOs.Count == 0 || heroSOs.Count > 4)
             {
-                Debug.LogError($"PartyData: Invalid hero setup! HeroSOs: {heroSOs?.Count ?? 0}, HeroTypes: {heroTypes?.Count ?? 0}");
+                Debug.LogError($"PartyData.GenerateHeroStats: Invalid hero count! Got {heroSOs?.Count ?? 0}, expected 1-4");
                 return;
             }
 
-            if (heroSOs.Count < 1 || heroSOs.Count > 4)
-            {
-                Debug.LogError($"PartyData: Hero count must be 1-4, got {heroSOs.Count}");
-                return;
-            }
+            // Convert Vector2[] to Vector3[] (z=0) if provided, else use default
+            Vector3[] positionVectors = positions != null && positions.Length >= heroSOs.Count
+                ? Array.ConvertAll(positions, p => new Vector3(p.x, p.y, 0))
+                : Array.ConvertAll(CharacterPositions.Default().heroPositions, p => new Vector3(p.x, p.y, 0));
 
-            if (positions.heroPositions == null || positions.heroPositions.Length < heroSOs.Count)
+            if (positionVectors.Length < heroSOs.Count)
             {
-                Debug.LogError($"PartyData: Invalid hero positions! Length: {positions.heroPositions?.Length ?? 0}, Required: {heroSOs.Count}");
+                Debug.LogError($"PartyData.GenerateHeroStats: Insufficient positions! Got {positionVectors.Length}, needed {heroSOs.Count}");
                 return;
             }
 
             for (int i = 0; i < heroSOs.Count; i++)
             {
-                if (heroSOs[i] == null || heroTypes[i] == null)
+                if (heroSOs[i] == null || heroSOs[i].Stats == null || heroSOs[i].Stats.Type == null)
                 {
-                    Debug.LogError($"PartyData: Null reference at index {i}! HeroSO: {heroSOs[i] != null}, HeroType: {heroTypes[i] != null}");
+                    Debug.LogError($"PartyData.GenerateHeroStats: Null HeroSO or Stats.Type at index {i}");
                     continue;
                 }
 
-                if (heroSOs[i].Stats.Type != heroTypes[i])
-                {
-                    Debug.LogWarning($"PartyData: Mismatch between HeroSO type {heroSOs[i].Stats.Type?.Id} and HeroTypes[{i}] {heroTypes[i].Id}");
-                }
-
-                var heroStat = new HeroStats(heroSOs[i], positions.heroPositions[i]);
-                if (allowCultist && heroTypes[i].CanBeCultist && i == heroSOs.Count - 1)
+                var heroStat = new HeroStats(heroSOs[i], positionVectors[i]);
+                if (allowCultist && heroSOs[i].Stats.Type.CanBeCultist && i == heroSOs.Count - 1)
                 {
                     heroStat.IsCultist = true;
                 }
                 heroStats.Add(heroStat);
             }
+
+            Debug.Log($"PartyData.GenerateHeroStats: Initialized {heroStats.Count} heroes");
         }
 
         public List<HeroStats> GetHeroes()
@@ -73,22 +67,22 @@ namespace VirulentVentures
         {
             if (slot < 0 || slot >= heroStats.Count)
             {
-                Debug.LogError($"PartyData: Invalid slot {slot} for cultist replacement");
+                Debug.LogError($"PartyData.ReplaceWithCultist: Invalid slot {slot}");
                 return;
             }
-            if (cultistSO == null)
+            if (cultistSO == null || cultistSO.Stats == null || cultistSO.Stats.Type == null)
             {
-                Debug.LogError("PartyData: Null cultistSO");
+                Debug.LogError("PartyData.ReplaceWithCultist: Null or invalid cultistSO");
                 return;
             }
             if (!cultistSO.Stats.Type.CanBeCultist)
             {
-                Debug.LogError($"PartyData: HeroSO type {cultistSO.Stats.Type.Id} cannot be a cultist");
+                Debug.LogError($"PartyData.ReplaceWithCultist: HeroSO type {cultistSO.Stats.Type.Id} cannot be a cultist");
                 return;
             }
 
-            var cultistStats = new HeroStats(cultistSO, positions.heroPositions[slot]) { IsCultist = true };
-            heroStats[slot] = cultistStats;
+            var position = heroStats[slot].Position; // Preserve position
+            heroStats[slot] = new HeroStats(cultistSO, position) { IsCultist = true };
         }
 
         public HeroStats FindLowestHealthAlly()
@@ -114,6 +108,30 @@ namespace VirulentVentures
         public void Reset()
         {
             heroStats.Clear();
+        }
+
+        private void OnValidate()
+        {
+            if (heroSOs == null || heroSOs.Count == 0)
+            {
+                Debug.LogWarning($"PartyData.OnValidate: No heroes assigned in {name}");
+            }
+            else if (heroSOs.Count > 4)
+            {
+                Debug.LogWarning($"PartyData.OnValidate: Too many heroes ({heroSOs.Count}) in {name}, max is 4");
+            }
+
+            for (int i = 0; i < heroSOs.Count; i++)
+            {
+                if (heroSOs[i] == null)
+                {
+                    Debug.LogWarning($"PartyData.OnValidate: Null HeroSO at index {i} in {name}");
+                }
+                else if (heroSOs[i].Stats == null || heroSOs[i].Stats.Type == null)
+                {
+                    Debug.LogWarning($"PartyData.OnValidate: Invalid Stats or Type for HeroSO at index {i} in {name}");
+                }
+            }
         }
     }
 }
