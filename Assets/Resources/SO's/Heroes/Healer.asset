@@ -10,25 +10,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1ae75d8752e66b54eaf4510f5cd27ef2, type: 3}
-  m_Name: Scout
+  m_Name: Healer
   m_EditorClassIdentifier: 
-  characterType: {fileID: 11400000, guid: a1523cb37a7c6f34aa3b1568e72411eb, type: 2}
+  characterType: {fileID: 11400000, guid: c7934c536176c054187798b98d9c775e, type: 2}
   stats:
-    type: {fileID: 11400000, guid: a1523cb37a7c6f34aa3b1568e72411eb, type: 2}
-    health: 0
-    maxHealth: 0
+    type: {fileID: 11400000, guid: c7934c536176c054187798b98d9c775e, type: 2}
+    health: 60
+    maxHealth: 60
     minHealth: 0
-    attack: 0
-    minAttack: 0
-    maxAttack: 0
-    defense: 0
-    minDefense: 0
-    maxDefense: 0
-    morale: 0
-    sanity: 0
+    attack: 4
+    minAttack: 4
+    maxAttack: 4
+    defense: 4
+    minDefense: 4
+    maxDefense: 4
+    morale: 50
+    sanity: 50
     rank: 0
     isInfected: 0
     slowTickDelay: 0
     speed: 0
     isCultist: 0
-  specialAbility: {fileID: 11400000, guid: a9fdeefe4095cbe4e8b402fb1607632d, type: 2}
+  abilityIds:
+  - BasicAttack
+  - HealerHeal
+  partyPosition: 6

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Linq;
 
 namespace VirulentVentures
 {
@@ -54,7 +55,12 @@ namespace VirulentVentures
             }
 
             portraitContainer.Clear();
-            var heroes = partyData.GetHeroes();
+            var heroes = partyData.GetHeroes()
+                .OrderByDescending(h => h.PartyPosition) // Sort by PartyPosition (7=front/left, 1=back/right)
+                .ToList();
+
+            Debug.Log($"TempleVisualController.UpdatePartyVisuals: Rendering {heroes.Count} heroes in order: {string.Join(", ", heroes.Select(h => h.PartyPosition))}");
+
             for (int i = 0; i < 4; i++)
             {
                 VisualElement portrait = new VisualElement();

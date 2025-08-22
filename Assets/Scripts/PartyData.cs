@@ -1,17 +1,23 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 namespace VirulentVentures
 {
     [CreateAssetMenu(fileName = "PartyData", menuName = "VirulentVentures/PartyData", order = 12)]
     public class PartyData : ScriptableObject
     {
-        [SerializeField] private List<HeroSO> heroSOs = new List<HeroSO>();
-        [SerializeField] private bool allowCultist = false;
+        private List<HeroSO> heroSOs = new List<HeroSO>(); // Non-serialized
+        [SerializeField] public bool AllowCultist = false;
         private List<HeroStats> heroStats = new List<HeroStats>();
 
         public List<HeroStats> HeroStats => heroStats;
+        public List<HeroSO> HeroSOs
+        {
+            get => heroSOs;
+            set => heroSOs = value ?? new List<HeroSO>();
+        }
 
         public void GenerateHeroStats(Vector2[] positions = null)
         {
@@ -23,34 +29,45 @@ namespace VirulentVentures
                 return;
             }
 
-            // Convert Vector2[] to Vector3[] (z=0) if provided, else use default
-            Vector3[] positionVectors = positions != null && positions.Length >= heroSOs.Count
+            // Filter out null HeroSOs and sort by PartyPosition (ascending: 1=front/left, 7=back/right)
+            var sortedHeroes = heroSOs
+                .Where(h => h != null)
+                .OrderBy(h => h.PartyPosition) // Fixed to PartyPosition
+                .ToList();
+
+            if (sortedHeroes.Count != heroSOs.Count)
+            {
+                Debug.LogError($"PartyData.GenerateHeroStats: Found {heroSOs.Count - sortedHeroes.Count} null HeroSOs, expected none");
+            }
+
+            // Convert Vector2[] to Vector3[] (z=0 for screen position)
+            Vector3[] positionVectors = positions != null && positions.Length >= sortedHeroes.Count
                 ? Array.ConvertAll(positions, p => new Vector3(p.x, p.y, 0))
                 : Array.ConvertAll(CharacterPositions.Default().heroPositions, p => new Vector3(p.x, p.y, 0));
 
-            if (positionVectors.Length < heroSOs.Count)
+            if (positionVectors.Length < sortedHeroes.Count)
             {
-                Debug.LogError($"PartyData.GenerateHeroStats: Insufficient positions! Got {positionVectors.Length}, needed {heroSOs.Count}");
+                Debug.LogError($"PartyData.GenerateHeroStats: Insufficient positions! Got {positionVectors.Length}, needed {sortedHeroes.Count}");
                 return;
             }
 
-            for (int i = 0; i < heroSOs.Count; i++)
+            for (int i = 0; i < sortedHeroes.Count; i++)
             {
-                if (heroSOs[i] == null || heroSOs[i].Stats == null || heroSOs[i].Stats.Type == null)
+                if (sortedHeroes[i].Stats == null || sortedHeroes[i].Stats.Type == null)
                 {
-                    Debug.LogError($"PartyData.GenerateHeroStats: Null HeroSO or Stats.Type at index {i}");
+                    Debug.LogError($"PartyData.GenerateHeroStats: Null Stats or Type for HeroSO at index {i}");
                     continue;
                 }
 
-                var heroStat = new HeroStats(heroSOs[i], positionVectors[i]);
-                if (allowCultist && heroSOs[i].Stats.Type.CanBeCultist && i == heroSOs.Count - 1)
+                var heroStat = new HeroStats(sortedHeroes[i], positionVectors[i]);
+                if (AllowCultist && sortedHeroes[i].Stats.Type.CanBeCultist && i == sortedHeroes.Count - 1)
                 {
                     heroStat.IsCultist = true;
                 }
                 heroStats.Add(heroStat);
             }
 
-            Debug.Log($"PartyData.GenerateHeroStats: Initialized {heroStats.Count} heroes");
+            Debug.Log($"PartyData.GenerateHeroStats: Initialized {heroStats.Count} heroes in order: {string.Join(", ", heroStats.Select(h => h.PartyPosition))}");
         }
 
         public List<HeroStats> GetHeroes()
@@ -81,7 +98,7 @@ namespace VirulentVentures
                 return;
             }
 
-            var position = heroStats[slot].Position; // Preserve position
+            var position = heroStats[slot].Position; // Preserve screen position
             heroStats[slot] = new HeroStats(cultistSO, position) { IsCultist = true };
         }
 
@@ -108,17 +125,31 @@ namespace VirulentVentures
         public void Reset()
         {
             heroStats.Clear();
+            heroSOs.Clear();
         }
 
         private void OnValidate()
         {
             if (heroSOs == null || heroSOs.Count == 0)
             {
-                Debug.LogWarning($"PartyData.OnValidate: No heroes assigned in {name}");
+                Debug.Log($"PartyData.OnValidate: No heroes assigned in {name}, awaiting ExpeditionManager setup");
+                return;
             }
-            else if (heroSOs.Count > 4)
+            if (heroSOs.Count > 4)
             {
                 Debug.LogWarning($"PartyData.OnValidate: Too many heroes ({heroSOs.Count}) in {name}, max is 4");
+            }
+            else
+            {
+                var positions = heroSOs.Where(h => h != null).Select(h => h.PartyPosition).ToList();
+                if (positions.Any(p => p != 1))
+                {
+                    var uniquePositions = positions.Distinct().Count();
+                    if (uniquePositions < positions.Count)
+                    {
+                        Debug.LogWarning($"PartyData.OnValidate: Duplicate PartyPosition values in {name}. Please assign unique values (1-7).");
+                    }
+                }
             }
 
             for (int i = 0; i < heroSOs.Count; i++)

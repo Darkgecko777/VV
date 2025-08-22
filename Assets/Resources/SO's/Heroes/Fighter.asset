@@ -10,25 +10,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1ae75d8752e66b54eaf4510f5cd27ef2, type: 3}
-  m_Name: Healer
+  m_Name: Fighter
   m_EditorClassIdentifier: 
-  characterType: {fileID: 11400000, guid: c7934c536176c054187798b98d9c775e, type: 2}
+  characterType: {fileID: 11400000, guid: 6b5c6544d0cab344cb6eaea8d71dfbf2, type: 2}
   stats:
-    type: {fileID: 11400000, guid: c7934c536176c054187798b98d9c775e, type: 2}
-    health: 0
-    maxHealth: 0
+    type: {fileID: 11400000, guid: 6b5c6544d0cab344cb6eaea8d71dfbf2, type: 2}
+    health: 100
+    maxHealth: 100
     minHealth: 0
-    attack: 0
-    minAttack: 0
-    maxAttack: 0
-    defense: 0
-    minDefense: 0
-    maxDefense: 0
-    morale: 0
-    sanity: 0
+    attack: 10
+    minAttack: 10
+    maxAttack: 10
+    defense: 6
+    minDefense: 6
+    maxDefense: 6
+    morale: 40
+    sanity: 40
     rank: 0
     isInfected: 0
     slowTickDelay: 0
     speed: 0
     isCultist: 0
-  specialAbility: {fileID: 11400000, guid: 92c53946563118749a4c038d450fdfaa, type: 2}
+  abilityIds:
+  - BasicAttack
+  - FighterAttack
+  partyPosition: 1

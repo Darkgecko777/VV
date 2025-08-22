@@ -2,17 +2,35 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace VirulentVentures
 {
+    [Serializable]
+    public class SaveDataWrapper
+    {
+        public string version;
+        public ExpeditionData expeditionData;
+        public PartyData partyData;
+
+        public SaveDataWrapper(string version, ExpeditionData expeditionData, PartyData partyData)
+        {
+            this.version = version;
+            this.expeditionData = expeditionData;
+            this.partyData = partyData;
+        }
+    }
+
     public class ExpeditionManager : MonoBehaviour
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
         [SerializeField] private MonsterSO ghoulSO;
         [SerializeField] private MonsterSO wraithSO;
+        [SerializeField] private List<HeroSO> fallbackHeroes;
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
+        private const string CURRENT_VERSION = "1.0";
 
         public static ExpeditionManager Instance => instance;
         public bool IsTransitioning => isTransitioning;
@@ -34,14 +52,13 @@ namespace VirulentVentures
                 return;
             }
 
-            // Validate partyData early
             if (partyData == null || partyData.HeroStats == null)
             {
                 Debug.LogError($"ExpeditionManager.Awake: partyData or HeroStats is null");
             }
             else
             {
-                Debug.Log($"ExpeditionManager.Awake: partyData.heroSOs count: {partyData.HeroStats.Count}");
+                Debug.Log($"ExpeditionManager.Awake: partyData.HeroSOs count: {partyData.HeroSOs.Count}");
             }
         }
 
@@ -53,21 +70,38 @@ namespace VirulentVentures
                 return;
             }
 
-            string saveData = PlayerPrefs.GetString("ExpeditionSave", "");
-            if (!string.IsNullOrEmpty(saveData))
+            string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
+            if (!string.IsNullOrEmpty(expeditionSaveData))
             {
-                var tempData = ScriptableObject.CreateInstance<ExpeditionData>();
-                JsonUtility.FromJsonOverwrite(saveData, tempData);
-                expeditionData.SetNodes(tempData.NodeData);
-                expeditionData.CurrentNodeIndex = tempData.CurrentNodeIndex;
-                expeditionData.SetParty(tempData.Party);
+                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(expeditionSaveData);
+                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.expeditionData != null)
+                {
+                    expeditionData.SetNodes(wrapper.expeditionData.NodeData);
+                    expeditionData.CurrentNodeIndex = wrapper.expeditionData.CurrentNodeIndex;
+                    expeditionData.SetParty(wrapper.expeditionData.Party);
+                }
+                else
+                {
+                    Debug.LogWarning("ExpeditionManager: Invalid or outdated ExpeditionSave version, resetting.");
+                    PlayerPrefs.DeleteKey("ExpeditionSave");
+                }
             }
 
-            // Only deserialize partyData if heroSOs is empty
             string partySaveData = PlayerPrefs.GetString("PartySave", "");
             if (!string.IsNullOrEmpty(partySaveData) && partyData != null && (partyData.HeroStats == null || partyData.HeroStats.Count == 0))
             {
-                JsonUtility.FromJsonOverwrite(partySaveData, partyData);
+                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(partySaveData);
+                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.partyData != null)
+                {
+                    partyData.HeroSOs = wrapper.partyData.HeroSOs ?? new List<HeroSO>();
+                    partyData.AllowCultist = wrapper.partyData.AllowCultist;
+                    partyData.GenerateHeroStats(CharacterPositions.Default().heroPositions);
+                }
+                else
+                {
+                    Debug.LogWarning("ExpeditionManager: Invalid or outdated PartySave version, resetting.");
+                    PlayerPrefs.DeleteKey("PartySave");
+                }
             }
 
             OnNodeUpdated?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
@@ -80,7 +114,29 @@ namespace VirulentVentures
             expeditionData.Reset();
             partyData.Reset();
 
-            List<NodeData> nodes = new List<NodeData>
+            HeroSO[] heroPool = Resources.LoadAll<HeroSO>("SO's/Heroes");
+            Debug.Log($"ExpeditionManager.GenerateExpedition: Loaded {heroPool.Length} HeroSOs from Resources/SOs/Heroes: {string.Join(", ", heroPool.Select(h => h.name + " (partyPosition: " + h.PartyPosition + ")"))}");
+
+            List<HeroSO> selectedHeroes;
+            if (heroPool.Length < 4)
+            {
+                Debug.LogError($"ExpeditionManager.GenerateExpedition: Insufficient HeroSOs in Resources/SOs/Heroes, found {heroPool.Length}, need 4. Using fallbackHeroes.");
+                selectedHeroes = fallbackHeroes != null && fallbackHeroes.Count >= 4
+                    ? fallbackHeroes.Take(4).ToList()
+                    : new List<HeroSO>();
+                if (selectedHeroes.Count < 4)
+                {
+                    Debug.LogError($"ExpeditionManager.GenerateExpedition: Fallback heroes insufficient, found {selectedHeroes.Count}, need 4");
+                    return;
+                }
+            }
+            else
+            {
+                selectedHeroes = heroPool.OrderBy(_ => UnityEngine.Random.value).Take(4).ToList();
+            }
+
+            partyData.HeroSOs = selectedHeroes;
+            expeditionData.SetNodes(new List<NodeData>
             {
                 new NodeData(
                     monsters: new List<MonsterStats>(),
@@ -98,11 +154,9 @@ namespace VirulentVentures
                     flavourText: "A ghoul-infested ruin.",
                     seededViruses: new List<VirusData>()
                 )
-            };
-
-            expeditionData.SetNodes(nodes);
+            });
             expeditionData.SetParty(partyData);
-            partyData.GenerateHeroStats(CharacterPositions.Default().heroPositions); // Initialize party here
+            partyData.GenerateHeroStats(CharacterPositions.Default().heroPositions);
             SaveProgress();
             OnExpeditionGenerated?.Invoke();
         }
@@ -236,10 +290,14 @@ namespace VirulentVentures
 
         public void SaveProgress()
         {
-            string json = JsonUtility.ToJson(expeditionData);
-            PlayerPrefs.SetString("ExpeditionSave", json);
-            string partyJson = JsonUtility.ToJson(partyData);
+            var expeditionWrapper = new SaveDataWrapper(CURRENT_VERSION, expeditionData, null);
+            string expeditionJson = JsonUtility.ToJson(expeditionWrapper);
+            PlayerPrefs.SetString("ExpeditionSave", expeditionJson);
+
+            var partyWrapper = new SaveDataWrapper(CURRENT_VERSION, null, partyData);
+            string partyJson = JsonUtility.ToJson(partyWrapper);
             PlayerPrefs.SetString("PartySave", partyJson);
+
             PlayerPrefs.Save();
         }
 

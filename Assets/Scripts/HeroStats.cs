@@ -81,5 +81,6 @@ namespace VirulentVentures
         public int SlowTickDelay { get => _slowTickDelay; set => _slowTickDelay = value; }
         public bool IsCultist { get => _isCultist; set => _isCultist = value; }
         public Vector3 Position => _position;
+        public int PartyPosition => _heroSO?.PartyPosition ?? 1;
     }
 }

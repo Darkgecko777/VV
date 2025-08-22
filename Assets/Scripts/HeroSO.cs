@@ -6,21 +6,21 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "HeroSO", menuName = "VirulentVentures/HeroSO", order = 1)]
     public class HeroSO : ScriptableObject
     {
-        [SerializeField] private CharacterTypeSO characterType; // For ID, isHero, etc.
+        [SerializeField] private CharacterTypeSO characterType;
         [SerializeField] private CharacterStatsData stats;
-        [SerializeField] private List<string> abilityIds = new List<string>(); // Replaces SpecialAbilitySO
-        private const int lowMoraleThreshold = 50;
+        [SerializeField] private List<string> abilityIds = new List<string>();
+        [SerializeField] private int partyPosition = 1; // Editor-only, 1-7, 7=front/left, 1=back/right
 
         public CharacterTypeSO CharacterType => characterType;
         public CharacterStatsData Stats => stats;
         public List<string> AbilityIds => abilityIds;
+        public int PartyPosition => partyPosition; // Read-only getter
 
         private void Awake()
         {
-            // Initialize abilityIds based on characterType.Id if not set in Inspector
             if (abilityIds.Count == 0 && characterType != null)
             {
-                abilityIds.Add("BasicAttack"); // Common attack
+                abilityIds.Add("BasicAttack");
                 switch (characterType.Id)
                 {
                     case "Fighter":
@@ -127,7 +127,7 @@ namespace VirulentVentures
             {
                 return false;
             }
-            int hpThreshold = other.MaxHealth / 5; // 20% HP
+            int hpThreshold = other.MaxHealth / 5;
             if (other.Health <= hpThreshold)
             {
                 other.Health = 0;
@@ -140,11 +140,16 @@ namespace VirulentVentures
         {
             if (characterType == null || string.IsNullOrEmpty(characterType.Id))
             {
-                Debug.LogWarning($"HeroSO.OnValidate: CharacterType or CharacterType.Id is missing for {name}! This will break VisualConfig sprite lookup.");
+                Debug.LogWarning($"HeroSO.OnValidate: CharacterType or CharacterType.Id is missing for {name}!");
             }
             if (stats.Type == null)
             {
-                stats.Type = characterType; // Sync stats.Type with characterType
+                stats.Type = characterType;
+            }
+            if (partyPosition < 1 || partyPosition > 7)
+            {
+                Debug.LogWarning($"HeroSO.OnValidate: partyPosition {partyPosition} out of range (1-7) in {name}, clamping");
+                partyPosition = Mathf.Clamp(partyPosition, 1, 7);
             }
         }
     }

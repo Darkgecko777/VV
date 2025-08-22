@@ -21,8 +21,7 @@ namespace VirulentVentures
             uiController.OnLaunchClicked += LaunchExpedition;
             uiController.OnSeedVirusClicked += SeedVirus;
 
-            // Log partyData state for debugging
-            Debug.Log($"TemplePlanningManager.Awake: partyData.heroSOs count: {partyData?.HeroStats?.Count ?? 0}");
+            Debug.Log($"TemplePlanningController.Awake: partyData.HeroSOs count: {partyData?.HeroSOs?.Count ?? 0}");
         }
 
         void Start()
@@ -37,7 +36,7 @@ namespace VirulentVentures
             if (expeditionData == null || partyData == null || availableViruses == null || visualConfig == null ||
                 visualController == null || uiController == null)
             {
-                Debug.LogError($"TemplePlanningManager: Missing references! ExpeditionData: {expeditionData != null}, " +
+                Debug.LogError($"TemplePlanningController: Missing references! ExpeditionData: {expeditionData != null}, " +
                     $"PartyData: {partyData != null}, AvailableViruses: {availableViruses != null}, " +
                     $"VisualConfig: {visualConfig != null}, VisualController: {visualController != null}, " +
                     $"UIController: {uiController != null}");
@@ -50,11 +49,10 @@ namespace VirulentVentures
         {
             if (isExpeditionGenerated)
             {
-                Debug.LogWarning("TemplePlanningManager: Expedition already generated!");
+                Debug.LogWarning("TemplePlanningController: Expedition already generated!");
                 return;
             }
 
-            partyData.GenerateHeroStats(CharacterPositions.Default().heroPositions); // Pass Vector2[] positions
             ExpeditionManager.Instance.GenerateExpedition();
             isExpeditionGenerated = expeditionData.IsValid();
 
@@ -68,7 +66,7 @@ namespace VirulentVentures
         {
             if (!isExpeditionGenerated || !expeditionData.IsValid())
             {
-                Debug.LogWarning("TemplePlanningManager: Cannot launch expedition, invalid or not generated!");
+                Debug.LogWarning("TemplePlanningController: Cannot launch expedition, invalid or not generated!");
                 return;
             }
             ExpeditionManager.Instance.TransitionToExpeditionScene();
@@ -78,19 +76,19 @@ namespace VirulentVentures
         {
             if (!isExpeditionGenerated || nodeIndex < 0 || nodeIndex >= expeditionData.NodeData.Count)
             {
-                Debug.LogWarning($"TemplePlanningManager: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {nodeIndex}");
+                Debug.LogWarning($"TemplePlanningController: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {nodeIndex}");
                 return;
             }
 
             VirusData virus = availableViruses.Find(v => v.VirusID == virusID);
             if (virus == null)
             {
-                Debug.LogWarning($"TemplePlanningManager: Virus {virusID} not found!");
+                Debug.LogWarning($"TemplePlanningController: Virus {virusID} not found!");
                 return;
             }
 
             expeditionData.NodeData[nodeIndex].SeededViruses.Add(virus);
-            Debug.Log($"TemplePlanningManager: Seeded {virus.VirusID} to Node {nodeIndex}");
+            Debug.Log($"TemplePlanningController: Seeded {virus.VirusID} to Node {nodeIndex}");
             visualController.UpdateNodeVisuals(expeditionData);
         }
 
