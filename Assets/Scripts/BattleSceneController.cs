@@ -89,38 +89,41 @@ namespace VirulentVentures
                     yield break;
                 }
 
-                List<(ICombatUnit, int)> initiativeQueue = BuildInitiativeQueue(heroes.Concat(monsters).ToList());
-
-                foreach (var (unit, init) in initiativeQueue)
+                List<(ICombatUnit, int)> initiativeQueue = BuildInitiativeQueue(heroes, monsters);
+                foreach (var (attacker, _) in initiativeQueue)
                 {
-                    if (unit.Health <= 0) continue;
-                    yield return ProcessUnitAction(unit, heroes, monsters);
+                    if (attacker.Health <= 0) continue;
+                    bool isHero = attacker is HeroStats;
+                    yield return PerformAttack(attacker, isHero ? monsters : heroes);
                 }
-
-                yield return new WaitForSeconds(1f / (combatConfig?.CombatSpeed ?? 1f));
             }
         }
 
-        private List<(ICombatUnit, int)> BuildInitiativeQueue(List<ICombatUnit> characters)
+        private List<(ICombatUnit, int)> BuildInitiativeQueue(List<ICombatUnit> heroes, List<ICombatUnit> monsters)
         {
             List<(ICombatUnit, int)> queue = new List<(ICombatUnit, int)>();
-            foreach (var unit in characters)
+            int GetSpeedValue(CharacterStatsData.Speed speed) => speed switch
             {
-                int init = 20 - (int)unit.CharacterSpeed + Random.Range(1, 7);
-                queue.Add((unit, init));
-            }
-            queue.Sort((a, b) => a.Item2.CompareTo(b.Item2));
+                CharacterStatsData.Speed.VeryFast => 4,
+                CharacterStatsData.Speed.Fast => 3,
+                CharacterStatsData.Speed.Normal => 2,
+                CharacterStatsData.Speed.Slow => 1,
+                _ => 0
+            };
+
+            queue.AddRange(heroes.Select(h => (h, GetSpeedValue(h.CharacterSpeed) + Random.Range(1, 10))));
+            queue.AddRange(monsters.Select(m => (m, GetSpeedValue(m.CharacterSpeed) + Random.Range(1, 10))));
+            queue.Sort((a, b) => b.Item2.CompareTo(a.Item2));
+
             return queue;
         }
 
-        private IEnumerator ProcessUnitAction(ICombatUnit attacker, List<ICombatUnit> heroes, List<ICombatUnit> monsters)
+        private IEnumerator PerformAttack(ICombatUnit attacker, List<ICombatUnit> targets)
         {
-            bool isHero = attacker is HeroStats;
-            List<ICombatUnit> targets = isHero ? monsters : heroes;
             ICombatUnit target = GetRandomAliveTarget(targets);
             if (target == null) yield break;
 
-            AbilityData? ability = isHero
+            AbilityData? ability = attacker is HeroStats
                 ? AbilityDatabase.GetHeroAbility(attacker.AbilityId)
                 : AbilityDatabase.GetMonsterAbility(attacker.AbilityId);
 
@@ -173,7 +176,7 @@ namespace VirulentVentures
 
         private bool CheckRetreat(List<ICombatUnit> characters)
         {
-            return characters.Exists(c => c.Morale <= (combatConfig?.RetreatMoraleThreshold ?? 20));
+            return characters.Where(c => c is HeroStats).Cast<HeroStats>().Any(h => h.Morale <= (combatConfig?.RetreatMoraleThreshold ?? 20)); // Morale check hero-only
         }
 
         public void SetCombatSpeed(float speed)

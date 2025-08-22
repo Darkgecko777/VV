@@ -36,24 +36,22 @@ namespace VirulentVentures
             new NodeVisuals { nodeType = "NonCombat", highlightColor = new Color(0.2f, 0.4f, 0.8f) } // Bluish for NonCombat
         };
 
-        public Sprite GetPortrait(string characterID, int rank)
+        public Sprite GetPortrait(string characterID)
         {
-            string tieredID = $"{characterID}_{rank}";
-            var visual = characterVisuals.Find(v => v.characterID == tieredID || v.characterID == characterID); // Fallback to base if tiered not found
+            var visual = characterVisuals.Find(v => v.characterID == characterID);
             if (visual.portrait == null)
             {
-                Debug.LogWarning($"VisualConfig.GetPortrait: No portrait found for {tieredID} (fallback {characterID})");
+                Debug.LogWarning($"VisualConfig.GetPortrait: No portrait found for {characterID}");
             }
             return visual.portrait;
         }
 
-        public Sprite GetCombatSprite(string characterID, int rank)
+        public Sprite GetCombatSprite(string characterID)
         {
-            string tieredID = $"{characterID}_{rank}";
-            var visual = characterVisuals.Find(v => v.characterID == tieredID || v.characterID == characterID); // Fallback to base if tiered not found
+            var visual = characterVisuals.Find(v => v.characterID == characterID);
             if (visual.combatSprite == null)
             {
-                Debug.LogWarning($"VisualConfig.GetCombatSprite: No combat sprite found for {tieredID} (fallback {characterID})");
+                Debug.LogWarning($"VisualConfig.GetCombatSprite: No combat sprite found for {characterID}");
             }
             return visual.combatSprite;
         }

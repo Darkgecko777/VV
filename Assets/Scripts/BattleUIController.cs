@@ -82,55 +82,50 @@ namespace VirulentVentures
                 ICombatUnit unit = statsList[i];
                 VisualElement panel = new VisualElement { name = $"Panel_{unit.Type.Id}" };
                 panel.AddToClassList("unit-panel");
-                panel.style.position = Position.Absolute;
-
-                Label typeLabel = new Label { text = unit.Type.Id, name = "TypeLabel" };
-                typeLabel.AddToClassList("stat-label");
-                panel.Add(typeLabel);
+                panel.style.position = Position.Relative;
 
                 ProgressBar healthBar = new ProgressBar { name = "HealthBar" };
+                healthBar.AddToClassList("health-bar");
                 healthBar.value = (float)unit.Health / unit.MaxHealth * 100;
                 healthBar.title = $"HP: {unit.Health}/{unit.MaxHealth}";
-                healthBar.AddToClassList(isHero ? "health-fill-hero" : "health-fill-monster");
                 panel.Add(healthBar);
 
-                ProgressBar moraleBar = new ProgressBar { name = "MoraleBar" };
-                moraleBar.value = unit.Morale;
-                moraleBar.title = $"Morale: {unit.Morale}";
-                panel.Add(moraleBar);
+                if (isHero) // Morale only for heroes
+                {
+                    ProgressBar moraleBar = new ProgressBar { name = "MoraleBar" };
+                    moraleBar.AddToClassList("morale-bar");
+                    var hero = unit as HeroStats;
+                    moraleBar.value = hero.Morale;
+                    moraleBar.title = $"Morale: {hero.Morale}";
+                    panel.Add(moraleBar);
+                }
 
                 container.Add(panel);
                 unitPanels[unit] = panel;
-
-                UpdateUnitPanelPosition(unit, panel, isHero);
             }
-        }
-
-        private void UpdateUnitPanelPosition(ICombatUnit unit, VisualElement panel, bool isHero)
-        {
-            Vector2 screenPosition = mainCamera.WorldToScreenPoint(unit.Position);
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRectTransform, screenPosition, null, out Vector2 localPoint);
-
-            panel.style.left = localPoint.x + (isHero ? -50 : 50);
-            panel.style.top = -localPoint.y + 50;
         }
 
         public void UpdateUnitPanel(ICombatUnit unit)
         {
-            if (unitPanels.TryGetValue(unit, out VisualElement panel))
+            if (!unitPanels.TryGetValue(unit, out VisualElement panel))
             {
-                ProgressBar healthBar = panel.Q<ProgressBar>("HealthBar");
-                if (healthBar != null)
-                {
-                    healthBar.value = (float)unit.Health / unit.MaxHealth * 100;
-                    healthBar.title = $"HP: {unit.Health}/{unit.MaxHealth}";
-                }
+                return;
+            }
 
+            ProgressBar healthBar = panel.Q<ProgressBar>("HealthBar");
+            if (healthBar != null)
+            {
+                healthBar.value = (float)unit.Health / unit.MaxHealth * 100;
+                healthBar.title = $"HP: {unit.Health}/{unit.MaxHealth}";
+            }
+
+            if (unit is HeroStats hero) // Morale update only for heroes
+            {
                 ProgressBar moraleBar = panel.Q<ProgressBar>("MoraleBar");
                 if (moraleBar != null)
                 {
-                    moraleBar.value = unit.Morale;
-                    moraleBar.title = $"Morale: {unit.Morale}";
+                    moraleBar.value = hero.Morale;
+                    moraleBar.title = $"Morale: {hero.Morale}";
                 }
             }
         }

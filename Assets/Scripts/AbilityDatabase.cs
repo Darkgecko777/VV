@@ -95,17 +95,10 @@ namespace VirulentVentures
                 animationTrigger: "TreasureHunterBoost",
                 effect: (target, partyData) =>
                 {
-                    if (target is HeroStats hero && partyData != null)
+                    if (target is HeroStats hero)
                     {
-                        HeroStats[] allies = partyData.FindAllies();
-                        foreach (var ally in allies)
-                        {
-                            if (ally.Health > 0)
-                            {
-                                ally.Morale = Mathf.Min(ally.Morale + 3, 100);
-                                Debug.Log($"{hero.Type.Id} boosts {ally.Type.Id}'s morale by 3!");
-                            }
-                        }
+                        hero.Morale = Mathf.Min(hero.Morale + 5, 100);
+                        Debug.Log($"{hero.Type.Id} boosts morale by 5!");
                     }
                 }
             ));
@@ -158,8 +151,7 @@ namespace VirulentVentures
                 {
                     if (target is MonsterStats monster)
                     {
-                        monster.Morale = Mathf.Max(monster.Morale - 5, 0);
-                        Debug.Log($"{monster.Type.Id} reduces target's morale by 5!");
+                        Debug.Log($"{monster.Type.Id} uses Rend!"); // Removed morale reduction as monsters lack Morale
                     }
                 }
             ));

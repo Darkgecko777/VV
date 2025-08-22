@@ -64,7 +64,7 @@ namespace VirulentVentures
                         portraitContainer.Add(portrait);
                         continue;
                     }
-                    Sprite sprite = visualConfig.GetPortrait(characterID, heroes[i].Rank);
+                    Sprite sprite = visualConfig.GetPortrait(characterID); // Removed Rank param; use base portrait
                     if (sprite != null)
                     {
                         portrait.style.backgroundImage = new StyleBackground(sprite);

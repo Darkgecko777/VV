@@ -78,9 +78,10 @@ namespace VirulentVentures
             UpdateFlavourText(expeditionData);
         }
 
-        // Render party portraits
+        // Update party portraits using VisualConfig
         private void UpdatePortraits(PartyData party)
         {
+            if (portraitContainer == null) return;
             portraitContainer.Clear();
             if (party == null || party.HeroStats.Count == 0) return;
 
@@ -93,8 +94,7 @@ namespace VirulentVentures
                 };
                 if (visualConfig != null)
                 {
-                    // Use default rank=0; replace with HeroStats rank if available
-                    Sprite sprite = visualConfig.GetPortrait(party.HeroStats[i].Type.Id, 0);
+                    Sprite sprite = visualConfig.GetPortrait(party.HeroStats[i].Type.Id); // Removed rank param; use base portrait
                     if (sprite != null)
                     {
                         portrait.style.backgroundImage = new StyleBackground(sprite);

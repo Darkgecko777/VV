@@ -46,7 +46,7 @@ namespace VirulentVentures
 
                 if (unit is HeroStats heroStats && heroStats.SO is HeroSO heroSO)
                 {
-                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.Stats.Type.Id, heroStats.Rank);
+                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.Stats.Type.Id); // Removed Rank param; use base sprite
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
