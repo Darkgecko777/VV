@@ -456,11 +456,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93af4d52ee670164788cd616f7055d6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
-  expeditionData: {fileID: 11400000, guid: dbd010dc53fbedf4ead5b8a30d6b6ccd, type: 2}
-  expeditionManager: {fileID: 0}
-  uiController: {fileID: 0}
-  visualController: {fileID: 0}
+  combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
+  uiController: {fileID: 1983701092}
+  visualController: {fileID: 1983701098}
 --- !u!4 &1938836762
 Transform:
   m_ObjectHideFlags: 0
@@ -510,10 +508,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37f530dfc8346bc4298dc33cccdf09cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiConfig: {fileID: 0}
-  partyData: {fileID: 0}
-  expeditionData: {fileID: 0}
-  fadeCanvasGroup: {fileID: 0}
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
 --- !u!114 &1983701093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -628,6 +623,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   visualConfig: {fileID: 11400000, guid: cb0178010a945794094db5ad97354fb6, type: 2}
+  characterPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
 --- !u!1 &2024886955
 GameObject:
   m_ObjectHideFlags: 0
