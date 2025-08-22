@@ -6,9 +6,9 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "MonsterSO", menuName = "VirulentVentures/MonsterSO", order = 7)]
     public class MonsterSO : ScriptableObject
     {
-        [SerializeField] private CharacterTypeSO characterType; // For ID, isMonster, etc.
+        [SerializeField] private CharacterTypeSO characterType;
         [SerializeField] private CharacterStatsData stats;
-        [SerializeField] private List<string> abilityIds = new List<string>(); // Replaces MonsterAbilitySO
+        [SerializeField] private List<string> abilityIds = new List<string>();
 
         public CharacterTypeSO CharacterType => characterType;
         public CharacterStatsData Stats => stats;
@@ -16,10 +16,9 @@ namespace VirulentVentures
 
         private void Awake()
         {
-            // Initialize abilityIds based on characterType.Id if not set in Inspector
             if (abilityIds.Count == 0 && characterType != null)
             {
-                abilityIds.Add("BasicAttack"); // Common attack
+                abilityIds.Add("BasicAttack");
                 switch (characterType.Id)
                 {
                     case "Ghoul":
@@ -40,7 +39,6 @@ namespace VirulentVentures
         {
             if (stats == null || characterType == null)
             {
-                Debug.LogError($"MonsterSO.ApplyStats: Stats or CharacterType is null for {name}");
                 return;
             }
 
@@ -72,10 +70,6 @@ namespace VirulentVentures
                 if (ability.HasValue)
                 {
                     ability.Value.Effect?.Invoke(target, partyData);
-                }
-                else
-                {
-                    Debug.LogWarning($"MonsterSO.ApplySpecialAbility: Ability {abilityId} not found for {name}");
                 }
             }
         }
@@ -125,7 +119,7 @@ namespace VirulentVentures
                 AbilityData? ability = AbilityDatabase.GetMonsterAbility(abilityId);
                 if (ability.HasValue && ability.Value.CanDodge)
                 {
-                    return true; // Ethereal monster with dodge ability Hannah
+                    return true;
                 }
             }
             return false;
@@ -135,11 +129,11 @@ namespace VirulentVentures
         {
             if (characterType == null || string.IsNullOrEmpty(characterType.Id))
             {
-                Debug.LogWarning($"MonsterSO.OnValidate: CharacterType or CharacterType.Id is missing for {name}! This will break VisualConfig sprite lookup.");
+                return;
             }
             if (stats.Type == null)
             {
-                stats.Type = characterType; // Sync stats.Type with characterType
+                stats.Type = characterType;
             }
         }
     }

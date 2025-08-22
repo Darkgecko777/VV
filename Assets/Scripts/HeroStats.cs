@@ -23,12 +23,12 @@ namespace VirulentVentures
         [SerializeField] private int _slowTickDelay;
         [SerializeField] private bool _isCultist;
         [SerializeField] private Vector3 _position;
+        [SerializeField] private string _abilityId;
 
         public HeroStats(HeroSO heroSO, Vector3 position)
         {
-            if (heroSO == null || heroSO.Stats == null || heroSO.Stats.Type == null || string.IsNullOrEmpty(heroSO.Stats.Type.Id))
+            if (heroSO == null || heroSO.Stats == null || heroSO.CharacterType == null || string.IsNullOrEmpty(heroSO.CharacterType.Id))
             {
-                Debug.LogError($"HeroStats Constructor: Invalid HeroSO or Stats.Type.Id for position {position}! This will break sprite lookup.");
                 return;
             }
             _heroSO = heroSO;
@@ -49,21 +49,11 @@ namespace VirulentVentures
             _isInfected = stats.IsInfected;
             _slowTickDelay = stats.SlowTickDelay;
             _isCultist = stats.IsCultist;
+            _abilityId = heroSO.AbilityIds.Count > 0 ? heroSO.AbilityIds[0] : "BasicAttack";
         }
 
         public ScriptableObject SO => _heroSO;
-        public CharacterTypeSO Type
-        {
-            get
-            {
-                if (_heroSO?.Stats?.Type == null)
-                {
-                    Debug.LogWarning($"HeroStats.Type: Missing CharacterTypeSO for {_heroSO?.name}");
-                    return null;
-                }
-                return _heroSO.Stats.Type;
-            }
-        }
+        public CharacterTypeSO Type => _heroSO?.Stats?.Type;
         public CharacterStatsData.Speed CharacterSpeed => _heroSO?.Stats.CharacterSpeed ?? CharacterStatsData.Speed.Normal;
         public int Health { get => _health; set => _health = value; }
         public int MaxHealth { get => _maxHealth; set => _maxHealth = value; }
@@ -76,11 +66,12 @@ namespace VirulentVentures
         public int MaxDefense { get => _maxDefense; set => _maxDefense = value; }
         public int Morale { get => _morale; set => _morale = value; }
         public int Sanity { get => _sanity; set => _sanity = value; }
-        public int Rank { get => _rank; set => _rank = value; }
+        public int Rank => _rank;
         public bool IsInfected { get => _isInfected; set => _isInfected = value; }
         public int SlowTickDelay { get => _slowTickDelay; set => _slowTickDelay = value; }
-        public bool IsCultist { get => _isCultist; set => _isCultist = value; }
+        public bool IsCultist => _isCultist;
         public Vector3 Position => _position;
+        public string AbilityId { get => _abilityId; set => _abilityId = value; }
         public int PartyPosition => _heroSO?.PartyPosition ?? 1;
     }
 }

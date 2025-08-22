@@ -184,8 +184,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiDocument: {fileID: 713138951}
-  fadeCanvasGroup: {fileID: 0}
-  expeditionManager: {fileID: 969033337}
+  visualConfig: {fileID: 11400000, guid: cb0178010a945794094db5ad97354fb6, type: 2}
 --- !u!1 &833675104
 GameObject:
   m_ObjectHideFlags: 0
@@ -278,7 +277,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &969033336
+--- !u!1 &2116178929
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -286,37 +285,37 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 969033338}
-  - component: {fileID: 969033337}
+  - component: {fileID: 2116178931}
+  - component: {fileID: 2116178930}
   m_Layer: 0
-  m_Name: ExpediitionManager
+  m_Name: ExpeditionController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &969033337
+--- !u!114 &2116178930
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 969033336}
+  m_GameObject: {fileID: 2116178929}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fba320e0f6509dd4b9eba9d3096d15f1, type: 3}
+  m_Script: {fileID: 11500000, guid: 3813da28da7f3c1478a9c6db7910bd09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiDocument: {fileID: 713138951}
   expeditionData: {fileID: 11400000, guid: dbd010dc53fbedf4ead5b8a30d6b6ccd, type: 2}
-  partyData: {fileID: 0}
-  uiManager: {fileID: 0}
---- !u!4 &969033338
+  visualConfig: {fileID: 11400000, guid: cb0178010a945794094db5ad97354fb6, type: 2}
+--- !u!4 &2116178931
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 969033336}
+  m_GameObject: {fileID: 2116178929}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 3.5, y: 0, z: 0}
@@ -331,4 +330,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 833675107}
   - {fileID: 713138952}
-  - {fileID: 969033338}
+  - {fileID: 2116178931}

@@ -1,0 +1,237 @@
+{
+    "title": "Virulent Ventures Script Reference",
+    "version": "1.7.4",
+    "date": "2025-08-21",
+    "description": "Auto-generated document tracking all scripts for Virulent Ventures.",
+    "scripts": [
+        {
+            "name": "AbilityDatabase.cs",
+            "path": "Assets/Scripts\\AbilityDatabase.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 09:52:42"
+        },
+        {
+            "name": "BattleSceneController.cs",
+            "path": "Assets/Scripts\\BattleSceneController.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 14:43:40"
+        },
+        {
+            "name": "BattleUIController.cs",
+            "path": "Assets/Scripts\\BattleUIController.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 14:44:30"
+        },
+        {
+            "name": "BattleVisualController.cs",
+            "path": "Assets/Scripts\\BattleVisualController.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 14:45:07"
+        },
+        {
+            "name": "CharacterPositions.cs",
+            "path": "Assets/Scripts\\CharacterPositions.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-18 14:21:38"
+        },
+        {
+            "name": "CharacterStatsData.cs",
+            "path": "Assets/Scripts\\CharacterStatsData.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-19 17:01:52"
+        },
+        {
+            "name": "CharacterTypeSO.cs",
+            "path": "Assets/Scripts\\CharacterTypeSO.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 11:45:37"
+        },
+        {
+            "name": "EncounterData.cs",
+            "path": "Assets/Scripts\\EncounterData.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 11:46:15"
+        },
+        {
+            "name": "ExpeditionData.cs",
+            "path": "Assets/Scripts\\ExpeditionData.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 08:44:30"
+        },
+        {
+            "name": "ExpeditionManager.cs",
+            "path": "Assets/Scripts\\ExpeditionManager.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 16:59:03"
+        },
+        {
+            "name": "ExpeditionSceneManager.cs",
+            "path": "Assets/Scripts\\ExpeditionSceneManager.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 14:39:49"
+        },
+        {
+            "name": "ExpeditionUIManager.cs",
+            "path": "Assets/Scripts\\ExpeditionUIManager.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 10:35:27"
+        },
+        {
+            "name": "HeroSO.cs",
+            "path": "Assets/Scripts\\HeroSO.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 16:41:24"
+        },
+        {
+            "name": "HeroStats.cs",
+            "path": "Assets/Scripts\\HeroStats.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 16:56:36"
+        },
+        {
+            "name": "ICombatUnit.cs",
+            "path": "Assets/Scripts\\ICombatUnit.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-19 17:44:01"
+        },
+        {
+            "name": "LogExporter.cs",
+            "path": "Assets/Scripts\\LogExporter.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 11:03:26"
+        },
+        {
+            "name": "MonsterSO.cs",
+            "path": "Assets/Scripts\\MonsterSO.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 09:53:02"
+        },
+        {
+            "name": "MonsterStats.cs",
+            "path": "Assets/Scripts\\MonsterStats.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-19 17:32:40"
+        },
+        {
+            "name": "NodeData.cs",
+            "path": "Assets/Scripts\\NodeData.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 08:38:41"
+        },
+        {
+            "name": "PartyData.cs",
+            "path": "Assets/Scripts\\PartyData.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 16:58:47"
+        },
+        {
+            "name": "SpriteAnimation.cs",
+            "path": "Assets/Scripts\\SpriteAnimation.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-15 18:38:52"
+        },
+        {
+            "name": "TemplePlanningController.cs",
+            "path": "Assets/Scripts\\TemplePlanningController.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 16:37:54"
+        },
+        {
+            "name": "TempleUIController.cs",
+            "path": "Assets/Scripts\\TempleUIController.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 10:26:35"
+        },
+        {
+            "name": "TempleVisualController.cs",
+            "path": "Assets/Scripts\\TempleVisualController.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 16:38:19"
+        },
+        {
+            "name": "UIConfig.cs",
+            "path": "Assets/Scripts\\UIConfig.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-15 17:44:06"
+        },
+        {
+            "name": "UpdateScriptReference.cs",
+            "path": "Assets/Scripts\\UpdateScriptReference.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-21 17:08:04"
+        },
+        {
+            "name": "VirusData.cs",
+            "path": "Assets/Scripts\\VirusData.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 08:39:19"
+        },
+        {
+            "name": "VisualConfig.cs",
+            "path": "Assets/Scripts\\VisualConfig.cs",
+            "description": "TODO: Add description",
+            "dependencies": [],
+            "notes": "Auto-generated entry.",
+            "lastModified": "2025-08-20 13:08:14"
+        }
+    ],
+    "removed_scripts": [],
+    "notes": [
+        "Initial auto-generated document.",
+        "Updated on 2025-08-21 17:09:01"
+    ]
+}

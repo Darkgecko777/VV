@@ -21,19 +21,13 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (visualConfig == null || uiDocument == null)
-            {
-                Debug.LogError($"TempleVisualController: Missing references! VisualConfig: {visualConfig != null}, UIDocument: {uiDocument != null}");
-                return false;
-            }
-            return true;
+            return visualConfig != null && uiDocument != null;
         }
 
         public void InitializeEmptyPortraits()
         {
             if (portraitContainer == null)
             {
-                Debug.LogWarning("TempleVisualController.InitializeEmptyPortraits: portraitContainer is null!");
                 return;
             }
 
@@ -50,16 +44,13 @@ namespace VirulentVentures
         {
             if (partyData == null || portraitContainer == null)
             {
-                Debug.LogWarning($"TempleVisualController.UpdatePartyVisuals: Invalid partyData={partyData != null}, portraitContainer={portraitContainer != null}");
                 return;
             }
 
             portraitContainer.Clear();
             var heroes = partyData.GetHeroes()
-                .OrderByDescending(h => h.PartyPosition) // Sort by PartyPosition (7=front/left, 1=back/right)
+                .OrderByDescending(h => h.PartyPosition)
                 .ToList();
-
-            Debug.Log($"TempleVisualController.UpdatePartyVisuals: Rendering {heroes.Count} heroes in order: {string.Join(", ", heroes.Select(h => h.PartyPosition))}");
 
             for (int i = 0; i < 4; i++)
             {
@@ -70,7 +61,6 @@ namespace VirulentVentures
                     string characterID = heroSO.Stats.Type?.Id;
                     if (string.IsNullOrEmpty(characterID))
                     {
-                        Debug.LogWarning($"TempleVisualController: Missing Type.Id for hero at index {i}");
                         portraitContainer.Add(portrait);
                         continue;
                     }
@@ -79,10 +69,6 @@ namespace VirulentVentures
                     {
                         portrait.style.backgroundImage = new StyleBackground(sprite);
                         portrait.tooltip = $"Health: {heroes[i].Health}, ATK: {heroes[i].Attack}, DEF: {heroes[i].Defense}, Morale: {heroes[i].Morale}";
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"TempleVisualController: No portrait found for characterID {characterID}_Rank{heroes[i].Rank}");
                     }
                 }
                 portraitContainer.Add(portrait);
@@ -93,7 +79,6 @@ namespace VirulentVentures
         {
             if (expeditionData == null || nodeContainer == null)
             {
-                Debug.LogWarning($"TempleVisualController.UpdateNodeVisuals: Invalid expeditionData={expeditionData != null}, nodeContainer={nodeContainer != null}");
                 return;
             }
 
@@ -106,7 +91,6 @@ namespace VirulentVentures
                 nodeBox.AddToClassList(nodes[i].IsCombat ? "node-combat" : "node-noncombat");
                 Color nodeColor = visualConfig.GetNodeColor(nodes[i].NodeType);
                 nodeBox.style.backgroundColor = new StyleColor(nodeColor);
-                Debug.Log($"TempleVisualController.UpdateNodeVisuals: Node {i}, Type={nodes[i].NodeType}, Color={nodeColor}");
 
                 Label nodeLabel = new Label($"Node {i + 1}");
                 nodeLabel.AddToClassList("node-label");

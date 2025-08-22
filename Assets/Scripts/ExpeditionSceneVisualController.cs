@@ -4,55 +4,51 @@ using System.Collections.Generic;
 
 namespace VirulentVentures
 {
-    public class ExpeditionSceneManager : MonoBehaviour
+    public class ExpeditionSceneVisualController : MonoBehaviour
     {
         [SerializeField] private UIDocument uiDocument;
-        [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private VisualConfig visualConfig;
-
         private VisualElement nodeContainer;
-        private Button continueButton;
 
+        // Initialize visual elements and validate references
         void Awake()
         {
-            if (!ValidateReferences()) return;
+            if (uiDocument == null || visualConfig == null)
+            {
+                Debug.LogError($"ExpeditionSceneVisualController: Missing references! UIDocument: {uiDocument != null}, VisualConfig: {visualConfig != null}");
+                return;
+            }
             nodeContainer = uiDocument.rootVisualElement.Q<VisualElement>("NodeContainer");
-            continueButton = uiDocument.rootVisualElement.Q<Button>("ContinueButton");
-            continueButton.clicked += () => ExpeditionManager.Instance.OnContinueClicked();
         }
 
+        // Subscribe to node updates and render initial visuals
         void Start()
         {
             ExpeditionManager.Instance.OnNodeUpdated += UpdateNodeVisuals;
             ExpeditionManager.Instance.OnSceneTransitionCompleted += UpdateNodeVisuals;
-            UpdateNodeVisuals(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+            var expeditionData = ExpeditionManager.Instance.GetExpedition();
+            UpdateNodeVisuals(expeditionData?.NodeData, expeditionData?.CurrentNodeIndex ?? 0);
         }
 
+        // Unsubscribe from events to prevent memory leaks
         void OnDestroy()
         {
             ExpeditionManager.Instance.OnNodeUpdated -= UpdateNodeVisuals;
             ExpeditionManager.Instance.OnSceneTransitionCompleted -= UpdateNodeVisuals;
         }
 
-        private bool ValidateReferences()
-        {
-            if (uiDocument == null || expeditionData == null || visualConfig == null)
-            {
-                Debug.LogError($"ExpeditionSceneManager: Missing references! UIDocument: {uiDocument != null}, ExpeditionData: {expeditionData != null}, VisualConfig: {visualConfig != null}");
-                return false;
-            }
-            return true;
-        }
-
+        // Render node map visuals with styles and tooltips
         private void UpdateNodeVisuals(List<NodeData> nodes, int currentNodeIndex)
         {
             if (nodeContainer == null)
             {
-                Debug.LogWarning("ExpeditionSceneManager.UpdateNodeVisuals: nodeContainer is null!");
+                Debug.LogError("ExpeditionSceneVisualController: nodeContainer is null!");
                 return;
             }
 
             nodeContainer.Clear();
+            if (nodes == null) return;
+
             for (int i = 0; i < nodes.Count; i++)
             {
                 VisualElement nodeBox = new VisualElement();
@@ -60,7 +56,7 @@ namespace VirulentVentures
                 nodeBox.AddToClassList(nodes[i].IsCombat ? "node-combat" : "node-noncombat");
                 if (i == currentNodeIndex)
                 {
-                    nodeBox.AddToClassList("node-active");
+                    nodeBox.AddToClassList("node-current");
                 }
                 Color nodeColor = visualConfig.GetNodeColor(nodes[i].NodeType);
                 nodeBox.style.backgroundColor = new StyleColor(nodeColor);

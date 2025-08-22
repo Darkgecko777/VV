@@ -23,6 +23,7 @@ namespace VirulentVentures
         [SerializeField] private int _slowTickDelay;
         [SerializeField] private bool _isCultist;
         [SerializeField] private Vector3 _position;
+        [SerializeField] private string _abilityId;
 
         public MonsterStats(MonsterSO monsterSO, Vector3 position)
         {
@@ -44,6 +45,7 @@ namespace VirulentVentures
             _isInfected = stats.IsInfected;
             _slowTickDelay = stats.SlowTickDelay;
             _isCultist = stats.IsCultist;
+            _abilityId = monsterSO.AbilityIds.Count > 0 ? monsterSO.AbilityIds[0] : "BasicAttack";
         }
 
         public ScriptableObject SO => _monsterSO;
@@ -60,10 +62,12 @@ namespace VirulentVentures
         public int MaxDefense { get => _maxDefense; set => _maxDefense = value; }
         public int Morale { get => _morale; set => _morale = value; }
         public int Sanity { get => _sanity; set => _sanity = value; }
-        public int Rank { get => _rank; set => _rank = value; }
+        public int Rank => _rank;
         public bool IsInfected { get => _isInfected; set => _isInfected = value; }
         public int SlowTickDelay { get => _slowTickDelay; set => _slowTickDelay = value; }
-        public bool IsCultist { get => _isCultist; set => _isCultist = value; }
+        public bool IsCultist => _isCultist;
         public Vector3 Position => _position;
+        public string AbilityId { get => _abilityId; set => _abilityId = value; }
+        public int PartyPosition => 0; // Monsters don't use party position
     }
 }

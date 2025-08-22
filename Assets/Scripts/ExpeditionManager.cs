@@ -51,22 +51,12 @@ namespace VirulentVentures
                 Destroy(gameObject);
                 return;
             }
-
-            if (partyData == null || partyData.HeroStats == null)
-            {
-                Debug.LogError($"ExpeditionManager.Awake: partyData or HeroStats is null");
-            }
-            else
-            {
-                Debug.Log($"ExpeditionManager.Awake: partyData.HeroSOs count: {partyData.HeroSOs.Count}");
-            }
         }
 
         void Start()
         {
             if (expeditionData == null || partyData == null || ghoulSO == null || wraithSO == null)
             {
-                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, GhoulSO: {ghoulSO != null}, WraithSO: {wraithSO != null}");
                 return;
             }
 
@@ -82,7 +72,6 @@ namespace VirulentVentures
                 }
                 else
                 {
-                    Debug.LogWarning("ExpeditionManager: Invalid or outdated ExpeditionSave version, resetting.");
                     PlayerPrefs.DeleteKey("ExpeditionSave");
                 }
             }
@@ -99,7 +88,6 @@ namespace VirulentVentures
                 }
                 else
                 {
-                    Debug.LogWarning("ExpeditionManager: Invalid or outdated PartySave version, resetting.");
                     PlayerPrefs.DeleteKey("PartySave");
                 }
             }
@@ -115,18 +103,14 @@ namespace VirulentVentures
             partyData.Reset();
 
             HeroSO[] heroPool = Resources.LoadAll<HeroSO>("SO's/Heroes");
-            Debug.Log($"ExpeditionManager.GenerateExpedition: Loaded {heroPool.Length} HeroSOs from Resources/SOs/Heroes: {string.Join(", ", heroPool.Select(h => h.name + " (partyPosition: " + h.PartyPosition + ")"))}");
-
             List<HeroSO> selectedHeroes;
             if (heroPool.Length < 4)
             {
-                Debug.LogError($"ExpeditionManager.GenerateExpedition: Insufficient HeroSOs in Resources/SOs/Heroes, found {heroPool.Length}, need 4. Using fallbackHeroes.");
                 selectedHeroes = fallbackHeroes != null && fallbackHeroes.Count >= 4
                     ? fallbackHeroes.Take(4).ToList()
                     : new List<HeroSO>();
                 if (selectedHeroes.Count < 4)
                 {
-                    Debug.LogError($"ExpeditionManager.GenerateExpedition: Fallback heroes insufficient, found {selectedHeroes.Count}, need 4");
                     return;
                 }
             }
@@ -165,11 +149,9 @@ namespace VirulentVentures
         {
             if (isTransitioning)
             {
-                Debug.LogWarning("ExpeditionManager: Already transitioning!");
                 return;
             }
             isTransitioning = true;
-            Debug.Log("ExpeditionManager: Transitioning to TemplePlanningScene");
             SceneManager.LoadSceneAsync("TemplePlanningScene").completed += _ =>
             {
                 isTransitioning = false;
@@ -181,16 +163,13 @@ namespace VirulentVentures
         {
             if (isTransitioning)
             {
-                Debug.LogWarning("ExpeditionManager: Already transitioning!");
                 return;
             }
             if (!expeditionData.IsValid())
             {
-                Debug.LogWarning("ExpeditionManager: Cannot transition to ExpeditionScene, invalid expedition data!");
                 return;
             }
             isTransitioning = true;
-            Debug.Log("ExpeditionManager: Transitioning to ExpeditionScene");
             SceneManager.LoadSceneAsync("ExpeditionScene").completed += _ =>
             {
                 isTransitioning = false;
@@ -202,16 +181,13 @@ namespace VirulentVentures
         {
             if (isTransitioning)
             {
-                Debug.LogWarning("ExpeditionManager: Already transitioning!");
                 return;
             }
             if (!expeditionData.IsValid() || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
             {
-                Debug.LogWarning("ExpeditionManager: Cannot transition to BattleScene, invalid state!");
                 return;
             }
             isTransitioning = true;
-            Debug.Log("ExpeditionManager: Transitioning to BattleScene");
             SceneManager.LoadSceneAsync("BattleScene", LoadSceneMode.Additive).completed += _ =>
             {
                 OnCombatStarted?.Invoke();
@@ -224,11 +200,9 @@ namespace VirulentVentures
         {
             if (isTransitioning)
             {
-                Debug.LogWarning("ExpeditionManager: Already transitioning!");
                 return;
             }
             isTransitioning = true;
-            Debug.Log("ExpeditionManager: Unloading BattleScene");
             SceneManager.UnloadSceneAsync("BattleScene").completed += _ =>
             {
                 isTransitioning = false;
@@ -283,6 +257,7 @@ namespace VirulentVentures
                 MonsterSO monsterSO = UnityEngine.Random.value > 0.5f ? ghoulSO : wraithSO;
                 MonsterStats stats = new MonsterStats(monsterSO, Vector3.zero);
                 monsterSO.ApplyStats(stats);
+                stats.AbilityId = monsterSO.AbilityIds.Count > 0 ? monsterSO.AbilityIds[0] : "BasicAttack";
                 monsters.Add(stats);
             }
             return monsters;

@@ -9,12 +9,12 @@ namespace VirulentVentures
         [SerializeField] private CharacterTypeSO characterType;
         [SerializeField] private CharacterStatsData stats;
         [SerializeField] private List<string> abilityIds = new List<string>();
-        [SerializeField] private int partyPosition = 1; // Editor-only, 1-7, 7=front/left, 1=back/right
+        [SerializeField] private int partyPosition = 1;
 
         public CharacterTypeSO CharacterType => characterType;
         public CharacterStatsData Stats => stats;
         public List<string> AbilityIds => abilityIds;
-        public int PartyPosition => partyPosition; // Read-only getter
+        public int PartyPosition => partyPosition;
 
         private void Awake()
         {
@@ -43,7 +43,6 @@ namespace VirulentVentures
         {
             if (stats == null || characterType == null)
             {
-                Debug.LogError($"HeroSO.ApplyStats: Stats or CharacterType is null for {name}");
                 return;
             }
 
@@ -71,14 +70,10 @@ namespace VirulentVentures
         {
             foreach (var abilityId in abilityIds)
             {
-                AbilityData? ability = characterType.IsMonster ? AbilityDatabase.GetMonsterAbility(abilityId) : AbilityDatabase.GetHeroAbility(abilityId);
+                AbilityData? ability = AbilityDatabase.GetHeroAbility(abilityId);
                 if (ability.HasValue)
                 {
                     ability.Value.Effect?.Invoke(target, partyData);
-                }
-                else
-                {
-                    Debug.LogWarning($"HeroSO.ApplySpecialAbility: Ability {abilityId} not found for {name}");
                 }
             }
         }
@@ -140,7 +135,7 @@ namespace VirulentVentures
         {
             if (characterType == null || string.IsNullOrEmpty(characterType.Id))
             {
-                Debug.LogWarning($"HeroSO.OnValidate: CharacterType or CharacterType.Id is missing for {name}!");
+                return;
             }
             if (stats.Type == null)
             {
@@ -148,7 +143,6 @@ namespace VirulentVentures
             }
             if (partyPosition < 1 || partyPosition > 7)
             {
-                Debug.LogWarning($"HeroSO.OnValidate: partyPosition {partyPosition} out of range (1-7) in {name}, clamping");
                 partyPosition = Mathf.Clamp(partyPosition, 1, 7);
             }
         }

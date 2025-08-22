@@ -6,76 +6,95 @@ namespace VirulentVentures
     public class BattleVisualController : MonoBehaviour
     {
         [SerializeField] private VisualConfig visualConfig;
-        private List<(ICombatUnit unit, GameObject go)> units;
+        [SerializeField] private CharacterPositions characterPositions;
+
+        private List<(ICombatUnit unit, GameObject go, SpriteAnimation animator)> units;
+        private bool isInitialized;
 
         void Awake()
         {
-            if (visualConfig == null)
+            if (visualConfig is null || characterPositions is null)
             {
-                Debug.LogError("BattleVisualController: Missing VisualConfig!");
+                isInitialized = false;
+                return;
             }
+            units = new List<(ICombatUnit, GameObject, SpriteAnimation)>();
+            isInitialized = true;
         }
 
-        public void InitializeUnits(List<HeroStats> heroStats, List<MonsterStats> monsterStats)
+        public void InitializeUnits(List<(ICombatUnit unit, GameObject go)> combatUnits)
         {
-            units = new List<(ICombatUnit, GameObject)>();
+            if (!isInitialized) return;
 
-            // Create hero GameObjects
-            for (int i = 0; i < heroStats.Count; i++)
+            units.Clear();
+            var heroPositions = characterPositions.heroPositions;
+            var monsterPositions = characterPositions.monsterPositions;
+
+            int heroIndex = 0;
+            int monsterIndex = 0;
+
+            foreach (var (unit, _) in combatUnits)
             {
-                if (heroStats[i].Health <= 0) continue;
-                GameObject heroObj = new GameObject(heroStats[i].Type.Id);
-                heroObj.transform.position = heroStats[i].Position;
-                var renderer = heroObj.AddComponent<SpriteRenderer>();
-                if (heroStats[i].SO is HeroSO heroSO)
+                if (unit.Health <= 0) continue;
+
+                GameObject unitObj = new GameObject(unit.Type.Id);
+                var renderer = unitObj.AddComponent<SpriteRenderer>();
+                var animator = unitObj.AddComponent<SpriteAnimation>();
+                renderer.sortingLayerName = "Characters";
+                renderer.sortingOrder = unit is HeroStats ? heroIndex : monsterIndex + 10;
+                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
+
+                if (unit is HeroStats heroStats && heroStats.SO is HeroSO heroSO)
                 {
-                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.Stats.Type.Id, heroStats[i].Rank);
+                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.Stats.Type.Id, heroStats.Rank);
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
                     }
-                    else
-                    {
-                        Debug.LogWarning($"BattleVisualController: No combat sprite for {heroSO.Stats.Type.Id}_Rank{heroStats[i].Rank}");
-                    }
+                    unitObj.transform.position = heroIndex < heroPositions.Length ? heroPositions[heroIndex] : Vector3.zero;
+                    heroIndex++;
                 }
-                renderer.sortingLayerName = "Characters";
-                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
-                units.Add((heroStats[i], heroObj));
-            }
-
-            // Create monster GameObjects
-            for (int i = 0; i < monsterStats.Count; i++)
-            {
-                if (monsterStats[i].Health <= 0) continue;
-                GameObject monsterObj = new GameObject(monsterStats[i].Type.Id);
-                monsterObj.transform.position = monsterStats[i].Position;
-                var renderer = monsterObj.AddComponent<SpriteRenderer>();
-                if (monsterStats[i].SO is MonsterSO monsterSO)
+                else if (unit is MonsterStats monsterStats && monsterStats.SO is MonsterSO monsterSO)
                 {
                     Sprite sprite = visualConfig.GetEnemySprite(monsterSO.Stats.Type.Id);
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
                     }
-                    else
-                    {
-                        Debug.LogWarning($"BattleVisualController: No combat sprite for {monsterSO.Stats.Type.Id}");
-                    }
+                    unitObj.transform.position = monsterIndex < monsterPositions.Length ? monsterPositions[monsterIndex] : Vector3.zero;
+                    monsterIndex++;
                 }
-                renderer.sortingLayerName = "Characters";
-                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
-                units.Add((monsterStats[i], monsterObj));
+
+                units.Add((unit, unitObj, animator));
             }
+        }
+
+        public void SubscribeToModel(CombatModel model)
+        {
+            if (!isInitialized) return;
+            model.OnUnitUpdated += UpdateUnitVisual;
+            model.OnDamagePopup += TriggerUnitAnimation;
         }
 
         public void UpdateUnitVisual(ICombatUnit unit)
         {
+            if (!isInitialized) return;
             var unitEntry = units.Find(u => u.unit == unit);
             if (unitEntry.go != null && unit.Health <= 0)
             {
-                Destroy(unitEntry.go);
+                unitEntry.animator.Jiggle(false);
+                Destroy(unitEntry.go, 0.5f);
                 units.Remove(unitEntry);
+            }
+        }
+
+        public void TriggerUnitAnimation(ICombatUnit unit, string message)
+        {
+            if (!isInitialized) return;
+            var unitEntry = units.Find(u => u.unit == unit);
+            if (unitEntry.animator != null)
+            {
+                unitEntry.animator.Jiggle(unit is HeroStats);
             }
         }
     }

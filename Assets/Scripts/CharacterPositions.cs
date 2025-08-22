@@ -1,34 +1,29 @@
 using UnityEngine;
 
-[System.Serializable]
-public struct CharacterPositions
+namespace VirulentVentures
 {
-    public Vector2[] heroPositions;
-    public Vector2[] monsterPositions;
-
-    // Default constructor with specified positions
-    public CharacterPositions(Vector2[] heroPos, Vector2[] monsterPos)
+    [CreateAssetMenu(fileName = "CharacterPositions", menuName = "VirulentVentures/CharacterPositions")]
+    public class CharacterPositions : ScriptableObject
     {
-        heroPositions = heroPos;
-        monsterPositions = monsterPos;
-    }
+        public Vector3[] heroPositions = new Vector3[]
+        {
+            new Vector3(-2f, 0f, 0f),
+            new Vector3(-1f, 0f, 0f),
+            new Vector3(-3f, 0f, 0f),
+            new Vector3(-4f, 0f, 0f)
+        };
 
-    // Static method to get default positions
-    public static CharacterPositions Default()
-    {
-        return new CharacterPositions(
-            new Vector2[] {
-                new Vector2(-2.5f, 0f), // Hero 1 (Fighter)
-                new Vector2(-4f, 0f),   // Hero 2 (Healer)
-                new Vector2(-5.5f, 0f), // Hero 3 (Treasure Hunter)
-                new Vector2(-7f, 0f)    // Hero 4 (Scout)
-            },
-            new Vector2[] {
-                new Vector2(1.5f, 0f),  // Monster 1
-                new Vector2(3.5f, 0f),  // Monster 2
-                new Vector2(5.5f, 0f),  // Monster 3
-                new Vector2(7.5f, 0f)   // Monster 4
-            }
-        );
+        public Vector3[] monsterPositions = new Vector3[]
+        {
+            new Vector3(1.5f, 0f, 0f),
+            new Vector3(3.5f, 0f, 0f),
+            new Vector3(5.5f, 0f, 0f),
+            new Vector3(7.5f, 0f, 0f)
+        };
+
+        public static CharacterPositions Default()
+        {
+            return CreateInstance<CharacterPositions>();
+        }
     }
 }
