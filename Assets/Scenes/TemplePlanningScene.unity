@@ -150,8 +150,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   expeditionData: {fileID: 11400000, guid: dbd010dc53fbedf4ead5b8a30d6b6ccd, type: 2}
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
-  ghoulSO: {fileID: 11400000, guid: 78dc40f26483faa40953fd6ef94c304f, type: 2}
-  wraithSO: {fileID: 11400000, guid: 5c720e73371eb8249acb3fcd8f1acc63, type: 2}
+  fallbackHeroes: []
+  defaultPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
+  combatNodeGenerator: {fileID: 785501697}
+  nonCombatNodeGenerator: {fileID: 785501696}
 --- !u!4 &133960925
 Transform:
   m_ObjectHideFlags: 0
@@ -241,6 +243,65 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &785501695
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 785501698}
+  - component: {fileID: 785501697}
+  - component: {fileID: 785501696}
+  m_Layer: 0
+  m_Name: NodeGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &785501696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 785501695}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0ce8cd28d806664c8d4aa5bba08ba98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &785501697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 785501695}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9839738786109d842bbdfc905ecdc73d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  positions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
+  monsterPool: []
+--- !u!4 &785501698
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 785501695}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.5, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -441,6 +502,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uiDocument: {fileID: 1289726885}
   planningManager: {fileID: 2139730224}
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
+  visualConfig: {fileID: 11400000, guid: cb0178010a945794094db5ad97354fb6, type: 2}
 --- !u!1 &1542003243
 GameObject:
   m_ObjectHideFlags: 0
@@ -589,7 +652,7 @@ GameObject:
   - component: {fileID: 2139730225}
   - component: {fileID: 2139730224}
   m_Layer: 0
-  m_Name: TemplePlanningManager
+  m_Name: TemplePlanningController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -638,3 +701,4 @@ SceneRoots:
   - {fileID: 2139730225}
   - {fileID: 966045762}
   - {fileID: 133960925}
+  - {fileID: 785501698}

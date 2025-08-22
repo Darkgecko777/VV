@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   monsterSOs: []
   isCombatNode: 1
-  positions: {fileID: 0}
+  positions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
