@@ -10,6 +10,8 @@ namespace VirulentVentures
         [SerializeField] private CombatConfig combatConfig;
         [SerializeField] private BattleUIController uiController;
         [SerializeField] private BattleVisualController visualController;
+        [SerializeField] private VisualConfig visualConfig; // Added for visual effects
+        [SerializeField] private UIConfig uiConfig; // Added for UI styling
 
         private CombatModel combatModel;
         private ExpeditionManager expeditionManager;
@@ -33,8 +35,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (combatConfig == null || uiController == null || visualController == null || expeditionManager == null)
+            if (combatConfig == null || uiController == null || visualController == null || expeditionManager == null || visualConfig == null || uiConfig == null)
             {
+                Debug.LogError($"BattleSceneController: Missing references! CombatConfig: {combatConfig != null}, UIController: {uiController != null}, VisualController: {visualController != null}, ExpeditionManager: {expeditionManager != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}");
                 return false;
             }
             return true;
@@ -77,14 +80,14 @@ namespace VirulentVentures
 
                 if (!AreAnyAlive(heroes) || CheckRetreat(heroes))
                 {
-                    combatModel.LogMessage(AreAnyAlive(heroes) ? "Party retreats due to low morale!" : "Party defeated!");
+                    combatModel.LogMessage(AreAnyAlive(heroes) ? "Party retreats due to low morale!" : "Party defeated!", uiConfig.TextColor);
                     EndBattle();
                     yield break;
                 }
 
                 if (!AreAnyAlive(monsters))
                 {
-                    combatModel.LogMessage("Monsters defeated!");
+                    combatModel.LogMessage("Monsters defeated!", uiConfig.BogRotColor);
                     EndBattle();
                     yield break;
                 }
@@ -132,7 +135,7 @@ namespace VirulentVentures
             bool dodged = ability.Value.CanDodge && target is MonsterStats monsterStats && monsterStats.SO is MonsterSO monsterSO && monsterSO.CheckDodge();
             if (dodged)
             {
-                combatModel.LogMessage($"{target.Type.Id} dodges the attack!");
+                combatModel.LogMessage($"{target.Type.Id} dodges the attack!", uiConfig.TextColor);
                 yield break;
             }
 
@@ -149,14 +152,18 @@ namespace VirulentVentures
                 killed = targetMonsterSO.TakeDamage(ref targetMonsterStats, damage);
             }
 
+            // Placeholder for ability animation using VisualConfig
+            // Sprite abilitySprite = visualConfig.GetCombatSprite(attacker.Type.Id);
+            // visualController.TriggerAbilityAnimation(abilitySprite, attacker.Position);
+
             if (killed)
             {
-                combatModel.LogMessage($"{attacker.Type.Id} kills {target.Type.Id}!");
+                combatModel.LogMessage($"{attacker.Type.Id} kills {target.Type.Id}!", uiConfig.BogRotColor);
                 combatModel.UpdateUnit(target);
             }
             else
             {
-                combatModel.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage!");
+                combatModel.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage!", uiConfig.TextColor);
                 combatModel.UpdateUnit(target, damage.ToString());
             }
 
@@ -176,7 +183,7 @@ namespace VirulentVentures
 
         private bool CheckRetreat(List<ICombatUnit> characters)
         {
-            return characters.Where(c => c is HeroStats).Cast<HeroStats>().Any(h => h.Morale <= (combatConfig?.RetreatMoraleThreshold ?? 20)); // Morale check hero-only
+            return characters.Where(c => c is HeroStats).Cast<HeroStats>().Any(h => h.Morale <= (combatConfig?.RetreatMoraleThreshold ?? 20));
         }
 
         public void SetCombatSpeed(float speed)

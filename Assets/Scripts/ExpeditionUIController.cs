@@ -10,6 +10,8 @@ namespace VirulentVentures
     {
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private VisualConfig visualConfig;
+        [SerializeField] private UIConfig uiConfig; // Added for UI styling
+
         private VisualElement root;
         private VisualElement popoutContainer;
         private Label flavourText;
@@ -18,7 +20,6 @@ namespace VirulentVentures
         private VisualElement fadeOverlay;
         private float fadeDuration = 0.5f;
 
-        // Initialize UI elements and validate references
         void Start()
         {
             if (!ValidateReferences()) return;
@@ -45,6 +46,12 @@ namespace VirulentVentures
             popoutContainer.style.display = DisplayStyle.None;
             fadeOverlay.style.opacity = 0;
 
+            // Apply UIConfig styling
+            flavourText.style.color = uiConfig.TextColor;
+            flavourText.style.unityFont = uiConfig.PixelFont;
+            continueButton.style.color = uiConfig.TextColor;
+            continueButton.style.unityFont = uiConfig.PixelFont;
+
             ExpeditionManager.Instance.OnExpeditionGenerated += UpdateUI;
             ExpeditionManager.Instance.OnCombatStarted += FadeToCombat;
             continueButton.clicked += () =>
@@ -56,7 +63,6 @@ namespace VirulentVentures
             UpdateUI();
         }
 
-        // Clean up safely, handling null references
         void OnDestroy()
         {
             if (ExpeditionManager.Instance != null)
@@ -70,7 +76,6 @@ namespace VirulentVentures
             }
         }
 
-        // Update UI elements (portraits, flavour text)
         private void UpdateUI()
         {
             var expeditionData = ExpeditionManager.Instance.GetExpedition();
@@ -78,7 +83,6 @@ namespace VirulentVentures
             UpdateFlavourText(expeditionData);
         }
 
-        // Update party portraits using VisualConfig
         private void UpdatePortraits(PartyData party)
         {
             if (portraitContainer == null) return;
@@ -94,7 +98,7 @@ namespace VirulentVentures
                 };
                 if (visualConfig != null)
                 {
-                    Sprite sprite = visualConfig.GetPortrait(party.HeroStats[i].Type.Id); // Removed rank param; use base portrait
+                    Sprite sprite = visualConfig.GetPortrait(party.HeroStats[i].Type.Id);
                     if (sprite != null)
                     {
                         portrait.style.backgroundImage = new StyleBackground(sprite);
@@ -105,7 +109,6 @@ namespace VirulentVentures
             }
         }
 
-        // Update flavour text for non-combat nodes
         private void UpdateFlavourText(ExpeditionData expeditionData)
         {
             if (expeditionData == null || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count || popoutContainer == null || flavourText == null)
@@ -116,17 +119,17 @@ namespace VirulentVentures
 
             NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
             flavourText.text = node.IsCombat ? "" : node.FlavourText;
+            flavourText.style.color = uiConfig.TextColor; // Reapply UIConfig
+            flavourText.style.unityFont = uiConfig.PixelFont; // Reapply UIConfig
             popoutContainer.style.display = node.IsCombat ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
-        // Trigger fade transition for combat
         public void FadeToCombat()
         {
             if (fadeOverlay == null) return;
             StartCoroutine(FadeRoutine(() => { }));
         }
 
-        // Handle fade animation using UI Toolkit
         private IEnumerator FadeRoutine(System.Action onComplete)
         {
             ExpeditionManager.Instance.SetTransitioning(true);
@@ -135,6 +138,7 @@ namespace VirulentVentures
             {
                 elapsed += Time.deltaTime;
                 fadeOverlay.style.opacity = Mathf.Lerp(0, 1, elapsed / fadeDuration);
+                fadeOverlay.style.backgroundColor = uiConfig.BogRotColor; // Use UIConfig
                 yield return null;
             }
             fadeOverlay.style.opacity = 1;
@@ -144,9 +148,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || ExpeditionManager.Instance == null)
+            if (uiDocument == null || ExpeditionManager.Instance == null || uiConfig == null)
             {
-                Debug.LogError($"ExpeditionUIController: Critical references missing! UIDocument: {uiDocument != null}, ExpeditionManager: {ExpeditionManager.Instance != null}");
+                Debug.LogError($"ExpeditionUIController: Critical references missing! UIDocument: {uiDocument != null}, ExpeditionManager: {ExpeditionManager.Instance != null}, UIConfig: {uiConfig != null}");
                 return false;
             }
             if (visualConfig == null)

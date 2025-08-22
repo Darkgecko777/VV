@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace VirulentVentures
 {
-    [CreateAssetMenu(fileName = "CharacterPositions", menuName = "VirulentVentures/CharacterPositions")]
+    [CreateAssetMenu(fileName = "CharacterPositions", menuName = "VirulentVentures/CharacterPositions", order = 16)]
     public class CharacterPositions : ScriptableObject
     {
         public Vector3[] heroPositions = new Vector3[]
@@ -21,9 +21,11 @@ namespace VirulentVentures
             new Vector3(7.5f, 0f, 0f)
         };
 
+        [System.Obsolete("Use Inspector-assigned CharacterPositions assets instead of runtime creation.")]
         public static CharacterPositions Default()
         {
-            return CreateInstance<CharacterPositions>();
+            var instance = CreateInstance<CharacterPositions>();
+            return instance;
         }
     }
 }

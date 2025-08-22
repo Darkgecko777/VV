@@ -8,9 +8,18 @@ namespace VirulentVentures
     {
         [SerializeField] private List<MonsterSO> monsterSOs = new List<MonsterSO>();
         [SerializeField] private bool isCombatNode = true; // Always true for prototype
-        [SerializeField] private CharacterPositions positions = CharacterPositions.Default();
+        [SerializeField] private CharacterPositions positions;
 
         public bool IsCombatNode => isCombatNode;
+        public CharacterPositions Positions { get => positions; set => positions = value; } // Added for access
+
+        private void OnEnable()
+        {
+            if (positions == null)
+            {
+                Debug.LogWarning($"EncounterData: CharacterPositions not assigned in Inspector for {name}. Please assign a CharacterPositions asset.");
+            }
+        }
 
         public List<MonsterStats> SpawnMonsters()
         {
@@ -22,9 +31,9 @@ namespace VirulentVentures
                 return monsters;
             }
 
-            if (positions.monsterPositions == null || positions.monsterPositions.Length < monsterSOs.Count)
+            if (positions == null || positions.monsterPositions == null || positions.monsterPositions.Length < monsterSOs.Count)
             {
-                Debug.LogError($"EncounterData: Invalid monster positions! Length: {positions.monsterPositions?.Length ?? 0}, Required: {monsterSOs.Count}");
+                Debug.LogError($"EncounterData: Invalid monster positions! Positions: {positions != null}, Length: {positions?.monsterPositions?.Length ?? 0}, Required: {monsterSOs.Count}");
                 return monsters;
             }
 

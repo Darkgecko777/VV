@@ -29,7 +29,7 @@ namespace VirulentVentures
             if (!ValidateReferences()) return;
 
             fadePanel = new VisualElement { name = "FadePanel" };
-            fadePanel.style.backgroundColor = Color.black;
+            fadePanel.style.backgroundColor = uiConfig.BogRotColor; // Use UIConfig for fade
             fadePanel.style.position = Position.Absolute;
             fadePanel.style.width = Length.Percent(100);
             fadePanel.style.height = Length.Percent(100);
@@ -37,25 +37,38 @@ namespace VirulentVentures
             root.Add(fadePanel);
 
             combatLog.style.display = DisplayStyle.Flex;
+            combatLog.style.color = uiConfig.TextColor; // Use UIConfig for default text color
+            combatLog.style.unityFont = uiConfig.PixelFont; // Use UIConfig for font
             combatLog.text = "";
 
             var continueButton = root.Q<Button>("ContinueButton");
             if (continueButton != null)
             {
+                continueButton.style.color = uiConfig.TextColor; // Use UIConfig
+                continueButton.style.unityFont = uiConfig.PixelFont; // Use UIConfig
                 continueButton.clicked += () => OnContinueClicked?.Invoke();
             }
         }
 
         private bool ValidateReferences()
         {
-            return uiConfig != null && root != null && canvasRectTransform != null && combatLog != null;
+            if (uiConfig == null || root == null || canvasRectTransform == null || combatLog == null)
+            {
+                Debug.LogError($"BattleUIController: Missing references! UIConfig: {uiConfig != null}, Root: {root != null}, CanvasRectTransform: {canvasRectTransform != null}, CombatLog: {combatLog != null}");
+                return false;
+            }
+            return true;
         }
 
         public void InitializeUI(List<(ICombatUnit unit, GameObject go)> units)
         {
             if (!ValidateReferences()) return;
             mainCamera = Camera.main;
-            if (mainCamera == null) return;
+            if (mainCamera == null)
+            {
+                Debug.LogError("BattleUIController: Main camera not found!");
+                return;
+            }
 
             unitPanels = new Dictionary<ICombatUnit, VisualElement>();
             SetupUnitPanels(units.Where(u => u.unit is HeroStats).Select(u => u.unit).ToList(), true);
@@ -64,7 +77,7 @@ namespace VirulentVentures
 
         public void SubscribeToModel(CombatModel model)
         {
-            model.OnLogMessage += LogMessage;
+            model.OnLogMessage += (message, color) => LogMessage(message, color); // Updated for new signature
             model.OnUnitUpdated += UpdateUnitPanel;
             model.OnDamagePopup += ShowDamagePopup;
         }
@@ -136,6 +149,8 @@ namespace VirulentVentures
             popup.AddToClassList("damage-popup");
             Label messageLabel = new Label { text = message };
             messageLabel.AddToClassList("damage-text");
+            messageLabel.style.color = uiConfig.TextColor; // Use UIConfig
+            messageLabel.style.unityFont = uiConfig.PixelFont; // Use UIConfig
             popup.Add(messageLabel);
 
             Vector2 screenPosition = mainCamera.WorldToScreenPoint(unit.Position);
@@ -170,9 +185,10 @@ namespace VirulentVentures
             root.Remove(popup);
         }
 
-        public void LogMessage(string message)
+        public void LogMessage(string message, Color color)
         {
             combatLog.text += $"{message}\n";
+            combatLog.style.color = color; // Apply received color
             string[] lines = combatLog.text.Split('\n');
             if (lines.Length > 10)
             {

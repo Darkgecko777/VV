@@ -9,6 +9,8 @@ namespace VirulentVentures
     {
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private TemplePlanningController planningManager;
+        [SerializeField] private UIConfig uiConfig; // Added for UI styling
+        [SerializeField] private VisualConfig visualConfig; // Added for future virus icons
 
         private DropdownField virusDropdown;
         private DropdownField nodeDropdown;
@@ -32,9 +34,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || planningManager == null)
+            if (uiDocument == null || planningManager == null || uiConfig == null || visualConfig == null)
             {
-                Debug.LogError($"TempleUIController: Missing references! UIDocument: {uiDocument != null}, PlanningManager: {planningManager != null}");
+                Debug.LogError($"TempleUIController: Missing references! UIDocument: {uiDocument != null}, PlanningManager: {planningManager != null}, UIConfig: {uiConfig != null}, VisualConfig: {visualConfig != null}");
                 return false;
             }
             return true;
@@ -55,9 +57,28 @@ namespace VirulentVentures
                 if (virus != null) virusDropdown.choices.Add(virus.VirusID);
             }
             virusDropdown.value = virusDropdown.choices.Count > 0 ? virusDropdown.choices[0] : null;
+            virusDropdown.style.color = uiConfig.TextColor;
+            virusDropdown.style.unityFont = uiConfig.PixelFont;
 
             // Populate node dropdown
             UpdateNodeDropdown(expeditionData);
+            nodeDropdown.style.color = uiConfig.TextColor;
+            nodeDropdown.style.unityFont = uiConfig.PixelFont;
+
+            // Style buttons
+            generateButton.style.color = uiConfig.TextColor;
+            generateButton.style.unityFont = uiConfig.PixelFont;
+            launchButton.style.color = uiConfig.TextColor;
+            launchButton.style.unityFont = uiConfig.PixelFont;
+            seedVirusButton.style.color = uiConfig.TextColor;
+            seedVirusButton.style.unityFont = uiConfig.PixelFont;
+
+            // Placeholder for virus icons using VisualConfig
+            // foreach (var virus in availableViruses)
+            // {
+            //     Sprite virusIcon = visualConfig.GetPortrait(virus.VirusID);
+            //     if (virusIcon != null) { /* Add to UI */ }
+            // }
 
             // Bind button events
             generateButton.clicked += () => OnGenerateClicked?.Invoke();
@@ -86,6 +107,8 @@ namespace VirulentVentures
                 nodeDropdown.choices.Add($"Node {i + 1} ({expeditionData.NodeData[i].NodeType})");
             }
             nodeDropdown.value = nodeDropdown.choices.Count > 0 ? nodeDropdown.choices[0] : null;
+            nodeDropdown.style.color = uiConfig.TextColor; // Ensure styling after update
+            nodeDropdown.style.unityFont = uiConfig.PixelFont;
         }
 
         public void SetLaunchButtonEnabled(bool enabled)

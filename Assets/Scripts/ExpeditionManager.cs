@@ -25,9 +25,10 @@ namespace VirulentVentures
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
-        [SerializeField] private MonsterSO ghoulSO;
-        [SerializeField] private MonsterSO wraithSO;
         [SerializeField] private List<HeroSO> fallbackHeroes;
+        [SerializeField] private CharacterPositions defaultPositions;
+        [SerializeField] private CombatNodeGenerator combatNodeGenerator;
+        [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
         private const string CURRENT_VERSION = "1.0";
@@ -55,10 +56,7 @@ namespace VirulentVentures
 
         void Start()
         {
-            if (expeditionData == null || partyData == null || ghoulSO == null || wraithSO == null)
-            {
-                return;
-            }
+            if (!ValidateReferences()) return;
 
             string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
             if (!string.IsNullOrEmpty(expeditionSaveData))
@@ -84,7 +82,7 @@ namespace VirulentVentures
                 {
                     partyData.HeroSOs = wrapper.partyData.HeroSOs ?? new List<HeroSO>();
                     partyData.AllowCultist = wrapper.partyData.AllowCultist;
-                    partyData.GenerateHeroStats(CharacterPositions.Default().heroPositions);
+                    partyData.GenerateHeroStats(defaultPositions.heroPositions);
                 }
                 else
                 {
@@ -96,12 +94,21 @@ namespace VirulentVentures
             ProcessCurrentNode();
         }
 
+        private bool ValidateReferences()
+        {
+            if (expeditionData == null || partyData == null || defaultPositions == null || combatNodeGenerator == null || nonCombatNodeGenerator == null)
+            {
+                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, DefaultPositions: {defaultPositions != null}, CombatNodeGenerator: {combatNodeGenerator != null}, NonCombatNodeGenerator: {nonCombatNodeGenerator != null}");
+                return false;
+            }
+            return true;
+        }
+
         public void GenerateExpedition()
         {
             if (isTransitioning) return;
             expeditionData.Reset();
             partyData.Reset();
-
             HeroSO[] heroPool = Resources.LoadAll<HeroSO>("SO's/Heroes");
             List<HeroSO> selectedHeroes;
             if (heroPool.Length < 4)
@@ -111,6 +118,7 @@ namespace VirulentVentures
                     : new List<HeroSO>();
                 if (selectedHeroes.Count < 4)
                 {
+                    Debug.LogError("ExpeditionManager: Insufficient heroes for expedition generation!");
                     return;
                 }
             }
@@ -118,29 +126,14 @@ namespace VirulentVentures
             {
                 selectedHeroes = heroPool.OrderBy(_ => UnityEngine.Random.value).Take(4).ToList();
             }
-
             partyData.HeroSOs = selectedHeroes;
             expeditionData.SetNodes(new List<NodeData>
             {
-                new NodeData(
-                    monsters: new List<MonsterStats>(),
-                    nodeType: "NonCombat",
-                    biome: "Swamp",
-                    isCombat: false,
-                    flavourText: "A foggy camp with eerie whispers.",
-                    seededViruses: new List<VirusData>()
-                ),
-                new NodeData(
-                    monsters: GenerateRandomMonsters(),
-                    nodeType: "Combat",
-                    biome: "Swamp",
-                    isCombat: true,
-                    flavourText: "A ghoul-infested ruin.",
-                    seededViruses: new List<VirusData>()
-                )
+                nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1),
+                combatNodeGenerator.GenerateCombatNode("Swamp", 1)
             });
             expeditionData.SetParty(partyData);
-            partyData.GenerateHeroStats(CharacterPositions.Default().heroPositions);
+            partyData.GenerateHeroStats(defaultPositions.heroPositions);
             SaveProgress();
             OnExpeditionGenerated?.Invoke();
         }
@@ -167,6 +160,7 @@ namespace VirulentVentures
             }
             if (!expeditionData.IsValid())
             {
+                Debug.LogError("ExpeditionManager: Cannot transition to ExpeditionScene, invalid expedition data!");
                 return;
             }
             isTransitioning = true;
@@ -185,6 +179,7 @@ namespace VirulentVentures
             }
             if (!expeditionData.IsValid() || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
             {
+                Debug.LogError("ExpeditionManager: Cannot transition to BattleScene, invalid expedition or node index!");
                 return;
             }
             isTransitioning = true;
@@ -217,10 +212,8 @@ namespace VirulentVentures
                 EndExpedition();
                 return;
             }
-
             NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
             OnNodeUpdated?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-
             if (node.IsCombat)
             {
                 TransitionToBattleScene();
@@ -248,31 +241,14 @@ namespace VirulentVentures
             TransitionToTemplePlanningScene();
         }
 
-        private List<MonsterStats> GenerateRandomMonsters()
-        {
-            List<MonsterStats> monsters = new List<MonsterStats>();
-            int count = UnityEngine.Random.Range(1, 5);
-            for (int i = 0; i < count; i++)
-            {
-                MonsterSO monsterSO = UnityEngine.Random.value > 0.5f ? ghoulSO : wraithSO;
-                MonsterStats stats = new MonsterStats(monsterSO, Vector3.zero);
-                monsterSO.ApplyStats(stats);
-                stats.AbilityId = monsterSO.AbilityIds.Count > 0 ? monsterSO.AbilityIds[0] : "BasicAttack";
-                monsters.Add(stats);
-            }
-            return monsters;
-        }
-
         public void SaveProgress()
         {
             var expeditionWrapper = new SaveDataWrapper(CURRENT_VERSION, expeditionData, null);
             string expeditionJson = JsonUtility.ToJson(expeditionWrapper);
             PlayerPrefs.SetString("ExpeditionSave", expeditionJson);
-
             var partyWrapper = new SaveDataWrapper(CURRENT_VERSION, null, partyData);
             string partyJson = JsonUtility.ToJson(partyWrapper);
             PlayerPrefs.SetString("PartySave", partyJson);
-
             PlayerPrefs.Save();
         }
 

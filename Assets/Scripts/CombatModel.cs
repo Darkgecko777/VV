@@ -10,7 +10,7 @@ namespace VirulentVentures
         public bool IsBattleActive { get; set; }
         public int RoundNumber { get; private set; }
 
-        public event Action<string> OnLogMessage;
+        public event Action<string, Color> OnLogMessage; // Modified to include Color
         public event Action<ICombatUnit> OnUnitUpdated;
         public event Action<ICombatUnit, string> OnDamagePopup;
         public event Action OnBattleEnded;
@@ -38,12 +38,12 @@ namespace VirulentVentures
         public void IncrementRound()
         {
             RoundNumber++;
-            OnLogMessage?.Invoke($"Round {RoundNumber} begins!");
+            OnLogMessage?.Invoke($"Round {RoundNumber} begins!", Color.white); // Default to white for round messages
         }
 
-        public void LogMessage(string message)
+        public void LogMessage(string message, Color color)
         {
-            OnLogMessage?.Invoke(message);
+            OnLogMessage?.Invoke(message, color);
         }
 
         public void UpdateUnit(ICombatUnit unit, string damageMessage = null)

@@ -8,6 +8,7 @@ namespace VirulentVentures
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private VisualConfig visualConfig;
+        [SerializeField] private UIConfig uiConfig; // Added for future UI elements
 
         // Validate references for scene setup
         void Awake()
@@ -24,9 +25,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || expeditionData == null || visualConfig == null)
+            if (uiDocument == null || expeditionData == null || visualConfig == null || uiConfig == null)
             {
-                Debug.LogError($"ExpeditionSceneController: Missing references! UIDocument: {uiDocument != null}, ExpeditionData: {expeditionData != null}, VisualConfig: {visualConfig != null}");
+                Debug.LogError($"ExpeditionSceneController: Missing references! UIDocument: {uiDocument != null}, ExpeditionData: {expeditionData != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}");
                 return false;
             }
             return true;
