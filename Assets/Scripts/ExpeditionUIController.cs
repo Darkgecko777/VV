@@ -10,12 +10,13 @@ namespace VirulentVentures
     {
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private VisualConfig visualConfig;
-        [SerializeField] private UIConfig uiConfig; // Added for UI styling
+        [SerializeField] private UIConfig uiConfig;
 
         private VisualElement root;
         private VisualElement popoutContainer;
         private Label flavourText;
         private Button continueButton;
+        private Button advanceNodeButton;
         private VisualElement portraitContainer;
         private VisualElement fadeOverlay;
         private float fadeDuration = 0.5f;
@@ -28,11 +29,12 @@ namespace VirulentVentures
             popoutContainer = root.Q<VisualElement>("PopoutContainer");
             flavourText = popoutContainer?.Q<Label>("FlavourText");
             continueButton = popoutContainer?.Q<Button>("ContinueButton");
+            advanceNodeButton = root.Q<Button>("AdvanceNodeButton");
             fadeOverlay = root.Q<VisualElement>("FadeOverlay");
 
-            if (popoutContainer == null || flavourText == null || continueButton == null || fadeOverlay == null)
+            if (popoutContainer == null || flavourText == null || continueButton == null || advanceNodeButton == null || fadeOverlay == null)
             {
-                Debug.LogError($"ExpeditionUIController: Missing UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, FadeOverlay: {fadeOverlay != null}");
+                Debug.LogError($"ExpeditionUIController: Missing UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, AdvanceNodeButton: {advanceNodeButton != null}, FadeOverlay: {fadeOverlay != null}");
                 return;
             }
 
@@ -51,6 +53,8 @@ namespace VirulentVentures
             flavourText.style.unityFont = uiConfig.PixelFont;
             continueButton.style.color = uiConfig.TextColor;
             continueButton.style.unityFont = uiConfig.PixelFont;
+            advanceNodeButton.style.color = uiConfig.TextColor;
+            advanceNodeButton.style.unityFont = uiConfig.PixelFont;
 
             ExpeditionManager.Instance.OnExpeditionGenerated += UpdateUI;
             ExpeditionManager.Instance.OnCombatStarted += FadeToCombat;
@@ -58,6 +62,14 @@ namespace VirulentVentures
             {
                 popoutContainer.style.display = DisplayStyle.None;
                 ExpeditionManager.Instance.OnContinueClicked();
+            };
+            advanceNodeButton.clicked += () =>
+            {
+                var expeditionData = ExpeditionManager.Instance.GetExpedition();
+                if (expeditionData != null && expeditionData.CurrentNodeIndex < expeditionData.NodeData.Count - 1)
+                {
+                    ExpeditionManager.Instance.ProcessCurrentNode();
+                }
             };
 
             UpdateUI();
@@ -73,6 +85,10 @@ namespace VirulentVentures
             if (continueButton != null)
             {
                 continueButton.clicked -= null;
+            }
+            if (advanceNodeButton != null)
+            {
+                advanceNodeButton.clicked -= null;
             }
         }
 
@@ -119,8 +135,8 @@ namespace VirulentVentures
 
             NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
             flavourText.text = node.IsCombat ? "" : node.FlavourText;
-            flavourText.style.color = uiConfig.TextColor; // Reapply UIConfig
-            flavourText.style.unityFont = uiConfig.PixelFont; // Reapply UIConfig
+            flavourText.style.color = uiConfig.TextColor;
+            flavourText.style.unityFont = uiConfig.PixelFont;
             popoutContainer.style.display = node.IsCombat ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
@@ -138,7 +154,7 @@ namespace VirulentVentures
             {
                 elapsed += Time.deltaTime;
                 fadeOverlay.style.opacity = Mathf.Lerp(0, 1, elapsed / fadeDuration);
-                fadeOverlay.style.backgroundColor = uiConfig.BogRotColor; // Use UIConfig
+                fadeOverlay.style.backgroundColor = uiConfig.BogRotColor;
                 yield return null;
             }
             fadeOverlay.style.opacity = 1;

@@ -27,8 +27,10 @@ namespace VirulentVentures
         [SerializeField] private PartyData partyData;
         [SerializeField] private List<HeroSO> fallbackHeroes;
         [SerializeField] private CharacterPositions defaultPositions;
+        [SerializeField] private EncounterData combatEncounterData; // Added for preconfigured EncounterData
         [SerializeField] private CombatNodeGenerator combatNodeGenerator;
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
+        [SerializeField] private bool autoProcessNodes = true; // Debug flag for auto-processing
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
         private const string CURRENT_VERSION = "1.0";
@@ -91,14 +93,17 @@ namespace VirulentVentures
             }
 
             OnNodeUpdated?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            ProcessCurrentNode();
+            if (autoProcessNodes)
+            {
+                ProcessCurrentNode();
+            }
         }
 
         private bool ValidateReferences()
         {
-            if (expeditionData == null || partyData == null || defaultPositions == null || combatNodeGenerator == null || nonCombatNodeGenerator == null)
+            if (expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null || combatEncounterData.Positions == null || combatNodeGenerator == null || nonCombatNodeGenerator == null)
             {
-                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, DefaultPositions: {defaultPositions != null}, CombatNodeGenerator: {combatNodeGenerator != null}, NonCombatNodeGenerator: {nonCombatNodeGenerator != null}");
+                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, DefaultPositions: {defaultPositions != null}, CombatEncounterData: {combatEncounterData != null}, CombatEncounterData.Positions: {combatEncounterData?.Positions != null}, CombatNodeGenerator: {combatNodeGenerator != null}, NonCombatNodeGenerator: {nonCombatNodeGenerator != null}");
                 return false;
             }
             return true;
@@ -127,13 +132,22 @@ namespace VirulentVentures
                 selectedHeroes = heroPool.OrderBy(_ => UnityEngine.Random.value).Take(4).ToList();
             }
             partyData.HeroSOs = selectedHeroes;
-            expeditionData.SetNodes(new List<NodeData>
+            var nodes = new List<NodeData>
             {
                 nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1),
-                combatNodeGenerator.GenerateCombatNode("Swamp", 1)
-            });
+                combatNodeGenerator.GenerateCombatNode("Swamp", 1, combatEncounterData)
+            };
+            expeditionData.SetNodes(nodes);
             expeditionData.SetParty(partyData);
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
+            // Log EncounterData details for debugging
+            foreach (var node in nodes)
+            {
+                if (node.IsCombat)
+                {
+                    Debug.Log($"Generated Combat Node: Positions Assigned: {combatEncounterData.Positions != null}");
+                }
+            }
             SaveProgress();
             OnExpeditionGenerated?.Invoke();
         }
@@ -213,6 +227,7 @@ namespace VirulentVentures
                 return;
             }
             NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
+            Debug.Log($"Processing node {expeditionData.CurrentNodeIndex}: IsCombat = {node.IsCombat}");
             OnNodeUpdated?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             if (node.IsCombat)
             {

@@ -20,8 +20,6 @@ namespace VirulentVentures
             uiController.OnGenerateClicked += GenerateExpedition;
             uiController.OnLaunchClicked += LaunchExpedition;
             uiController.OnSeedVirusClicked += SeedVirus;
-
-            Debug.Log($"TemplePlanningController.Awake: partyData.HeroSOs count: {partyData?.HeroSOs?.Count ?? 0}");
         }
 
         void Start()

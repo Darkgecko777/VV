@@ -15,6 +15,7 @@
             <ui:Label name="FlavourText" text="Swamp miasma clouds your mind." class="flavour-text" />
             <ui:Button name="ContinueButton" text="Continue" class="continue-button" />
         </ui:VisualElement>
+        <ui:Button name="AdvanceNodeButton" text="Advance Node" class="advance-button" style="position: absolute; top: 750px; left: 860px;" />
         <ui:VisualElement name="FadeOverlay" style="width: 1920px; height: 1080px; display: flex;" />
     </ui:VisualElement>
 </ui:UXML>
