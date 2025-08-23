@@ -27,10 +27,10 @@ namespace VirulentVentures
         [SerializeField] private PartyData partyData;
         [SerializeField] private List<HeroSO> fallbackHeroes;
         [SerializeField] private CharacterPositions defaultPositions;
-        [SerializeField] private EncounterData combatEncounterData; // Added for preconfigured EncounterData
+        [SerializeField] private EncounterData combatEncounterData;
         [SerializeField] private CombatNodeGenerator combatNodeGenerator;
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
-        [SerializeField] private bool autoProcessNodes = true; // Debug flag for auto-processing
+        [SerializeField] private bool autoProcessNodes = true;
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
         private const string CURRENT_VERSION = "1.0";
@@ -134,19 +134,17 @@ namespace VirulentVentures
             partyData.HeroSOs = selectedHeroes;
             var nodes = new List<NodeData>
             {
+                new NodeData(new List<MonsterStats>(), "Temple", "Temple", false, ""), // Temple node as starting point
                 nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1),
                 combatNodeGenerator.GenerateCombatNode("Swamp", 1, combatEncounterData)
             };
             expeditionData.SetNodes(nodes);
             expeditionData.SetParty(partyData);
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
-            // Log EncounterData details for debugging
+            // Log node details for debugging
             foreach (var node in nodes)
             {
-                if (node.IsCombat)
-                {
-                    Debug.Log($"Generated Combat Node: Positions Assigned: {combatEncounterData.Positions != null}");
-                }
+                Debug.Log($"Generated Node: Type = {node.NodeType}, IsCombat = {node.IsCombat}, FlavourText = '{node.FlavourText}'");
             }
             SaveProgress();
             OnExpeditionGenerated?.Invoke();
@@ -227,7 +225,7 @@ namespace VirulentVentures
                 return;
             }
             NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
-            Debug.Log($"Processing node {expeditionData.CurrentNodeIndex}: IsCombat = {node.IsCombat}");
+            Debug.Log($"Processing node {expeditionData.CurrentNodeIndex}: IsCombat = {node.IsCombat}, NodeType = {node.NodeType}");
             OnNodeUpdated?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             if (node.IsCombat)
             {

@@ -25,6 +25,10 @@ namespace VirulentVentures
         {
             if (!ValidateReferences()) return;
 
+            // Log Canvas presence
+            Canvas canvas = GetComponent<Canvas>();
+            Debug.Log($"ExpeditionUIController: Canvas component present = {canvas != null}, RenderMode = {(canvas != null ? canvas.renderMode.ToString() : "N/A")}");
+
             root = uiDocument.rootVisualElement;
             popoutContainer = root.Q<VisualElement>("PopoutContainer");
             flavourText = popoutContainer?.Q<Label>("FlavourText");
@@ -56,15 +60,27 @@ namespace VirulentVentures
             advanceNodeButton.style.color = uiConfig.TextColor;
             advanceNodeButton.style.unityFont = uiConfig.PixelFont;
 
+            // Ensure buttons are clickable
+            continueButton.pickingMode = PickingMode.Position;
+            advanceNodeButton.pickingMode = PickingMode.Position;
+            continueButton.SetEnabled(true);
+            advanceNodeButton.SetEnabled(true);
+
+            // Log button states
+            Debug.Log($"ExpeditionUIController: ContinueButton enabled = {continueButton.enabledInHierarchy}, visible = {continueButton.visible}");
+            Debug.Log($"ExpeditionUIController: AdvanceNodeButton enabled = {advanceNodeButton.enabledInHierarchy}, visible = {advanceNodeButton.visible}");
+
             ExpeditionManager.Instance.OnExpeditionGenerated += UpdateUI;
             ExpeditionManager.Instance.OnCombatStarted += FadeToCombat;
             continueButton.clicked += () =>
             {
+                Debug.Log("ContinueButton clicked");
                 popoutContainer.style.display = DisplayStyle.None;
                 ExpeditionManager.Instance.OnContinueClicked();
             };
             advanceNodeButton.clicked += () =>
             {
+                Debug.Log("AdvanceNodeButton clicked");
                 var expeditionData = ExpeditionManager.Instance.GetExpedition();
                 if (expeditionData != null && expeditionData.CurrentNodeIndex < expeditionData.NodeData.Count - 1)
                 {
@@ -134,10 +150,17 @@ namespace VirulentVentures
             }
 
             NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
-            flavourText.text = node.IsCombat ? "" : node.FlavourText;
-            flavourText.style.color = uiConfig.TextColor;
-            flavourText.style.unityFont = uiConfig.PixelFont;
-            popoutContainer.style.display = node.IsCombat ? DisplayStyle.None : DisplayStyle.Flex;
+            if (node.NodeType == "Temple" || node.IsCombat)
+            {
+                popoutContainer.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                flavourText.text = node.FlavourText;
+                flavourText.style.color = uiConfig.TextColor;
+                flavourText.style.unityFont = uiConfig.PixelFont;
+                popoutContainer.style.display = DisplayStyle.Flex;
+            }
         }
 
         public void FadeToCombat()

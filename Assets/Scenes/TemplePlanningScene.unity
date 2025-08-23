@@ -152,8 +152,10 @@ MonoBehaviour:
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
   fallbackHeroes: []
   defaultPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
+  combatEncounterData: {fileID: 11400000, guid: cb2f1c90e6f1dd54ea59e6686e020c98, type: 2}
   combatNodeGenerator: {fileID: 785501697}
   nonCombatNodeGenerator: {fileID: 785501696}
+  autoProcessNodes: 1
 --- !u!4 &133960925
 Transform:
   m_ObjectHideFlags: 0
@@ -290,7 +292,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9839738786109d842bbdfc905ecdc73d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  positions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
   monsterPool: []
 --- !u!4 &785501698
 Transform:
@@ -381,7 +382,7 @@ GameObject:
   - component: {fileID: 1289726885}
   - component: {fileID: 1289726890}
   m_Layer: 0
-  m_Name: TemplePlanningSceneUIManager
+  m_Name: TemplePlanningSceneUIController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
