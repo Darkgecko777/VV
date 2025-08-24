@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 
 namespace VirulentVentures
 {
@@ -10,37 +10,50 @@ namespace VirulentVentures
         [SerializeField] private CombatConfig combatConfig;
         [SerializeField] private BattleUIController uiController;
         [SerializeField] private BattleVisualController visualController;
-        [SerializeField] private VisualConfig visualConfig; // Added for visual effects
-        [SerializeField] private UIConfig uiConfig; // Added for UI styling
+        [SerializeField] private VisualConfig visualConfig;
+        [SerializeField] private UIConfig uiConfig;
 
         private CombatModel combatModel;
         private ExpeditionManager expeditionManager;
 
         void Awake()
         {
+            if (!ValidateReferences()) return;
             expeditionManager = ExpeditionManager.Instance;
             combatModel = new CombatModel();
-            if (!ValidateReferences()) return;
-            uiController.OnContinueClicked += EndBattle;
-            combatModel.OnBattleEnded += EndBattle;
-            uiController.SubscribeToModel(combatModel);
-            visualController.SubscribeToModel(combatModel);
+
+            var listeners = FindObjectsByType<AudioListener>(FindObjectsSortMode.None);
+            if (listeners.Length > 1)
+            {
+                for (int i = 1; i < listeners.Length; i++)
+                {
+                    listeners[i].enabled = false;
+                }
+            }
         }
 
         void Start()
         {
             if (!ValidateReferences()) return;
+
+            uiController.SubscribeToModel(combatModel);
+            visualController.SubscribeToModel(combatModel);
+            uiController.OnContinueClicked += EndBattle;
+            combatModel.OnBattleEnded += EndBattle;
+
             StartCoroutine(RunBattle());
         }
 
-        private bool ValidateReferences()
+        void OnDestroy()
         {
-            if (combatConfig == null || uiController == null || visualController == null || expeditionManager == null || visualConfig == null || uiConfig == null)
+            if (uiController != null)
             {
-                Debug.LogError($"BattleSceneController: Missing references! CombatConfig: {combatConfig != null}, UIController: {uiController != null}, VisualController: {visualController != null}, ExpeditionManager: {expeditionManager != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}");
-                return false;
+                uiController.OnContinueClicked -= EndBattle;
             }
-            return true;
+            if (combatModel != null)
+            {
+                combatModel.OnBattleEnded -= EndBattle;
+            }
         }
 
         private IEnumerator RunBattle()
@@ -71,114 +84,93 @@ namespace VirulentVentures
             visualController.InitializeUnits(combatModel.Units);
             uiController.InitializeUI(combatModel.Units);
 
+            combatModel.IncrementRound();
             while (combatModel.IsBattleActive)
             {
-                combatModel.IncrementRound();
-
-                List<ICombatUnit> heroes = combatModel.Units.Where(u => u.unit is HeroStats).Select(u => u.unit).ToList();
-                List<ICombatUnit> monsters = combatModel.Units.Where(u => u.unit is MonsterStats).Select(u => u.unit).ToList();
-
-                if (!AreAnyAlive(heroes) || CheckRetreat(heroes))
+                if (CheckRetreat(combatModel.Units.Select(u => u.unit).ToList()))
                 {
-                    combatModel.LogMessage(AreAnyAlive(heroes) ? "Party retreats due to low morale!" : "Party defeated!", uiConfig.TextColor);
-                    EndBattle();
+                    combatModel.LogMessage("Party morale too low, retreating!", uiConfig.BogRotColor);
+                    combatModel.EndBattle();
                     yield break;
                 }
 
-                if (!AreAnyAlive(monsters))
+                var unitList = combatModel.Units.Select(u => u.unit).ToList();
+                var aliveUnits = unitList.Where(u => u.Health > 0).ToList(); // Replaced FindAll with Where
+                if (aliveUnits.Count == 0)
                 {
-                    combatModel.LogMessage("Monsters defeated!", uiConfig.BogRotColor);
-                    EndBattle();
+                    combatModel.EndBattle();
                     yield break;
                 }
 
-                List<(ICombatUnit, int)> initiativeQueue = BuildInitiativeQueue(heroes, monsters);
-                foreach (var (attacker, _) in initiativeQueue)
+                foreach (var attacker in aliveUnits)
                 {
-                    if (attacker.Health <= 0) continue;
-                    bool isHero = attacker is HeroStats;
-                    yield return PerformAttack(attacker, isHero ? monsters : heroes);
+                    var targets = attacker is HeroStats
+                        ? combatModel.Units.Select(u => u.unit).Where(u => u is MonsterStats).ToList() // Replaced FindAll with Where
+                        : combatModel.Units.Select(u => u.unit).Where(u => u is HeroStats).ToList(); // Replaced FindAll with Where
+                    var target = GetRandomAliveTarget(targets);
+                    if (target == null)
+                    {
+                        combatModel.EndBattle();
+                        yield break;
+                    }
+
+                    List<string> abilityIds = null;
+                    if (attacker is HeroStats hero && hero.SO is HeroSO heroSO)
+                    {
+                        abilityIds = heroSO.AbilityIds;
+                    }
+                    else if (attacker is MonsterStats monster && monster.SO is MonsterSO monsterSO)
+                    {
+                        abilityIds = monsterSO.AbilityIds;
+                    }
+
+                    if (abilityIds == null || abilityIds.Count == 0)
+                    {
+                        combatModel.LogMessage($"{attacker.Type.Id} has no abilities!", uiConfig.TextColor);
+                        continue;
+                    }
+
+                    var abilityId = abilityIds[Random.Range(0, abilityIds.Count)];
+                    AbilityData? ability = attacker is HeroStats
+                        ? AbilityDatabase.GetHeroAbility(abilityId)
+                        : AbilityDatabase.GetMonsterAbility(abilityId);
+
+                    if (ability.HasValue)
+                    {
+                        ability.Value.Effect?.Invoke(attacker, expeditionManager.GetExpedition().Party);
+                    }
+
+                    int damage = attacker.Attack;
+                    bool killed = false;
+                    if (target is HeroStats targetHero && targetHero.SO is HeroSO targetHeroSO)
+                    {
+                        killed = targetHeroSO.TakeDamage(ref targetHero, damage);
+                    }
+                    else if (target is MonsterStats targetMonster && targetMonster.SO is MonsterSO targetMonsterSO)
+                    {
+                        killed = targetMonsterSO.TakeDamage(ref targetMonster, damage);
+                    }
+
+                    if (killed)
+                    {
+                        combatModel.LogMessage($"{attacker.Type.Id} kills {target.Type.Id}!", uiConfig.BogRotColor);
+                        combatModel.UpdateUnit(target);
+                    }
+                    else
+                    {
+                        combatModel.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage!", uiConfig.TextColor);
+                        combatModel.UpdateUnit(target, damage.ToString());
+                    }
+
+                    yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
                 }
             }
-        }
-
-        private List<(ICombatUnit, int)> BuildInitiativeQueue(List<ICombatUnit> heroes, List<ICombatUnit> monsters)
-        {
-            List<(ICombatUnit, int)> queue = new List<(ICombatUnit, int)>();
-            int GetSpeedValue(CharacterStatsData.Speed speed) => speed switch
-            {
-                CharacterStatsData.Speed.VeryFast => 4,
-                CharacterStatsData.Speed.Fast => 3,
-                CharacterStatsData.Speed.Normal => 2,
-                CharacterStatsData.Speed.Slow => 1,
-                _ => 0
-            };
-
-            queue.AddRange(heroes.Select(h => (h, GetSpeedValue(h.CharacterSpeed) + Random.Range(1, 10))));
-            queue.AddRange(monsters.Select(m => (m, GetSpeedValue(m.CharacterSpeed) + Random.Range(1, 10))));
-            queue.Sort((a, b) => b.Item2.CompareTo(a.Item2));
-
-            return queue;
-        }
-
-        private IEnumerator PerformAttack(ICombatUnit attacker, List<ICombatUnit> targets)
-        {
-            ICombatUnit target = GetRandomAliveTarget(targets);
-            if (target == null) yield break;
-
-            AbilityData? ability = attacker is HeroStats
-                ? AbilityDatabase.GetHeroAbility(attacker.AbilityId)
-                : AbilityDatabase.GetMonsterAbility(attacker.AbilityId);
-
-            if (ability == null) yield break;
-
-            bool dodged = ability.Value.CanDodge && target is MonsterStats monsterStats && monsterStats.SO is MonsterSO monsterSO && monsterSO.CheckDodge();
-            if (dodged)
-            {
-                combatModel.LogMessage($"{target.Type.Id} dodges the attack!", uiConfig.TextColor);
-                yield break;
-            }
-
-            ability.Value.Effect?.Invoke(attacker, expeditionManager.GetExpedition().Party);
-
-            int damage = attacker.Attack;
-            bool killed = false;
-            if (target is HeroStats heroStats && heroStats.SO is HeroSO heroSO)
-            {
-                killed = heroSO.TakeDamage(ref heroStats, damage);
-            }
-            else if (target is MonsterStats targetMonsterStats && targetMonsterStats.SO is MonsterSO targetMonsterSO)
-            {
-                killed = targetMonsterSO.TakeDamage(ref targetMonsterStats, damage);
-            }
-
-            // Placeholder for ability animation using VisualConfig
-            // Sprite abilitySprite = visualConfig.GetCombatSprite(attacker.Type.Id);
-            // visualController.TriggerAbilityAnimation(abilitySprite, attacker.Position);
-
-            if (killed)
-            {
-                combatModel.LogMessage($"{attacker.Type.Id} kills {target.Type.Id}!", uiConfig.BogRotColor);
-                combatModel.UpdateUnit(target);
-            }
-            else
-            {
-                combatModel.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage!", uiConfig.TextColor);
-                combatModel.UpdateUnit(target, damage.ToString());
-            }
-
-            yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
         }
 
         private ICombatUnit GetRandomAliveTarget(List<ICombatUnit> targets)
         {
-            List<ICombatUnit> aliveTargets = targets.FindAll(t => t.Health > 0);
+            var aliveTargets = targets.Where(t => t.Health > 0).ToList(); // Replaced FindAll with Where
             return aliveTargets.Count > 0 ? aliveTargets[Random.Range(0, aliveTargets.Count)] : null;
-        }
-
-        private bool AreAnyAlive(List<ICombatUnit> characters)
-        {
-            return characters.Exists(c => c.Health > 0);
         }
 
         private bool CheckRetreat(List<ICombatUnit> characters)
@@ -210,6 +202,15 @@ namespace VirulentVentures
                     expeditionManager.OnContinueClicked();
                 });
             }
+        }
+
+        private bool ValidateReferences()
+        {
+            if (combatConfig == null || uiController == null || visualController == null || expeditionManager == null || visualConfig == null || uiConfig == null)
+            {
+                return false;
+            }
+            return true;
         }
     }
 }

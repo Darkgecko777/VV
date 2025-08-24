@@ -3,161 +3,136 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Linq;
 
 namespace VirulentVentures
 {
     public class BattleUIController : MonoBehaviour
     {
         [SerializeField] private UIConfig uiConfig;
+        [SerializeField] private UIDocument uiDocument;
 
         private VisualElement root;
         private VisualElement fadePanel;
-        private RectTransform canvasRectTransform;
-        private Camera mainCamera;
-        private Dictionary<ICombatUnit, VisualElement> unitPanels;
+        private VisualElement heroesContainer;
+        private VisualElement monstersContainer;
         private Label combatLog;
+        private Button continueButton;
+        private Dictionary<ICombatUnit, VisualElement> unitPanels;
         private float fadeDuration = 0.5f;
 
         public event Action OnContinueClicked;
 
         void Awake()
         {
-            root = GetComponent<UIDocument>()?.rootVisualElement;
-            canvasRectTransform = GetComponent<RectTransform>();
-            combatLog = root?.Q<Label>("CombatLog");
             if (!ValidateReferences()) return;
 
-            fadePanel = new VisualElement { name = "FadePanel" };
-            fadePanel.style.backgroundColor = uiConfig.BogRotColor; // Use UIConfig for fade
-            fadePanel.style.position = Position.Absolute;
-            fadePanel.style.width = Length.Percent(100);
-            fadePanel.style.height = Length.Percent(100);
-            fadePanel.style.opacity = 0;
-            root.Add(fadePanel);
+            root = uiDocument.rootVisualElement;
+            heroesContainer = root.Q<VisualElement>("HeroesContainer");
+            monstersContainer = root.Q<VisualElement>("MonstersContainer");
+            combatLog = root.Q<Label>("CombatLog");
+            continueButton = root.Q<Button>("ContinueButton");
+            fadePanel = root.Q<VisualElement>("FadePanel") ?? new VisualElement { name = "FadePanel" };
 
-            combatLog.style.display = DisplayStyle.Flex;
-            combatLog.style.color = uiConfig.TextColor; // Use UIConfig for default text color
-            combatLog.style.unityFont = uiConfig.PixelFont; // Use UIConfig for font
-            combatLog.text = "";
-
-            var continueButton = root.Q<Button>("ContinueButton");
-            if (continueButton != null)
+            if (heroesContainer == null || monstersContainer == null || combatLog == null || continueButton == null)
             {
-                continueButton.style.color = uiConfig.TextColor; // Use UIConfig
-                continueButton.style.unityFont = uiConfig.PixelFont; // Use UIConfig
-                continueButton.clicked += () => OnContinueClicked?.Invoke();
+                Debug.LogError($"BattleUIController: Missing UI elements! HeroesContainer: {heroesContainer != null}, MonstersContainer: {monstersContainer != null}, CombatLog: {combatLog != null}, ContinueButton: {continueButton != null}");
+                return;
             }
-        }
-
-        private bool ValidateReferences()
-        {
-            if (uiConfig == null || root == null || canvasRectTransform == null || combatLog == null)
-            {
-                Debug.LogError($"BattleUIController: Missing references! UIConfig: {uiConfig != null}, Root: {root != null}, CanvasRectTransform: {canvasRectTransform != null}, CombatLog: {combatLog != null}");
-                return false;
-            }
-            return true;
         }
 
         public void InitializeUI(List<(ICombatUnit unit, GameObject go)> units)
         {
             if (!ValidateReferences()) return;
-            mainCamera = Camera.main;
-            if (mainCamera == null)
+
+            // Setup fade panel
+            fadePanel.style.backgroundColor = uiConfig.BogRotColor;
+            fadePanel.style.position = Position.Absolute;
+            fadePanel.style.width = Length.Percent(100);
+            fadePanel.style.height = Length.Percent(100);
+            fadePanel.style.opacity = 0;
+            fadePanel.style.display = DisplayStyle.None;
+            fadePanel.pickingMode = PickingMode.Ignore;
+            root.Add(fadePanel);
+
+            // Style UI elements
+            combatLog.style.display = DisplayStyle.Flex;
+            combatLog.style.color = uiConfig.TextColor;
+            combatLog.style.unityFont = uiConfig.PixelFont;
+            combatLog.text = "";
+            continueButton.style.color = uiConfig.TextColor;
+            continueButton.style.unityFont = uiConfig.PixelFont;
+            continueButton.pickingMode = PickingMode.Position;
+            continueButton.SetEnabled(true);
+
+            // Bind button
+            continueButton.clicked += () =>
             {
-                Debug.LogError("BattleUIController: Main camera not found!");
-                return;
+                Debug.Log("BattleUIController: ContinueButton clicked");
+                OnContinueClicked?.Invoke();
+            };
+
+            // Initialize unit panels
+            unitPanels = new Dictionary<ICombatUnit, VisualElement>();
+            heroesContainer.Clear();
+            monstersContainer.Clear();
+            foreach (var (unit, _) in units)
+            {
+                if (unit.Health <= 0) continue;
+                VisualElement panel = new VisualElement { name = $"{unit.Type.Id}_Panel" };
+                panel.AddToClassList("unit-panel");
+                var healthBar = new VisualElement { name = $"{unit.Type.Id}_HealthBar" };
+                healthBar.AddToClassList(unit is HeroStats ? "health-fill-hero" : "health-fill-monster");
+                healthBar.style.width = 180; // Fixed width, no Slots property
+                panel.Add(healthBar);
+                var statLabel = new Label { text = $"{unit.Type.Id}\nHealth: {unit.Health}" };
+                statLabel.AddToClassList("stat-label");
+                statLabel.style.color = uiConfig.TextColor;
+                statLabel.style.unityFont = uiConfig.PixelFont;
+                panel.Add(statLabel);
+                unitPanels[unit] = panel;
+                if (unit is HeroStats) heroesContainer.Add(panel);
+                else monstersContainer.Add(panel);
             }
 
-            unitPanels = new Dictionary<ICombatUnit, VisualElement>();
-            SetupUnitPanels(units.Where(u => u.unit is HeroStats).Select(u => u.unit).ToList(), true);
-            SetupUnitPanels(units.Where(u => u.unit is MonsterStats).Select(u => u.unit).ToList(), false);
+            Debug.Log($"BattleUIController: Initialized {unitPanels.Count} unit panels");
         }
 
         public void SubscribeToModel(CombatModel model)
         {
-            model.OnLogMessage += (message, color) => LogMessage(message, color); // Updated for new signature
+            if (!ValidateReferences()) return;
             model.OnUnitUpdated += UpdateUnitPanel;
             model.OnDamagePopup += ShowDamagePopup;
-        }
-
-        private void SetupUnitPanels(List<ICombatUnit> statsList, bool isHero)
-        {
-            string containerName = isHero ? "HeroesContainer" : "MonstersContainer";
-            VisualElement container = root.Q<VisualElement>(containerName);
-            if (container == null) return;
-
-            container.Clear();
-
-            for (int i = 0; i < statsList.Count; i++)
-            {
-                ICombatUnit unit = statsList[i];
-                VisualElement panel = new VisualElement { name = $"Panel_{unit.Type.Id}" };
-                panel.AddToClassList("unit-panel");
-                panel.style.position = Position.Relative;
-
-                ProgressBar healthBar = new ProgressBar { name = "HealthBar" };
-                healthBar.AddToClassList("health-bar");
-                healthBar.value = (float)unit.Health / unit.MaxHealth * 100;
-                healthBar.title = $"HP: {unit.Health}/{unit.MaxHealth}";
-                panel.Add(healthBar);
-
-                if (isHero) // Morale only for heroes
-                {
-                    ProgressBar moraleBar = new ProgressBar { name = "MoraleBar" };
-                    moraleBar.AddToClassList("morale-bar");
-                    var hero = unit as HeroStats;
-                    moraleBar.value = hero.Morale;
-                    moraleBar.title = $"Morale: {hero.Morale}";
-                    panel.Add(moraleBar);
-                }
-
-                container.Add(panel);
-                unitPanels[unit] = panel;
-            }
+            model.OnLogMessage += LogMessage;
         }
 
         public void UpdateUnitPanel(ICombatUnit unit)
         {
-            if (!unitPanels.TryGetValue(unit, out VisualElement panel))
+            if (!unitPanels.TryGetValue(unit, out var panel)) return;
+            var statLabel = panel.Q<Label>();
+            if (statLabel != null)
             {
-                return;
+                statLabel.text = $"{unit.Type.Id}\nHealth: {unit.Health}";
             }
-
-            ProgressBar healthBar = panel.Q<ProgressBar>("HealthBar");
-            if (healthBar != null)
+            if (unit.Health <= 0)
             {
-                healthBar.value = (float)unit.Health / unit.MaxHealth * 100;
-                healthBar.title = $"HP: {unit.Health}/{unit.MaxHealth}";
-            }
-
-            if (unit is HeroStats hero) // Morale update only for heroes
-            {
-                ProgressBar moraleBar = panel.Q<ProgressBar>("MoraleBar");
-                if (moraleBar != null)
-                {
-                    moraleBar.value = hero.Morale;
-                    moraleBar.title = $"Morale: {hero.Morale}";
-                }
+                panel.RemoveFromHierarchy();
+                unitPanels.Remove(unit);
             }
         }
 
         public void ShowDamagePopup(ICombatUnit unit, string message)
         {
+            if (!unitPanels.ContainsKey(unit)) return;
             VisualElement popup = new VisualElement { name = "DamagePopup" };
             popup.AddToClassList("damage-popup");
             Label messageLabel = new Label { text = message };
             messageLabel.AddToClassList("damage-text");
-            messageLabel.style.color = uiConfig.TextColor; // Use UIConfig
-            messageLabel.style.unityFont = uiConfig.PixelFont; // Use UIConfig
+            messageLabel.style.color = uiConfig.TextColor;
+            messageLabel.style.unityFont = uiConfig.PixelFont;
             popup.Add(messageLabel);
-
-            Vector2 screenPosition = mainCamera.WorldToScreenPoint(unit.Position);
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRectTransform, screenPosition, null, out Vector2 localPoint);
-
-            popup.style.left = localPoint.x;
-            popup.style.top = -localPoint.y;
+            popup.style.position = Position.Absolute;
+            popup.style.left = unitPanels[unit].layout.x;
+            popup.style.top = unitPanels[unit].layout.y - 50;
             root.Add(popup);
             StartCoroutine(AnimatePopup(popup));
         }
@@ -173,8 +148,7 @@ namespace VirulentVentures
             while (elapsed < riseDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / riseDuration;
-                popup.style.top = startY - (riseDistance * t);
+                popup.style.top = startY - (riseDistance * (elapsed / riseDuration));
                 if (elapsed > riseDuration - fadeDuration)
                 {
                     float fadeT = (elapsed - (riseDuration - fadeDuration)) / fadeDuration;
@@ -188,7 +162,7 @@ namespace VirulentVentures
         public void LogMessage(string message, Color color)
         {
             combatLog.text += $"{message}\n";
-            combatLog.style.color = color; // Apply received color
+            combatLog.style.color = color;
             string[] lines = combatLog.text.Split('\n');
             if (lines.Length > 10)
             {
@@ -203,6 +177,7 @@ namespace VirulentVentures
 
         private IEnumerator FadeToExpedition(Action onComplete)
         {
+            fadePanel.style.display = DisplayStyle.Flex;
             float elapsed = 0f;
             while (elapsed < fadeDuration)
             {
@@ -212,6 +187,18 @@ namespace VirulentVentures
             }
             fadePanel.style.opacity = 1;
             onComplete?.Invoke();
+            fadePanel.style.opacity = 0;
+            fadePanel.style.display = DisplayStyle.None;
+        }
+
+        private bool ValidateReferences()
+        {
+            if (uiDocument == null || uiConfig == null || root == null)
+            {
+                Debug.LogError($"BattleUIController: Missing critical references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, Root: {root != null}");
+                return false;
+            }
+            return true;
         }
     }
 }

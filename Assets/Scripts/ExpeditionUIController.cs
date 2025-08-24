@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 
 namespace VirulentVentures
 {
@@ -21,13 +20,12 @@ namespace VirulentVentures
         private VisualElement fadeOverlay;
         private float fadeDuration = 0.5f;
 
-        void Start()
+        public event Action OnContinueClicked;
+        public event Action OnAdvanceClicked;
+
+        void Awake()
         {
             if (!ValidateReferences()) return;
-
-            // Log Canvas presence
-            Canvas canvas = GetComponent<Canvas>();
-            Debug.Log($"ExpeditionUIController: Canvas component present = {canvas != null}, RenderMode = {(canvas != null ? canvas.renderMode.ToString() : "N/A")}");
 
             root = uiDocument.rootVisualElement;
             popoutContainer = root.Q<VisualElement>("PopoutContainer");
@@ -41,16 +39,17 @@ namespace VirulentVentures
                 Debug.LogError($"ExpeditionUIController: Missing UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, AdvanceNodeButton: {advanceNodeButton != null}, FadeOverlay: {fadeOverlay != null}");
                 return;
             }
+        }
 
+        void Start()
+        {
+            // Create portrait container programmatically
             portraitContainer = new VisualElement { name = "PortraitContainer" };
             root.Add(portraitContainer);
-
             portraitContainer.style.flexDirection = FlexDirection.Row;
             portraitContainer.style.position = Position.Absolute;
             portraitContainer.style.top = 200;
             portraitContainer.style.left = 50;
-            popoutContainer.style.display = DisplayStyle.None;
-            fadeOverlay.style.opacity = 0;
 
             // Apply UIConfig styling
             flavourText.style.color = uiConfig.TextColor;
@@ -60,33 +59,33 @@ namespace VirulentVentures
             advanceNodeButton.style.color = uiConfig.TextColor;
             advanceNodeButton.style.unityFont = uiConfig.PixelFont;
 
-            // Ensure buttons are clickable
+            // Ensure buttons and overlay are clickable/ignorable
             continueButton.pickingMode = PickingMode.Position;
             advanceNodeButton.pickingMode = PickingMode.Position;
-            continueButton.SetEnabled(true);
-            advanceNodeButton.SetEnabled(true);
+            fadeOverlay.pickingMode = PickingMode.Ignore;
+            popoutContainer.style.display = DisplayStyle.None;
+            fadeOverlay.style.display = DisplayStyle.None;
+
+            // Bind button events
+            continueButton.clicked += () =>
+            {
+                Debug.Log("ExpeditionUIController: ContinueButton clicked");
+                popoutContainer.style.display = DisplayStyle.None;
+                OnContinueClicked?.Invoke();
+            };
+            advanceNodeButton.clicked += () =>
+            {
+                Debug.Log("ExpeditionUIController: AdvanceNodeButton clicked");
+                OnAdvanceClicked?.Invoke();
+            };
 
             // Log button states
             Debug.Log($"ExpeditionUIController: ContinueButton enabled = {continueButton.enabledInHierarchy}, visible = {continueButton.visible}");
             Debug.Log($"ExpeditionUIController: AdvanceNodeButton enabled = {advanceNodeButton.enabledInHierarchy}, visible = {advanceNodeButton.visible}");
 
+            // Subscribe to ExpeditionManager events
             ExpeditionManager.Instance.OnExpeditionGenerated += UpdateUI;
             ExpeditionManager.Instance.OnCombatStarted += FadeToCombat;
-            continueButton.clicked += () =>
-            {
-                Debug.Log("ContinueButton clicked");
-                popoutContainer.style.display = DisplayStyle.None;
-                ExpeditionManager.Instance.OnContinueClicked();
-            };
-            advanceNodeButton.clicked += () =>
-            {
-                Debug.Log("AdvanceNodeButton clicked");
-                var expeditionData = ExpeditionManager.Instance.GetExpedition();
-                if (expeditionData != null && expeditionData.CurrentNodeIndex < expeditionData.NodeData.Count - 1)
-                {
-                    ExpeditionManager.Instance.ProcessCurrentNode();
-                }
-            };
 
             UpdateUI();
         }
@@ -108,7 +107,7 @@ namespace VirulentVentures
             }
         }
 
-        private void UpdateUI()
+        public void UpdateUI()
         {
             var expeditionData = ExpeditionManager.Instance.GetExpedition();
             if (visualConfig != null) UpdatePortraits(expeditionData?.Party);
@@ -145,7 +144,7 @@ namespace VirulentVentures
         {
             if (expeditionData == null || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count || popoutContainer == null || flavourText == null)
             {
-                if (popoutContainer != null) popoutContainer.style.display = DisplayStyle.None;
+                popoutContainer.style.display = DisplayStyle.None;
                 return;
             }
 
@@ -172,6 +171,7 @@ namespace VirulentVentures
         private IEnumerator FadeRoutine(System.Action onComplete)
         {
             ExpeditionManager.Instance.SetTransitioning(true);
+            fadeOverlay.style.display = DisplayStyle.Flex;
             float elapsed = 0f;
             while (elapsed < fadeDuration)
             {
@@ -182,6 +182,8 @@ namespace VirulentVentures
             }
             fadeOverlay.style.opacity = 1;
             onComplete?.Invoke();
+            fadeOverlay.style.opacity = 0;
+            fadeOverlay.style.display = DisplayStyle.None;
             ExpeditionManager.Instance.SetTransitioning(false);
         }
 
