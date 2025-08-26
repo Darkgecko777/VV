@@ -112,7 +112,6 @@ namespace VirulentVentures
             if (isTransitioning) return;
             expeditionData.Reset();
 
-            // Select heroes before resetting partyData
             HeroSO[] heroPool = Resources.LoadAll<HeroSO>("SO's/Heroes");
             List<HeroSO> selectedHeroes;
             if (heroPool.Length < 4)
@@ -131,7 +130,6 @@ namespace VirulentVentures
                 selectedHeroes = heroPool.OrderBy(_ => UnityEngine.Random.value).Take(4).ToList();
             }
 
-            // Reset partyData after hero selection
             partyData.Reset();
             partyData.HeroSOs = selectedHeroes;
             expeditionData.SetNodes(nodes);
@@ -148,7 +146,7 @@ namespace VirulentVentures
                 return;
             }
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("TemplePlanningScene").completed += _ =>
+            SceneManager.LoadSceneAsync("TemplePlanningScene", LoadSceneMode.Single).completed += _ =>
             {
                 isTransitioning = false;
                 OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
@@ -167,7 +165,7 @@ namespace VirulentVentures
                 return;
             }
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("ExpeditionScene").completed += _ =>
+            SceneManager.LoadSceneAsync("ExpeditionScene", LoadSceneMode.Single).completed += _ =>
             {
                 isTransitioning = false;
                 OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
@@ -186,23 +184,9 @@ namespace VirulentVentures
                 return;
             }
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("BattleScene", LoadSceneMode.Additive).completed += _ =>
+            SceneManager.LoadSceneAsync("BattleScene", LoadSceneMode.Single).completed += _ =>
             {
                 OnCombatStarted?.Invoke();
-                isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            };
-        }
-
-        public void UnloadBattleScene()
-        {
-            if (isTransitioning)
-            {
-                return;
-            }
-            isTransitioning = true;
-            SceneManager.UnloadSceneAsync("BattleScene").completed += _ =>
-            {
                 isTransitioning = false;
                 OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             };

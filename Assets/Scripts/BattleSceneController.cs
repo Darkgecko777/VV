@@ -21,16 +21,6 @@ namespace VirulentVentures
         void Awake()
         {
             combatModel = new CombatModel(); // Initialize early, as it's not reference-dependent
-
-            // Disable other cameras
-            var allCameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
-            foreach (var cam in allCameras)
-            {
-                if (cam != battleCamera)
-                {
-                    cam.enabled = false;
-                }
-            }
         }
 
         void Start()
@@ -38,12 +28,8 @@ namespace VirulentVentures
             expeditionManager = ExpeditionManager.Instance;
             if (expeditionManager == null)
             {
-                expeditionManager = FindObjectOfType<ExpeditionManager>();
-                if (expeditionManager == null)
-                {
-                    Debug.LogError("BattleSceneController: Failed to find ExpeditionManager!");
-                    return;
-                }
+                Debug.LogError("BattleSceneController: Failed to find ExpeditionManager!");
+                return;
             }
 
             if (!ValidateReferences()) return;
@@ -65,16 +51,6 @@ namespace VirulentVentures
             if (combatModel != null)
             {
                 combatModel.OnBattleEnded -= EndBattle;
-            }
-
-            // Re-enable other cameras
-            var allCameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
-            foreach (var cam in allCameras)
-            {
-                if (cam != battleCamera)
-                {
-                    cam.enabled = true;
-                }
             }
         }
 
@@ -222,10 +198,7 @@ namespace VirulentVentures
             }
             else
             {
-                uiController.FadeToScene(() => {
-                    expeditionManager.UnloadBattleScene();
-                    expeditionManager.OnContinueClicked();
-                });
+                uiController.FadeToScene(() => expeditionManager.TransitionToExpeditionScene());
             }
 
             isEndingBattle = false; // Reset guard
