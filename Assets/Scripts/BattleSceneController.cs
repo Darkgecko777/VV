@@ -79,8 +79,8 @@ namespace VirulentVentures
 
             combatModel.IsBattleActive = true;
             combatModel.InitializeUnits(heroStats, monsterStats);
-            visualController.InitializeUnits(combatModel.Units);
-            uiController.InitializeUI(combatModel.Units);
+            visualController.InitializeUnits(combatModel.Units.Select(u => (u.unit, u.go)).ToList()); // Project to match visualController signature
+            uiController.InitializeUI(combatModel.Units); // Full list with DisplayStats
 
             combatModel.IncrementRound();
             while (combatModel.IsBattleActive)
@@ -103,16 +103,10 @@ namespace VirulentVentures
                 foreach (var attacker in aliveUnits)
                 {
                     var targets = attacker is HeroStats
-                        ? combatModel.Units.Select(u => u.unit).Where(u => u is MonsterStats).ToList()
-                        : combatModel.Units.Select(u => u.unit).Where(u => u is HeroStats).ToList();
-                    var target = GetRandomAliveTarget(targets);
-                    if (target == null)
-                    {
-                        combatModel.EndBattle();
-                        yield break;
-                    }
+                        ? combatModel.Units.Select(u => u.unit).Where(u => u is MonsterStats && u.Health > 0).ToList()
+                        : combatModel.Units.Select(u => u.unit).Where(u => u is HeroStats && u.Health > 0).ToList();
 
-                    List<string> abilityIds = null;
+                    List<string> abilityIds = new List<string>();
                     if (attacker is HeroStats hero && hero.SO is HeroSO heroSO)
                     {
                         abilityIds = heroSO.AbilityIds;
@@ -122,13 +116,7 @@ namespace VirulentVentures
                         abilityIds = monsterSO.AbilityIds;
                     }
 
-                    if (abilityIds == null || abilityIds.Count == 0)
-                    {
-                        combatModel.LogMessage($"{attacker.Type.Id} has no abilities!", uiConfig.TextColor);
-                        continue;
-                    }
-
-                    var abilityId = abilityIds[Random.Range(0, abilityIds.Count)];
+                    var abilityId = abilityIds.Count > 0 ? abilityIds[Random.Range(0, abilityIds.Count)] : "BasicAttack";
                     AbilityData? ability = attacker is HeroStats
                         ? AbilityDatabase.GetHeroAbility(abilityId)
                         : AbilityDatabase.GetMonsterAbility(abilityId);
@@ -137,6 +125,9 @@ namespace VirulentVentures
                     {
                         ability.Value.Effect?.Invoke(attacker, expeditionManager.GetExpedition().Party);
                     }
+
+                    var target = GetRandomAliveTarget(targets);
+                    if (target == null) continue;
 
                     int damage = attacker.Attack;
                     bool killed = false;

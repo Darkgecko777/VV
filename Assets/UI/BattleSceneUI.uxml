@@ -1,16 +1,18 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="Assets/UI/BattleSceneUI.uss" />
-    <ui:VisualElement name="BattleUI_Root" style="position: absolute; top: 0px; width: 1920px; height: 1080px;"> <!-- Adjusted top to 0 and height to 1080 for full screen -->
-        <ui:VisualElement name="HeroesContainer" style="position: absolute; left: 10px; top: 10px; width: 630px; height: 520px; flex-direction: column;">
+    <ui:VisualElement name="BattleUI_Root" style="position: absolute; top: 0px; width: 1920px; height: 1080px;">
+        <ui:VisualElement name="HeroesContainer" style="position: absolute; left: 10px; top: 540px; width: 630px; height: 520px; flex-direction: column;">
             <!-- Dynamic hero panels populated by BattleUIController -->
         </ui:VisualElement>
-        <ui:VisualElement name="CombatLogContainer" style="position: absolute; left: 650px; top: 10px; width: 630px; height: 520px;">
+        <ui:VisualElement name="CombatLogContainer" style="position: absolute; left: 650px; top: 540px; width: 630px; height: 520px;">
             <ui:Label name="CombatLog" class="combat-log" text="" />
         </ui:VisualElement>
-        <ui:VisualElement name="MonstersContainer" style="position: absolute; left: 1290px; top: 10px; width: 630px; height: 520px; flex-direction: column;">
+        <ui:VisualElement name="MonstersContainer" style="position: absolute; left: 1290px; top: 540px; width: 630px; height: 520px; flex-direction: column;">
             <!-- Dynamic monster panels populated by BattleUIController -->
         </ui:VisualElement>
-        <ui:VisualElement name="ButtonContainer" style="position: absolute; bottom: 10px; left: 650px; width: 400px; height: 50px; flex-direction: row;">
+        <ui:VisualElement name="ButtonContainer" style="position: absolute; bottom: 10px; left: 650px; width: 400
+
+px; height: 50px; flex-direction: row;">
             <ui:Button name="ContinueButton" text="Continue" class="button" />
         </ui:VisualElement>
     </ui:VisualElement>

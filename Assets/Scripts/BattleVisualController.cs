@@ -7,8 +7,8 @@ namespace VirulentVentures
     {
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private CharacterPositions characterPositions;
-        [SerializeField] private Sprite backgroundSprite; // 512x512 at 64 PPU
-        [SerializeField] private Camera mainCamera; // Reference to the main camera
+        [SerializeField] private Sprite backgroundSprite;
+        [SerializeField] private Camera mainCamera;
 
         private List<(ICombatUnit unit, GameObject go, SpriteAnimation animator)> units;
         private bool isInitialized;
@@ -22,38 +22,23 @@ namespace VirulentVentures
                 return;
             }
 
-            // Ensure camera is orthographic and not rotated for 2D setup
             mainCamera.orthographic = true;
             mainCamera.transform.rotation = Quaternion.identity;
-            mainCamera.transform.position = new Vector3(0f, 0f, -8f); // Maintain Z=-8
+            mainCamera.transform.position = new Vector3(0f, 0f, -8f);
 
             units = new List<(ICombatUnit, GameObject, SpriteAnimation)>();
             isInitialized = true;
 
-            // Log CharacterPositions arrays for debugging
-            Debug.Log($"BattleVisualController: heroPositions.Length = {characterPositions.heroPositions.Length}");
-            for (int i = 0; i < characterPositions.heroPositions.Length; i++)
-            {
-                Debug.Log($"BattleVisualController: heroPositions[{i}] = {characterPositions.heroPositions[i]}");
-            }
-            Debug.Log($"BattleVisualController: monsterPositions.Length = {characterPositions.monsterPositions.Length}");
-            for (int i = 0; i < characterPositions.monsterPositions.Length; i++)
-            {
-                Debug.Log($"BattleVisualController: monsterPositions[{i}] = {characterPositions.monsterPositions[i]}");
-            }
-
-            // Create background programmatically
             if (backgroundSprite != null)
             {
                 backgroundObject = new GameObject("BattleBackground");
                 var renderer = backgroundObject.AddComponent<SpriteRenderer>();
                 renderer.sprite = backgroundSprite;
                 renderer.sortingLayerName = "Background";
-                renderer.sortingOrder = -10; // Behind all other elements
+                renderer.sortingOrder = -10;
 
-                // Set hard-coded scale and position
-                backgroundObject.transform.localScale = new Vector3(2.4f, 1f, 1f); // Scale: 2.4X, 1Y
-                backgroundObject.transform.position = new Vector3(0f, 1f, 0f); // Position: Y=1, Z=0 for 2D
+                backgroundObject.transform.localScale = new Vector3(2.4f, 1f, 1f);
+                backgroundObject.transform.position = new Vector3(0f, 1f, 0f);
             }
             else
             {
@@ -85,26 +70,24 @@ namespace VirulentVentures
 
                 if (unit is HeroStats heroStats && heroStats.SO is HeroSO heroSO)
                 {
-                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.Stats.Type.Id);
+                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.CharacterType.Id);
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
                     }
                     Vector3 position = heroIndex < heroPositions.Length ? heroPositions[heroIndex] : Vector3.zero;
                     unitObj.transform.position = position;
-                    Debug.Log($"BattleVisualController: Placing hero {unit.Type.Id} at index {heroIndex} with position {position}");
                     heroIndex++;
                 }
                 else if (unit is MonsterStats monsterStats && monsterStats.SO is MonsterSO monsterSO)
                 {
-                    Sprite sprite = visualConfig.GetEnemySprite(monsterSO.Stats.Type.Id);
+                    Sprite sprite = visualConfig.GetEnemySprite(monsterSO.CharacterType.Id);
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
                     }
                     Vector3 position = monsterIndex < monsterPositions.Length ? monsterPositions[monsterIndex] : Vector3.zero;
                     unitObj.transform.position = position;
-                    Debug.Log($"BattleVisualController: Placing monster {unit.Type.Id} at index {monsterIndex} with position {position}");
                     monsterIndex++;
                 }
 
@@ -119,7 +102,7 @@ namespace VirulentVentures
             model.OnDamagePopup += TriggerUnitAnimation;
         }
 
-        public void UpdateUnitVisual(ICombatUnit unit)
+        public void UpdateUnitVisual(ICombatUnit unit, DisplayStats displayStats) // Added DisplayStats param to match event
         {
             if (!isInitialized) return;
             var unitEntry = units.Find(u => u.unit == unit);
@@ -162,6 +145,11 @@ namespace VirulentVentures
                 mainCamera.orthographic = true;
             }
             return true;
+        }
+
+        public List<(ICombatUnit unit, GameObject go, SpriteAnimation animator)> GetUnits()
+        {
+            return units;
         }
     }
 }

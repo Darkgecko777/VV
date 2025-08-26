@@ -52,5 +52,19 @@ namespace VirulentVentures
         public int Morale { get => _morale; set => _morale = value; }
         public int Sanity { get => _sanity; set => _sanity = value; }
         public bool IsCultist { get => _isCultist; set => _isCultist = value; }
+
+        public DisplayStats GetDisplayStats()
+        {
+            return new DisplayStats(
+                name: Type?.Id ?? "Unknown",
+                health: Health,
+                maxHealth: MaxHealth,
+                attack: Attack,
+                defense: Defense,
+                morale: Morale,
+                sanity: Sanity,
+                isHero: true
+            );
+        }
     }
 }

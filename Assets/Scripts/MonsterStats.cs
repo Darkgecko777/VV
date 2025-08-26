@@ -39,5 +39,19 @@ namespace VirulentVentures
         public Vector3 Position => _position;
         public string AbilityId { get => _abilityId; set => _abilityId = value; }
         public int PartyPosition => 0; // Monsters don't use party position
+
+        public DisplayStats GetDisplayStats()
+        {
+            return new DisplayStats(
+                name: Type?.Id ?? "Unknown",
+                health: Health,
+                maxHealth: MaxHealth,
+                attack: Attack,
+                defense: Defense,
+                morale: null,
+                sanity: null,
+                isHero: false
+            );
+        }
     }
 }

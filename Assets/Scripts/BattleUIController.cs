@@ -10,6 +10,8 @@ namespace VirulentVentures
     {
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private UIDocument uiDocument;
+        [SerializeField] private Camera mainCamera;
+        [SerializeField] private BattleVisualController visualController;
 
         private VisualElement root;
         private VisualElement fadePanel;
@@ -64,7 +66,6 @@ namespace VirulentVentures
                 return;
             }
 
-            // Setup fade panel
             fadePanel.style.backgroundColor = uiConfig.BogRotColor;
             fadePanel.style.position = Position.Absolute;
             fadePanel.style.width = Length.Percent(100);
@@ -74,7 +75,6 @@ namespace VirulentVentures
             fadePanel.pickingMode = PickingMode.Ignore;
             root.Add(fadePanel);
 
-            // Style UI elements
             combatLog.style.display = DisplayStyle.Flex;
             combatLog.style.color = uiConfig.TextColor;
             combatLog.style.unityFont = uiConfig.PixelFont;
@@ -84,61 +84,74 @@ namespace VirulentVentures
             continueButton.pickingMode = PickingMode.Position;
             continueButton.SetEnabled(true);
 
-            // Bind button
-            continueButton.clicked += () =>
-            {
-                Debug.Log("BattleUIController: ContinueButton clicked");
-                OnContinueClicked?.Invoke();
-            };
+            continueButton.clicked += () => OnContinueClicked?.Invoke();
         }
 
-        public void InitializeUI(List<(ICombatUnit unit, GameObject go)> units)
+        public void InitializeUI(List<(ICombatUnit unit, GameObject go, DisplayStats displayStats)> combatUnits)
         {
-            if (!ValidateReferences() || root == null) return;
-
-            // Initialize unit panels
             unitPanels = new Dictionary<ICombatUnit, VisualElement>();
-            heroesContainer.Clear();
-            monstersContainer.Clear();
-            foreach (var (unit, _) in units)
+            foreach (var (unit, _, displayStats) in combatUnits)
             {
-                if (unit.Health <= 0) continue;
-                VisualElement panel = new VisualElement { name = $"{unit.Type.Id}_Panel" };
+                if (displayStats.Health <= 0) continue;
+
+                VisualElement container = displayStats.IsHero ? heroesContainer : monstersContainer;
+                VisualElement panel = new VisualElement { name = $"{displayStats.Name}Panel" };
                 panel.AddToClassList("unit-panel");
-                var healthBar = new VisualElement { name = $"{unit.Type.Id}_HealthBar" };
-                healthBar.AddToClassList(unit is HeroStats ? "health-fill-hero" : "health-fill-monster");
-                healthBar.style.width = 180; // Fixed width, no Slots property
-                panel.Add(healthBar);
-                var statLabel = new Label { text = $"{unit.Type.Id}\nHealth: {unit.Health}" };
+
+                // Health bar
+                VisualElement healthBar = new VisualElement { name = "HealthBar" };
+                healthBar.AddToClassList("health-bar");
+                healthBar.style.width = 100;
+                healthBar.style.height = 10;
+                healthBar.style.backgroundColor = uiConfig.BogRotColor;
+
+                VisualElement healthFill = new VisualElement { name = "HealthFill" };
+                healthFill.AddToClassList("health-fill");
+                healthFill.style.width = Length.Percent((float)displayStats.Health / displayStats.MaxHealth * 100);
+                healthFill.style.height = Length.Percent(100);
+                healthFill.style.backgroundColor = Color.red;
+                healthBar.Add(healthFill);
+
+                // Stat labels
+                Label statLabel = new Label
+                {
+                    text = $"{displayStats.Name}: {displayStats.Health}/{displayStats.MaxHealth}" +
+                           (displayStats.IsHero ? $"\nMorale: {displayStats.Morale}\nSanity: {displayStats.Sanity}" : ""),
+                    name = "StatLabel"
+                };
                 statLabel.AddToClassList("stat-label");
+                statLabel.style.color = uiConfig.TextColor;
+                statLabel.style.unityFont = uiConfig.PixelFont;
+
+                panel.Add(healthBar);
                 panel.Add(statLabel);
-                if (unit is HeroStats)
-                    heroesContainer.Add(panel);
-                else
-                    monstersContainer.Add(panel);
-                unitPanels[unit] = panel;
+                container.Add(panel);
+                unitPanels.Add(unit, panel);
             }
         }
 
         public void SubscribeToModel(CombatModel model)
         {
-            if (root == null) return; // Skip if UI not initialized
-            model.OnUnitUpdated += UpdateUnitPanel;
-            model.OnDamagePopup += ShowDamagePopup;
+            model.OnUnitUpdated += UpdateUnit;
             model.OnLogMessage += LogMessage;
+            model.OnDamagePopup += ShowDamagePopup;
         }
 
-        public void UpdateUnitPanel(ICombatUnit unit)
+        public void UpdateUnit(ICombatUnit unit, DisplayStats displayStats)
         {
-            if (!unitPanels.TryGetValue(unit, out var panel)) return;
-            var statLabel = panel.Q<Label>();
-            if (statLabel != null)
+            if (!unitPanels.ContainsKey(unit)) return;
+
+            var panel = unitPanels[unit];
+            var statLabel = panel.Q<Label>("StatLabel");
+            var healthFill = panel.Q<VisualElement>("HealthFill");
+
+            statLabel.text = $"{displayStats.Name}: {displayStats.Health}/{displayStats.MaxHealth}" +
+                             (displayStats.IsHero ? $"\nMorale: {displayStats.Morale}\nSanity: {displayStats.Sanity}" : "");
+            healthFill.style.width = Length.Percent((float)displayStats.Health / displayStats.MaxHealth * 100);
+
+            if (displayStats.Health <= 0)
             {
-                statLabel.text = $"{unit.Type.Id}\nHealth: {unit.Health}";
-            }
-            if (unit.Health <= 0)
-            {
-                panel.RemoveFromHierarchy();
+                panel.style.display = DisplayStyle.None;
                 unitPanels.Remove(unit);
             }
         }
@@ -146,6 +159,23 @@ namespace VirulentVentures
         public void ShowDamagePopup(ICombatUnit unit, string message)
         {
             if (!unitPanels.ContainsKey(unit)) return;
+
+            if (visualController == null)
+            {
+                Debug.LogError("BattleUIController: BattleVisualController not assigned!");
+                return;
+            }
+            var unitEntry = visualController.GetUnits().Find(u => u.unit == unit);
+            if (unitEntry.go == null)
+            {
+                Debug.LogError($"BattleUIController: No GameObject for unit {unit.Type.Id}!");
+                return;
+            }
+
+            Vector3 worldPos = unitEntry.go.transform.position + Vector3.up * 0.5f;
+            Vector3 screenPos = mainCamera.WorldToScreenPoint(worldPos);
+            float screenHeight = Screen.height;
+
             VisualElement popup = new VisualElement { name = "DamagePopup" };
             popup.AddToClassList("damage-popup");
             Label messageLabel = new Label { text = message };
@@ -154,13 +184,13 @@ namespace VirulentVentures
             messageLabel.style.unityFont = uiConfig.PixelFont;
             popup.Add(messageLabel);
             popup.style.position = Position.Absolute;
-            popup.style.left = unitPanels[unit].layout.x;
-            popup.style.top = unitPanels[unit].layout.y - 50;
+            popup.style.left = screenPos.x;
+            popup.style.top = screenHeight - screenPos.y - 50;
             root.Add(popup);
-            StartCoroutine(AnimatePopup(popup));
+            StartCoroutine(AnimatePopup(popup, screenHeight));
         }
 
-        private IEnumerator AnimatePopup(VisualElement popup)
+        private IEnumerator AnimatePopup(VisualElement popup, float screenHeight)
         {
             float riseDistance = 100f;
             float riseDuration = 1f;
@@ -171,7 +201,8 @@ namespace VirulentVentures
             while (elapsed < riseDuration)
             {
                 elapsed += Time.deltaTime;
-                popup.style.top = startY - (riseDistance * (elapsed / riseDuration));
+                float t = elapsed / riseDuration;
+                popup.style.top = startY - (riseDistance * t);
                 if (elapsed > riseDuration - fadeDuration)
                 {
                     float fadeT = (elapsed - (riseDuration - fadeDuration)) / fadeDuration;
@@ -216,9 +247,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || uiConfig == null)
+            if (uiDocument == null || uiConfig == null || mainCamera == null || visualController == null)
             {
-                Debug.LogError($"BattleUIController: Missing critical references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}");
+                Debug.LogError($"BattleUIController: Missing critical references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, MainCamera: {mainCamera != null}, VisualController: {visualController != null}");
                 return false;
             }
             return true;
