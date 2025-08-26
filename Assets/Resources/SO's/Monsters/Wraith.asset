@@ -15,20 +15,12 @@ MonoBehaviour:
   characterType: {fileID: 11400000, guid: 3f2e6761ccbe6a1489f80fd31a64efe2, type: 2}
   stats:
     type: {fileID: 11400000, guid: 3f2e6761ccbe6a1489f80fd31a64efe2, type: 2}
-    health: 0
-    maxHealth: 0
-    minHealth: 0
-    attack: 0
-    minAttack: 0
-    maxAttack: 0
-    defense: 0
-    minDefense: 0
-    maxDefense: 0
-    morale: 0
-    sanity: 0
-    rank: 0
-    isInfected: 0
+    health: 100
+    maxHealth: 100
+    attack: 10
+    defense: 10
     slowTickDelay: 0
     speed: 0
-    isCultist: 0
-  specialAbility: {fileID: 11400000, guid: a491662d8d86b004eb89df3ff9c9fa4c, type: 2}
+  abilityIds:
+  - BasicAttack
+  - WraithStrike

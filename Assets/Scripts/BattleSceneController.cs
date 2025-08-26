@@ -16,6 +16,7 @@ namespace VirulentVentures
 
         private CombatModel combatModel;
         private ExpeditionManager expeditionManager;
+        private bool isEndingBattle; // Guard to prevent recursive calls
 
         void Awake()
         {
@@ -43,7 +44,6 @@ namespace VirulentVentures
                     Debug.LogError("BattleSceneController: Failed to find ExpeditionManager!");
                     return;
                 }
-                Debug.LogWarning("BattleSceneController: Used FindObjectOfType for ExpeditionManager.");
             }
 
             if (!ValidateReferences()) return;
@@ -100,8 +100,6 @@ namespace VirulentVentures
                 EndBattle();
                 yield break;
             }
-
-            Debug.Log($"Starting battle with {heroStats.Count} heroes and {monsterStats.Count} monsters");
 
             combatModel.IsBattleActive = true;
             combatModel.InitializeUnits(heroStats, monsterStats);
@@ -212,6 +210,9 @@ namespace VirulentVentures
 
         private void EndBattle()
         {
+            if (isEndingBattle) return; // Prevent recursive calls
+            isEndingBattle = true;
+
             combatModel.EndBattle();
             expeditionManager.SaveProgress();
             bool partyDead = expeditionManager.GetExpedition().Party.CheckDeadStatus().Count == 0;
@@ -226,6 +227,8 @@ namespace VirulentVentures
                     expeditionManager.OnContinueClicked();
                 });
             }
+
+            isEndingBattle = false; // Reset guard
         }
 
         private bool ValidateReferences()
