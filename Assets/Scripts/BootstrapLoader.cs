@@ -12,10 +12,6 @@ namespace VirulentVentures
             {
                 Debug.LogError("BootstrapLoader: ExpeditionManager.Instance is null after bootstrap!");
             }
-            else
-            {
-                Debug.Log("BootstrapLoader: ExpeditionManager initialized successfully.");
-            }
 
             // Load the initial scene (e.g., TemplePlanningScene) single or additive
             SceneManager.LoadSceneAsync("TemplePlanningScene", LoadSceneMode.Single);

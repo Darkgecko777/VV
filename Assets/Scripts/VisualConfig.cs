@@ -3,45 +3,75 @@ using System.Collections.Generic;
 
 namespace VirulentVentures
 {
-    [CreateAssetMenu(fileName = "VisualConfig", menuName = "ScriptableObjects/VisualConfig", order = 1)]
+    [CreateAssetMenu(fileName = "VisualConfig", menuName = "VirulentVentures/VisualConfig", order = 14)]
     public class VisualConfig : ScriptableObject
     {
-        [SerializeField] private Sprite defaultPortrait;
-        [SerializeField] private Sprite defaultCombatSprite;
-        [SerializeField] private Sprite defaultEnemySprite;
-        [SerializeField] private Dictionary<string, Sprite> portraits = new Dictionary<string, Sprite>();
-        [SerializeField] private Dictionary<string, Sprite> combatSprites = new Dictionary<string, Sprite>();
-        [SerializeField] private Dictionary<string, Sprite> enemySprites = new Dictionary<string, Sprite>();
-        [SerializeField]
-        private Dictionary<string, Color> nodeColors = new Dictionary<string, Color> {
-            { "NonCombat", Color.green },
-            { "Combat", Color.red },
-            { "Temple", Color.gray } // Added for Temple nodes to eliminate warnings
+        [System.Serializable]
+        public struct CharacterVisuals
+        {
+            public string characterID; // e.g., "Fighter", "Healer" from HeroSO.Stats.Type.Id
+            public Sprite portrait; // Temple/Expedition
+            public Sprite combatSprite; // BattleScene
+        }
+
+        [System.Serializable]
+        public struct EnemyVisuals
+        {
+            public string enemyID; // e.g., "Ghoul", "Wraith"
+            public Sprite combatSprite;
+        }
+
+        [System.Serializable]
+        public struct NodeVisuals
+        {
+            public string nodeType; // e.g., "Combat", "NonCombat"
+            public Color highlightColor;
+        }
+
+        public List<CharacterVisuals> characterVisuals;
+        public List<EnemyVisuals> enemyVisuals;
+        public List<NodeVisuals> nodeVisuals = new List<NodeVisuals>
+        {
+            new NodeVisuals { nodeType = "Combat", highlightColor = new Color(0.8f, 0.2f, 0.2f) }, // Reddish for Combat
+            new NodeVisuals { nodeType = "NonCombat", highlightColor = new Color(0.2f, 0.4f, 0.8f) }, // Bluish for NonCombat
+            new NodeVisuals { nodeType = "Temple", highlightColor = Color.white } // White for Temple
         };
 
-        public Sprite GetPortrait(string id)
+        public Sprite GetPortrait(string characterID)
         {
-            return portraits.TryGetValue(id, out var sprite) ? sprite : defaultPortrait;
+            var visual = characterVisuals.Find(v => v.characterID == characterID);
+            if (visual.portrait == null)
+            {
+                Debug.LogWarning($"VisualConfig.GetPortrait: No portrait found for {characterID}");
+            }
+            return visual.portrait;
         }
 
-        public Sprite GetCombatSprite(string id)
+        public Sprite GetCombatSprite(string characterID)
         {
-            return combatSprites.TryGetValue(id, out var sprite) ? sprite : defaultCombatSprite;
+            var visual = characterVisuals.Find(v => v.characterID == characterID);
+            if (visual.combatSprite == null)
+            {
+                Debug.LogWarning($"VisualConfig.GetCombatSprite: No combat sprite found for {characterID}");
+            }
+            return visual.combatSprite;
         }
 
-        public Sprite GetEnemySprite(string id)
+        public Sprite GetEnemySprite(string enemyID)
         {
-            return enemySprites.TryGetValue(id, out var sprite) ? sprite : defaultEnemySprite;
+            var visual = enemyVisuals.Find(v => v.enemyID == enemyID);
+            return visual.combatSprite != null ? visual.combatSprite : null;
         }
 
         public Color GetNodeColor(string nodeType)
         {
-            if (nodeColors.TryGetValue(nodeType, out var color))
+            var visual = nodeVisuals.Find(v => v.nodeType == nodeType);
+            if (visual.highlightColor == default)
             {
-                return color;
+                Debug.LogWarning($"VisualConfig.GetNodeColor: No color found for nodeType {nodeType}, returning white");
+                return Color.white;
             }
-            Debug.LogWarning($"VisualConfig.GetNodeColor: No color found for nodeType {nodeType}, returning white");
-            return Color.white;
+            return visual.highlightColor;
         }
     }
 }

@@ -26,12 +26,14 @@ MonoBehaviour:
     portrait: {fileID: 21300000, guid: 5d2c293a53efae14a9921281fcc79bb3, type: 3}
     combatSprite: {fileID: -5705666034287103667, guid: 683b38f0ea3ccce4b9af3fe9b17a9ef6, type: 3}
   enemyVisuals:
-  - enemyID: Ghoul
-    combatSprite: {fileID: -8095136766332345138, guid: b8576ef16bbfcce44abfee44601e108a, type: 3}
   - enemyID: Wraith
     combatSprite: {fileID: 21300000, guid: ce0992ec2e88ef34cb61f593f64a317c, type: 3}
+  - enemyID: Ghoul
+    combatSprite: {fileID: -8095136766332345138, guid: b8576ef16bbfcce44abfee44601e108a, type: 3}
   nodeVisuals:
   - nodeType: Combat
-    highlightColor: {r: 0.8, g: 0.2, b: 0.2, a: 0.8352941}
+    highlightColor: {r: 0.8, g: 0.2, b: 0.2, a: 1}
   - nodeType: NonCombat
-    highlightColor: {r: 0.2, g: 0.4, b: 0.8, a: 0.7647059}
+    highlightColor: {r: 0.2, g: 0.4, b: 0.8, a: 1}
+  - nodeType: Temple
+    highlightColor: {r: 1, g: 1, b: 1, a: 1}

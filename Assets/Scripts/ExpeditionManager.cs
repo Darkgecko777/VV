@@ -46,7 +46,6 @@ namespace VirulentVentures
             {
                 instance = this;
                 DontDestroyOnLoad(gameObject);
-                Debug.Log("ExpeditionManager Awake in scene: " + gameObject.scene.name);
             }
             else
             {
@@ -112,7 +111,8 @@ namespace VirulentVentures
         {
             if (isTransitioning) return;
             expeditionData.Reset();
-            partyData.Reset();
+
+            // Select heroes before resetting partyData
             HeroSO[] heroPool = Resources.LoadAll<HeroSO>("SO's/Heroes");
             List<HeroSO> selectedHeroes;
             if (heroPool.Length < 4)
@@ -130,14 +130,13 @@ namespace VirulentVentures
             {
                 selectedHeroes = heroPool.OrderBy(_ => UnityEngine.Random.value).Take(4).ToList();
             }
+
+            // Reset partyData after hero selection
+            partyData.Reset();
             partyData.HeroSOs = selectedHeroes;
             expeditionData.SetNodes(nodes);
             expeditionData.SetParty(partyData);
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
-            foreach (var node in nodes)
-            {
-                Debug.Log($"Generated Node: Type = {node.NodeType}, IsCombat = {node.IsCombat}, FlavourText = '{node.FlavourText}'");
-            }
             SaveProgress();
             OnExpeditionGenerated?.Invoke();
         }
@@ -217,7 +216,6 @@ namespace VirulentVentures
                 return;
             }
             NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
-            Debug.Log($"Processing node {expeditionData.CurrentNodeIndex}: IsCombat = {node.IsCombat}, NodeType = {node.NodeType}");
             OnNodeUpdated?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             if (node.IsCombat)
             {

@@ -44,6 +44,7 @@ namespace VirulentVentures
         {
             if (partyData == null || portraitContainer == null)
             {
+                Debug.LogWarning("TempleVisualController: PartyData or portraitContainer is null, skipping update.");
                 return;
             }
 
@@ -52,6 +53,8 @@ namespace VirulentVentures
                 .OrderByDescending(h => h.PartyPosition)
                 .ToList();
 
+            Debug.Log($"TempleVisualController: Updating portraits with {heroes.Count} heroes from PartyData.");
+
             for (int i = 0; i < 4; i++)
             {
                 VisualElement portrait = new VisualElement();
@@ -59,17 +62,29 @@ namespace VirulentVentures
                 if (i < heroes.Count && heroes[i] != null && heroes[i].SO is HeroSO heroSO && heroSO.Stats != null)
                 {
                     string characterID = heroSO.Stats.Type?.Id;
+                    Debug.Log($"TempleVisualController: Hero {i + 1} ID = '{characterID ?? "null"}', Health = {heroes[i].Health}, ATK = {heroes[i].Attack}");
                     if (string.IsNullOrEmpty(characterID))
                     {
-                        portraitContainer.Add(portrait);
-                        continue;
+                        Debug.LogWarning($"TempleVisualController: Hero {i + 1} has null/empty Type.Id, skipping sprite.");
                     }
-                    Sprite sprite = visualConfig.GetPortrait(characterID); // Removed Rank param; use base portrait
-                    if (sprite != null)
+                    else
                     {
-                        portrait.style.backgroundImage = new StyleBackground(sprite);
-                        portrait.tooltip = $"Health: {heroes[i].Health}, ATK: {heroes[i].Attack}, DEF: {heroes[i].Defense}, Morale: {heroes[i].Morale}";
+                        Sprite sprite = visualConfig.GetPortrait(characterID);
+                        if (sprite != null)
+                        {
+                            portrait.style.backgroundImage = new StyleBackground(sprite);
+                            portrait.tooltip = $"Health: {heroes[i].Health}, ATK: {heroes[i].Attack}, DEF: {heroes[i].Defense}, Morale: {heroes[i].Morale}";
+                            Debug.Log($"TempleVisualController: Loaded sprite for '{characterID}'");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"TempleVisualController: No sprite found for '{characterID}' in VisualConfig.");
+                        }
                     }
+                }
+                else
+                {
+                    Debug.LogWarning($"TempleVisualController: Hero {i + 1} is null or invalid.");
                 }
                 portraitContainer.Add(portrait);
             }

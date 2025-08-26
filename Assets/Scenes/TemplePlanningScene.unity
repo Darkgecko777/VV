@@ -210,7 +210,7 @@ MonoBehaviour:
   uiDocument: {fileID: 688150216}
   planningManager: {fileID: 2139730224}
   uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
-  visualConfig: {fileID: 11400000, guid: cb0178010a945794094db5ad97354fb6, type: 2}
+  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
 --- !u!114 &688150216
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -275,7 +275,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95883095d25c4414da6058536ea3d9e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visualConfig: {fileID: 11400000, guid: cb0178010a945794094db5ad97354fb6, type: 2}
+  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   uiDocument: {fileID: 688150216}
 --- !u!4 &966045762
 Transform:
@@ -473,12 +473,13 @@ MonoBehaviour:
   expeditionData: {fileID: 11400000, guid: dbd010dc53fbedf4ead5b8a30d6b6ccd, type: 2}
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
   availableViruses: []
-  visualConfig: {fileID: 11400000, guid: cb0178010a945794094db5ad97354fb6, type: 2}
+  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   visualController: {fileID: 966045761}
   uiController: {fileID: 688150215}
   combatNodeGenerator: {fileID: 363512855}
   nonCombatNodeGenerator: {fileID: 363512854}
   combatEncounterData: {fileID: 11400000, guid: cb2f1c90e6f1dd54ea59e6686e020c98, type: 2}
+  testMode: 1
 --- !u!4 &2139730225
 Transform:
   m_ObjectHideFlags: 0

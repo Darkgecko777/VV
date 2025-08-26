@@ -15,6 +15,7 @@ namespace VirulentVentures
         [SerializeField] private CombatNodeGenerator combatNodeGenerator;
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
         [SerializeField] private EncounterData combatEncounterData;
+        [SerializeField] private bool testMode = true; // For testing: true = 3 nodes, false = 8-12 nodes
 
         private bool isExpeditionGenerated = false;
 
@@ -57,38 +58,50 @@ namespace VirulentVentures
                 return;
             }
 
-            // Generate 8-12 nodes (per vision doc)
+            // Generate nodes
             List<NodeData> nodes = new List<NodeData>();
             nodes.Add(new NodeData(new List<MonsterStats>(), "Temple", "Temple", false, "")); // Starting Temple node
-            int totalNodes = Random.Range(8, 13); // 8-12 nodes
-            int combatNodes = Mathf.FloorToInt(totalNodes * 0.4f); // ~40% combat
-            int nonCombatNodes = totalNodes - combatNodes - 1; // -1 for Temple
-            string[] biomes = { "Swamp", "Ruins", "HauntedForest" }; // From vision doc
-            int level = 1; // Starting difficulty
 
-            // Generate non-combat nodes
-            for (int i = 0; i < nonCombatNodes; i++)
+            if (testMode)
             {
-                string biome = biomes[Random.Range(0, biomes.Length)];
-                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
-                level++; // Incremental difficulty
+                // Testing: 1 non-combat + 1 combat
+                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1));
+                nodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", 1, combatEncounterData));
             }
-
-            // Generate combat nodes
-            for (int i = 0; i < combatNodes; i++)
+            else
             {
-                string biome = biomes[Random.Range(0, biomes.Length)];
-                nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
-                level++;
-            }
+                // Full mode: 8-12 nodes
+                int totalNodes = Random.Range(8, 13); // 8-12 nodes
+                int combatNodes = Mathf.FloorToInt(totalNodes * 0.4f); // ~40% combat
+                int nonCombatNodes = totalNodes - combatNodes - 1; // -1 for Temple
+                string[] biomes = { "Swamp", "Ruins", "HauntedForest" }; // From vision doc
+                int level = 1; // Starting difficulty
 
-            // Shuffle nodes (except Temple at start)
-            var shuffledNodes = new List<NodeData> { nodes[0] }; // Keep Temple first
-            var otherNodes = nodes.Skip(1).OrderBy(_ => Random.value).ToList();
-            shuffledNodes.AddRange(otherNodes);
+                // Generate non-combat nodes
+                for (int i = 0; i < nonCombatNodes; i++)
+                {
+                    string biome = biomes[Random.Range(0, biomes.Length)];
+                    nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
+                    level++; // Incremental difficulty
+                }
+
+                // Generate combat nodes
+                for (int i = 0; i < combatNodes; i++)
+                {
+                    string biome = biomes[Random.Range(0, biomes.Length)];
+                    nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
+                    level++;
+                }
+
+                // Shuffle nodes (except Temple at start)
+                var shuffledNodes = new List<NodeData> { nodes[0] }; // Keep Temple first
+                var otherNodes = nodes.Skip(1).OrderBy(_ => Random.value).ToList();
+                shuffledNodes.AddRange(otherNodes);
+                nodes = shuffledNodes;
+            }
 
             // Pass nodes to ExpeditionManager
-            ExpeditionManager.Instance.GenerateExpedition(shuffledNodes);
+            ExpeditionManager.Instance.GenerateExpedition(nodes);
             isExpeditionGenerated = expeditionData.IsValid();
 
             visualController.UpdatePartyVisuals(partyData);
