@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace VirulentVentures
@@ -7,7 +7,8 @@ namespace VirulentVentures
     {
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private CharacterPositions characterPositions;
-        [SerializeField] private Sprite backgroundSprite; // New serialized field for the background image
+        [SerializeField] private Sprite backgroundSprite; // 512x512 at 64 PPU
+        [SerializeField] private Camera mainCamera; // Reference to the main camera
 
         private List<(ICombatUnit unit, GameObject go, SpriteAnimation animator)> units;
         private bool isInitialized;
@@ -15,11 +16,17 @@ namespace VirulentVentures
 
         void Awake()
         {
-            if (visualConfig is null || characterPositions is null)
+            if (!ValidateReferences())
             {
                 isInitialized = false;
                 return;
             }
+
+            // Ensure camera is orthographic and not rotated for 2D setup
+            mainCamera.orthographic = true;
+            mainCamera.transform.rotation = Quaternion.identity;
+            mainCamera.transform.position = new Vector3(0f, 0f, -8f); // Maintain Z=-8
+
             units = new List<(ICombatUnit, GameObject, SpriteAnimation)>();
             isInitialized = true;
 
@@ -31,8 +38,10 @@ namespace VirulentVentures
                 renderer.sprite = backgroundSprite;
                 renderer.sortingLayerName = "Background";
                 renderer.sortingOrder = -10; // Behind all other elements
-                backgroundObject.transform.position = Vector3.zero; // Center or adjust as needed
-                backgroundObject.transform.localScale = new Vector3(1f, 1f, 1f); // Scale to fit screen if necessary
+
+                // Set hard-coded scale and position
+                backgroundObject.transform.localScale = new Vector3(2.4f, 1f, 1f); // Scale: 2.4X, 1Y
+                backgroundObject.transform.position = new Vector3(0f, 1f, 0f); // Position: Y=1, Z=0 for 2D
             }
             else
             {
@@ -64,7 +73,7 @@ namespace VirulentVentures
 
                 if (unit is HeroStats heroStats && heroStats.SO is HeroSO heroSO)
                 {
-                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.Stats.Type.Id); // Removed Rank param; use base sprite
+                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.Stats.Type.Id);
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
@@ -122,6 +131,21 @@ namespace VirulentVentures
             {
                 Destroy(backgroundObject);
             }
+        }
+
+        private bool ValidateReferences()
+        {
+            if (visualConfig == null || characterPositions == null || mainCamera == null || backgroundSprite == null)
+            {
+                Debug.LogError($"BattleVisualController: Missing references! VisualConfig: {visualConfig != null}, CharacterPositions: {characterPositions != null}, MainCamera: {mainCamera != null}, BackgroundSprite: {backgroundSprite != null}");
+                return false;
+            }
+            if (!mainCamera.orthographic)
+            {
+                Debug.LogWarning("BattleVisualController: MainCamera is not orthographic, forcing orthographic for 2D setup.");
+                mainCamera.orthographic = true;
+            }
+            return true;
         }
     }
 }

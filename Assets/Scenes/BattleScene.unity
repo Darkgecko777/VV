@@ -422,6 +422,7 @@ MonoBehaviour:
   visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   characterPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
   backgroundSprite: {fileID: 4771802001370111548, guid: b4ead30647ae19c4692634354b4c7d7b, type: 3}
+  mainCamera: {fileID: 519420031}
 --- !u!4 &940074843
 Transform:
   m_ObjectHideFlags: 0
