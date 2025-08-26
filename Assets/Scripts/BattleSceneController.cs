@@ -12,28 +12,40 @@ namespace VirulentVentures
         [SerializeField] private BattleVisualController visualController;
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private UIConfig uiConfig;
+        [SerializeField] private Camera battleCamera;
 
         private CombatModel combatModel;
         private ExpeditionManager expeditionManager;
 
         void Awake()
         {
-            if (!ValidateReferences()) return;
-            expeditionManager = ExpeditionManager.Instance;
-            combatModel = new CombatModel();
+            combatModel = new CombatModel(); // Initialize early, as it's not reference-dependent
 
-            var listeners = FindObjectsByType<AudioListener>(FindObjectsSortMode.None);
-            if (listeners.Length > 1)
+            // Disable other cameras
+            var allCameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            foreach (var cam in allCameras)
             {
-                for (int i = 1; i < listeners.Length; i++)
+                if (cam != battleCamera)
                 {
-                    listeners[i].enabled = false;
+                    cam.enabled = false;
                 }
             }
         }
 
         void Start()
         {
+            expeditionManager = ExpeditionManager.Instance;
+            if (expeditionManager == null)
+            {
+                expeditionManager = FindObjectOfType<ExpeditionManager>();
+                if (expeditionManager == null)
+                {
+                    Debug.LogError("BattleSceneController: Failed to find ExpeditionManager!");
+                    return;
+                }
+                Debug.LogWarning("BattleSceneController: Used FindObjectOfType for ExpeditionManager.");
+            }
+
             if (!ValidateReferences()) return;
 
             uiController.SubscribeToModel(combatModel);
@@ -53,6 +65,16 @@ namespace VirulentVentures
             if (combatModel != null)
             {
                 combatModel.OnBattleEnded -= EndBattle;
+            }
+
+            // Re-enable other cameras
+            var allCameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            foreach (var cam in allCameras)
+            {
+                if (cam != battleCamera)
+                {
+                    cam.enabled = true;
+                }
             }
         }
 
@@ -79,6 +101,8 @@ namespace VirulentVentures
                 yield break;
             }
 
+            Debug.Log($"Starting battle with {heroStats.Count} heroes and {monsterStats.Count} monsters");
+
             combatModel.IsBattleActive = true;
             combatModel.InitializeUnits(heroStats, monsterStats);
             visualController.InitializeUnits(combatModel.Units);
@@ -95,7 +119,7 @@ namespace VirulentVentures
                 }
 
                 var unitList = combatModel.Units.Select(u => u.unit).ToList();
-                var aliveUnits = unitList.Where(u => u.Health > 0).ToList(); // Replaced FindAll with Where
+                var aliveUnits = unitList.Where(u => u.Health > 0).ToList();
                 if (aliveUnits.Count == 0)
                 {
                     combatModel.EndBattle();
@@ -105,8 +129,8 @@ namespace VirulentVentures
                 foreach (var attacker in aliveUnits)
                 {
                     var targets = attacker is HeroStats
-                        ? combatModel.Units.Select(u => u.unit).Where(u => u is MonsterStats).ToList() // Replaced FindAll with Where
-                        : combatModel.Units.Select(u => u.unit).Where(u => u is HeroStats).ToList(); // Replaced FindAll with Where
+                        ? combatModel.Units.Select(u => u.unit).Where(u => u is MonsterStats).ToList()
+                        : combatModel.Units.Select(u => u.unit).Where(u => u is HeroStats).ToList();
                     var target = GetRandomAliveTarget(targets);
                     if (target == null)
                     {
@@ -169,7 +193,7 @@ namespace VirulentVentures
 
         private ICombatUnit GetRandomAliveTarget(List<ICombatUnit> targets)
         {
-            var aliveTargets = targets.Where(t => t.Health > 0).ToList(); // Replaced FindAll with Where
+            var aliveTargets = targets.Where(t => t.Health > 0).ToList();
             return aliveTargets.Count > 0 ? aliveTargets[Random.Range(0, aliveTargets.Count)] : null;
         }
 
@@ -206,8 +230,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (combatConfig == null || uiController == null || visualController == null || expeditionManager == null || visualConfig == null || uiConfig == null)
+            if (combatConfig == null || uiController == null || visualController == null || expeditionManager == null || visualConfig == null || uiConfig == null || battleCamera == null)
             {
+                Debug.LogError($"BattleSceneController: Missing references! CombatConfig: {combatConfig != null}, UIController: {uiController != null}, VisualController: {visualController != null}, ExpeditionManager: {expeditionManager != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, BattleCamera: {battleCamera != null}");
                 return false;
             }
             return true;

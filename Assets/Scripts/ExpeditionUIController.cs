@@ -15,13 +15,11 @@ namespace VirulentVentures
         private VisualElement popoutContainer;
         private Label flavourText;
         private Button continueButton;
-        private Button advanceNodeButton;
         private VisualElement portraitContainer;
         private VisualElement fadeOverlay;
         private float fadeDuration = 0.5f;
 
         public event Action OnContinueClicked;
-        public event Action OnAdvanceClicked;
 
         void Awake()
         {
@@ -30,13 +28,12 @@ namespace VirulentVentures
             root = uiDocument.rootVisualElement;
             popoutContainer = root.Q<VisualElement>("PopoutContainer");
             flavourText = popoutContainer?.Q<Label>("FlavourText");
-            continueButton = popoutContainer?.Q<Button>("ContinueButton");
-            advanceNodeButton = root.Q<Button>("AdvanceNodeButton");
+            continueButton = root.Q<Button>("ContinueButton");
             fadeOverlay = root.Q<VisualElement>("FadeOverlay");
 
-            if (popoutContainer == null || flavourText == null || continueButton == null || advanceNodeButton == null || fadeOverlay == null)
+            if (popoutContainer == null || flavourText == null || continueButton == null || fadeOverlay == null)
             {
-                Debug.LogError($"ExpeditionUIController: Missing UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, AdvanceNodeButton: {advanceNodeButton != null}, FadeOverlay: {fadeOverlay != null}");
+                Debug.LogError($"ExpeditionUIController: Missing UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, FadeOverlay: {fadeOverlay != null}");
                 return;
             }
         }
@@ -56,35 +53,23 @@ namespace VirulentVentures
             flavourText.style.unityFont = uiConfig.PixelFont;
             continueButton.style.color = uiConfig.TextColor;
             continueButton.style.unityFont = uiConfig.PixelFont;
-            advanceNodeButton.style.color = uiConfig.TextColor;
-            advanceNodeButton.style.unityFont = uiConfig.PixelFont;
 
-            // Ensure buttons and overlay are clickable/ignorable
+            // Ensure button and overlay are clickable/ignorable
             continueButton.pickingMode = PickingMode.Position;
-            advanceNodeButton.pickingMode = PickingMode.Position;
             fadeOverlay.pickingMode = PickingMode.Ignore;
             popoutContainer.style.display = DisplayStyle.None;
             fadeOverlay.style.display = DisplayStyle.None;
 
-            // Bind button events
+            // Bind button event
             continueButton.clicked += () =>
             {
-                Debug.Log("ExpeditionUIController: ContinueButton clicked");
                 popoutContainer.style.display = DisplayStyle.None;
                 OnContinueClicked?.Invoke();
             };
-            advanceNodeButton.clicked += () =>
-            {
-                Debug.Log("ExpeditionUIController: AdvanceNodeButton clicked");
-                OnAdvanceClicked?.Invoke();
-            };
-
-            // Log button states
-            Debug.Log($"ExpeditionUIController: ContinueButton enabled = {continueButton.enabledInHierarchy}, visible = {continueButton.visible}");
-            Debug.Log($"ExpeditionUIController: AdvanceNodeButton enabled = {advanceNodeButton.enabledInHierarchy}, visible = {advanceNodeButton.visible}");
 
             // Subscribe to ExpeditionManager events
             ExpeditionManager.Instance.OnExpeditionGenerated += UpdateUI;
+            ExpeditionManager.Instance.OnNodeUpdated += (nodes, index) => UpdateUI();
             ExpeditionManager.Instance.OnCombatStarted += FadeToCombat;
 
             UpdateUI();
@@ -95,15 +80,12 @@ namespace VirulentVentures
             if (ExpeditionManager.Instance != null)
             {
                 ExpeditionManager.Instance.OnExpeditionGenerated -= UpdateUI;
+                ExpeditionManager.Instance.OnNodeUpdated -= (nodes, index) => UpdateUI();
                 ExpeditionManager.Instance.OnCombatStarted -= FadeToCombat;
             }
             if (continueButton != null)
             {
                 continueButton.clicked -= null;
-            }
-            if (advanceNodeButton != null)
-            {
-                advanceNodeButton.clicked -= null;
             }
         }
 
@@ -145,13 +127,23 @@ namespace VirulentVentures
             if (expeditionData == null || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count || popoutContainer == null || flavourText == null)
             {
                 popoutContainer.style.display = DisplayStyle.None;
+                continueButton.style.display = DisplayStyle.Flex;
+                continueButton.text = "Continue";
                 return;
             }
 
             NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
-            if (node.NodeType == "Temple" || node.IsCombat)
+            if (node.NodeType == "Temple")
             {
                 popoutContainer.style.display = DisplayStyle.None;
+                continueButton.style.display = DisplayStyle.Flex;
+                continueButton.text = "Continue";
+            }
+            else if (node.IsCombat)
+            {
+                popoutContainer.style.display = DisplayStyle.None;
+                continueButton.style.display = DisplayStyle.Flex;
+                continueButton.text = "Continue";
             }
             else
             {
@@ -159,6 +151,8 @@ namespace VirulentVentures
                 flavourText.style.color = uiConfig.TextColor;
                 flavourText.style.unityFont = uiConfig.PixelFont;
                 popoutContainer.style.display = DisplayStyle.Flex;
+                continueButton.style.display = DisplayStyle.Flex;
+                continueButton.text = "Continue";
             }
         }
 

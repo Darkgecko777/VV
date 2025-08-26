@@ -7,9 +7,11 @@ namespace VirulentVentures
     {
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private CharacterPositions characterPositions;
+        [SerializeField] private Sprite backgroundSprite; // New serialized field for the background image
 
         private List<(ICombatUnit unit, GameObject go, SpriteAnimation animator)> units;
         private bool isInitialized;
+        private GameObject backgroundObject;
 
         void Awake()
         {
@@ -20,6 +22,22 @@ namespace VirulentVentures
             }
             units = new List<(ICombatUnit, GameObject, SpriteAnimation)>();
             isInitialized = true;
+
+            // Create background programmatically
+            if (backgroundSprite != null)
+            {
+                backgroundObject = new GameObject("BattleBackground");
+                var renderer = backgroundObject.AddComponent<SpriteRenderer>();
+                renderer.sprite = backgroundSprite;
+                renderer.sortingLayerName = "Background";
+                renderer.sortingOrder = -10; // Behind all other elements
+                backgroundObject.transform.position = Vector3.zero; // Center or adjust as needed
+                backgroundObject.transform.localScale = new Vector3(1f, 1f, 1f); // Scale to fit screen if necessary
+            }
+            else
+            {
+                Debug.LogWarning("BattleVisualController: No backgroundSprite assigned!");
+            }
         }
 
         public void InitializeUnits(List<(ICombatUnit unit, GameObject go)> combatUnits)
@@ -95,6 +113,14 @@ namespace VirulentVentures
             if (unitEntry.animator != null)
             {
                 unitEntry.animator.Jiggle(unit is HeroStats);
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (backgroundObject != null)
+            {
+                Destroy(backgroundObject);
             }
         }
     }

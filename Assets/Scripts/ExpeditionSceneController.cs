@@ -20,7 +20,6 @@ namespace VirulentVentures
         {
             // Subscribe to UIController events
             uiController.OnContinueClicked += HandleContinueClicked;
-            uiController.OnAdvanceClicked += HandleAdvanceClicked;
             ExpeditionManager.Instance.OnExpeditionGenerated += UpdateScene;
             ExpeditionManager.Instance.OnCombatStarted += () => { /* Optional: Handle combat start visuals/logic */ };
 
@@ -33,7 +32,6 @@ namespace VirulentVentures
             if (uiController != null)
             {
                 uiController.OnContinueClicked -= HandleContinueClicked;
-                uiController.OnAdvanceClicked -= HandleAdvanceClicked;
             }
             if (ExpeditionManager.Instance != null)
             {
@@ -44,26 +42,11 @@ namespace VirulentVentures
 
         private void HandleContinueClicked()
         {
-            Debug.Log("ExpeditionSceneController: Continue button clicked, triggering ExpeditionManager.OnContinueClicked");
             ExpeditionManager.Instance.OnContinueClicked();
-        }
-
-        private void HandleAdvanceClicked()
-        {
-            Debug.Log("ExpeditionSceneController: AdvanceNode button clicked");
-            if (expeditionData != null && expeditionData.CurrentNodeIndex < expeditionData.NodeData.Count - 1)
-            {
-                ExpeditionManager.Instance.ProcessCurrentNode();
-            }
-            else
-            {
-                Debug.LogWarning("ExpeditionSceneController: Cannot advance, invalid node index or expedition data!");
-            }
         }
 
         private void UpdateScene()
         {
-            Debug.Log("ExpeditionSceneController: Updating scene with current expedition data");
             uiController.UpdateUI();
         }
 

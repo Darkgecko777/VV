@@ -27,6 +27,31 @@ namespace VirulentVentures
             if (!ValidateReferences()) return;
 
             root = uiDocument.rootVisualElement;
+            if (root == null)
+            {
+                Debug.LogWarning("BattleUIController: rootVisualElement is null in Awake, will retry in Start.");
+                return;
+            }
+
+            InitializeUIElements();
+        }
+
+        void Start()
+        {
+            if (root == null && uiDocument != null)
+            {
+                root = uiDocument.rootVisualElement;
+                if (root == null)
+                {
+                    Debug.LogError("BattleUIController: Failed to initialize rootVisualElement in Start!");
+                    return;
+                }
+                InitializeUIElements();
+            }
+        }
+
+        private void InitializeUIElements()
+        {
             heroesContainer = root.Q<VisualElement>("HeroesContainer");
             monstersContainer = root.Q<VisualElement>("MonstersContainer");
             combatLog = root.Q<Label>("CombatLog");
@@ -38,11 +63,6 @@ namespace VirulentVentures
                 Debug.LogError($"BattleUIController: Missing UI elements! HeroesContainer: {heroesContainer != null}, MonstersContainer: {monstersContainer != null}, CombatLog: {combatLog != null}, ContinueButton: {continueButton != null}");
                 return;
             }
-        }
-
-        public void InitializeUI(List<(ICombatUnit unit, GameObject go)> units)
-        {
-            if (!ValidateReferences()) return;
 
             // Setup fade panel
             fadePanel.style.backgroundColor = uiConfig.BogRotColor;
@@ -70,6 +90,11 @@ namespace VirulentVentures
                 Debug.Log("BattleUIController: ContinueButton clicked");
                 OnContinueClicked?.Invoke();
             };
+        }
+
+        public void InitializeUI(List<(ICombatUnit unit, GameObject go)> units)
+        {
+            if (!ValidateReferences() || root == null) return;
 
             // Initialize unit panels
             unitPanels = new Dictionary<ICombatUnit, VisualElement>();
@@ -86,20 +111,18 @@ namespace VirulentVentures
                 panel.Add(healthBar);
                 var statLabel = new Label { text = $"{unit.Type.Id}\nHealth: {unit.Health}" };
                 statLabel.AddToClassList("stat-label");
-                statLabel.style.color = uiConfig.TextColor;
-                statLabel.style.unityFont = uiConfig.PixelFont;
                 panel.Add(statLabel);
+                if (unit is HeroStats)
+                    heroesContainer.Add(panel);
+                else
+                    monstersContainer.Add(panel);
                 unitPanels[unit] = panel;
-                if (unit is HeroStats) heroesContainer.Add(panel);
-                else monstersContainer.Add(panel);
             }
-
-            Debug.Log($"BattleUIController: Initialized {unitPanels.Count} unit panels");
         }
 
         public void SubscribeToModel(CombatModel model)
         {
-            if (!ValidateReferences()) return;
+            if (root == null) return; // Skip if UI not initialized
             model.OnUnitUpdated += UpdateUnitPanel;
             model.OnDamagePopup += ShowDamagePopup;
             model.OnLogMessage += LogMessage;
@@ -193,9 +216,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || uiConfig == null || root == null)
+            if (uiDocument == null || uiConfig == null)
             {
-                Debug.LogError($"BattleUIController: Missing critical references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, Root: {root != null}");
+                Debug.LogError($"BattleUIController: Missing critical references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}");
                 return false;
             }
             return true;

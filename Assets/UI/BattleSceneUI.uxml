@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="Assets/UI/BattleSceneUI.uss" />
-    <ui:VisualElement name="BattleUI_Root" style="position: absolute; top: 540px; width: 1920px; height: 540px;">
+    <ui:VisualElement name="BattleUI_Root" style="position: absolute; top: 0px; width: 1920px; height: 1080px;"> <!-- Adjusted top to 0 and height to 1080 for full screen -->
         <ui:VisualElement name="HeroesContainer" style="position: absolute; left: 10px; top: 10px; width: 630px; height: 520px; flex-direction: column;">
             <!-- Dynamic hero panels populated by BattleUIController -->
         </ui:VisualElement>
