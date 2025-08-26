@@ -30,6 +30,18 @@ namespace VirulentVentures
             units = new List<(ICombatUnit, GameObject, SpriteAnimation)>();
             isInitialized = true;
 
+            // Log CharacterPositions arrays for debugging
+            Debug.Log($"BattleVisualController: heroPositions.Length = {characterPositions.heroPositions.Length}");
+            for (int i = 0; i < characterPositions.heroPositions.Length; i++)
+            {
+                Debug.Log($"BattleVisualController: heroPositions[{i}] = {characterPositions.heroPositions[i]}");
+            }
+            Debug.Log($"BattleVisualController: monsterPositions.Length = {characterPositions.monsterPositions.Length}");
+            for (int i = 0; i < characterPositions.monsterPositions.Length; i++)
+            {
+                Debug.Log($"BattleVisualController: monsterPositions[{i}] = {characterPositions.monsterPositions[i]}");
+            }
+
             // Create background programmatically
             if (backgroundSprite != null)
             {
@@ -78,7 +90,9 @@ namespace VirulentVentures
                     {
                         renderer.sprite = sprite;
                     }
-                    unitObj.transform.position = heroIndex < heroPositions.Length ? heroPositions[heroIndex] : Vector3.zero;
+                    Vector3 position = heroIndex < heroPositions.Length ? heroPositions[heroIndex] : Vector3.zero;
+                    unitObj.transform.position = position;
+                    Debug.Log($"BattleVisualController: Placing hero {unit.Type.Id} at index {heroIndex} with position {position}");
                     heroIndex++;
                 }
                 else if (unit is MonsterStats monsterStats && monsterStats.SO is MonsterSO monsterSO)
@@ -88,7 +102,9 @@ namespace VirulentVentures
                     {
                         renderer.sprite = sprite;
                     }
-                    unitObj.transform.position = monsterIndex < monsterPositions.Length ? monsterPositions[monsterIndex] : Vector3.zero;
+                    Vector3 position = monsterIndex < monsterPositions.Length ? monsterPositions[monsterIndex] : Vector3.zero;
+                    unitObj.transform.position = position;
+                    Debug.Log($"BattleVisualController: Placing monster {unit.Type.Id} at index {monsterIndex} with position {position}");
                     monsterIndex++;
                 }
 

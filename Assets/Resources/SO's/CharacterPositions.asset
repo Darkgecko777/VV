@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: CharacterPositions
   m_EditorClassIdentifier: 
   heroPositions:
-  - {x: -2, y: 0, z: 0}
   - {x: -1, y: 0, z: 0}
   - {x: -3, y: 0, z: 0}
-  - {x: -4, y: 0, z: 0}
+  - {x: -5, y: 0, z: 0}
+  - {x: -7, y: 0, z: 0}
   monsterPositions:
   - {x: 1.5, y: 0, z: 0}
   - {x: 3.5, y: 0, z: 0}
