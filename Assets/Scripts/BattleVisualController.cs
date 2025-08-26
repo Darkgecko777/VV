@@ -37,8 +37,8 @@ namespace VirulentVentures
                 renderer.sortingLayerName = "Background";
                 renderer.sortingOrder = -10;
 
-                backgroundObject.transform.localScale = new Vector3(2.4f, 1f, 1f);
-                backgroundObject.transform.position = new Vector3(0f, 1f, 0f);
+                backgroundObject.transform.localScale = new Vector3(2.25f, 0.625f, 1f); // Fit top half (18x5 units, 512x512px at 64 PPU)
+                backgroundObject.transform.position = new Vector3(0f, 0f, 0f); // Center at ground level
             }
             else
             {
@@ -102,7 +102,7 @@ namespace VirulentVentures
             model.OnDamagePopup += TriggerUnitAnimation;
         }
 
-        public void UpdateUnitVisual(ICombatUnit unit, DisplayStats displayStats) // Added DisplayStats param to match event
+        public void UpdateUnitVisual(ICombatUnit unit, DisplayStats displayStats)
         {
             if (!isInitialized) return;
             var unitEntry = units.Find(u => u.unit == unit);
