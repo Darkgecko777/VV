@@ -6,12 +6,12 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "EncounterData", menuName = "VirulentVentures/EncounterData", order = 10)]
     public class EncounterData : ScriptableObject
     {
-        [SerializeField] private List<MonsterSO> monsterSOs = new List<MonsterSO>();
+        [SerializeField] private List<string> monsterIds = new List<string>(); // Changed from List<MonsterSO>
         [SerializeField] private bool isCombatNode = true; // Always true for prototype
         [SerializeField] private CharacterPositions positions;
 
         public bool IsCombatNode => isCombatNode;
-        public CharacterPositions Positions { get => positions; set => positions = value; } // Added for access
+        public CharacterPositions Positions { get => positions; set => positions = value; }
 
         private void OnEnable()
         {
@@ -25,48 +25,48 @@ namespace VirulentVentures
         {
             List<MonsterStats> monsters = new List<MonsterStats>();
 
-            if (monsterSOs == null || monsterSOs.Count == 0 || monsterSOs.Count > 4)
+            if (monsterIds == null || monsterIds.Count == 0 || monsterIds.Count > 4)
             {
-                Debug.LogError($"EncounterData: Invalid monster setup! MonsterSOs count: {monsterSOs?.Count ?? 0}, must be 1-4");
+                Debug.LogError($"EncounterData: Invalid monster setup! MonsterIds count: {monsterIds?.Count ?? 0}, must be 1-4");
                 return monsters;
             }
 
-            if (positions == null || positions.monsterPositions == null || positions.monsterPositions.Length < monsterSOs.Count)
+            if (positions == null || positions.monsterPositions == null || positions.monsterPositions.Length < monsterIds.Count)
             {
-                Debug.LogError($"EncounterData: Invalid monster positions! Positions: {positions != null}, Length: {positions?.monsterPositions?.Length ?? 0}, Required: {monsterSOs.Count}");
+                Debug.LogError($"EncounterData: Invalid monster positions! Positions: {positions != null}, Length: {positions?.monsterPositions?.Length ?? 0}, Required: {monsterIds.Count}");
                 return monsters;
             }
 
-            for (int i = 0; i < monsterSOs.Count; i++)
+            for (int i = 0; i < monsterIds.Count; i++)
             {
-                if (monsterSOs[i] == null)
+                if (string.IsNullOrEmpty(monsterIds[i]))
                 {
-                    Debug.LogWarning($"EncounterData: Null MonsterSO at index {i}");
+                    Debug.LogWarning($"EncounterData: Empty MonsterId at index {i}");
                     continue;
                 }
 
-                GameObject monsterObj = new GameObject($"Monster{i + 1}_{monsterSOs[i].Stats.Type.Id}");
+                var monsterData = CharacterLibrary.GetMonsterData(monsterIds[i]);
+                GameObject monsterObj = new GameObject($"Monster{i + 1}_{monsterData.Id}");
                 monsterObj.transform.position = positions.monsterPositions[i];
                 var renderer = monsterObj.AddComponent<SpriteRenderer>();
-                //renderer.sprite = monsterSOs[i].Sprite;
+                // Sprite assignment handled by BattleVisualController
                 renderer.sortingLayerName = "Characters";
                 renderer.transform.localScale = new Vector3(2f, 2f, 1f);
-                var monsterStats = new MonsterStats(monsterSOs[i], positions.monsterPositions[i]);
-                monsterSOs[i].ApplyStats(monsterStats);
+                var monsterStats = new MonsterStats(monsterIds[i], positions.monsterPositions[i]);
                 monsters.Add(monsterStats);
             }
 
             return monsters;
         }
 
-        public void InitializeEncounter(List<MonsterSO> monsterSOs)
+        public void InitializeEncounter(List<string> monsterIds)
         {
-            if (monsterSOs == null || monsterSOs.Count < 1 || monsterSOs.Count > 4)
+            if (monsterIds == null || monsterIds.Count < 1 || monsterIds.Count > 4)
             {
-                Debug.LogError($"EncounterData: Invalid monsterSOs count for initialization: {monsterSOs?.Count ?? 0}, must be 1-4");
+                Debug.LogError($"EncounterData: Invalid monsterIds count for initialization: {monsterIds?.Count ?? 0}, must be 1-4");
                 return;
             }
-            this.monsterSOs = monsterSOs;
+            this.monsterIds = monsterIds;
         }
     }
 }

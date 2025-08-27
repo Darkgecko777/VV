@@ -105,14 +105,19 @@ namespace VirulentVentures
                         ? unitList.Where(u => u is MonsterStats && u.Health > 0).ToList()
                         : unitList.Where(u => u is HeroStats && u.Health > 0).ToList();
 
-                    List<string> abilityIds = new List<string>();
-                    if (attacker is HeroStats hero && hero.SO is HeroSO heroSO)
+                    // Get ability IDs from CharacterLibrary
+                    List<string> abilityIds;
+                    if (attacker is HeroStats hero)
                     {
-                        abilityIds = heroSO.AbilityIds;
+                        abilityIds = CharacterLibrary.GetHeroData(hero.GetDisplayStats().name).AbilityIds;
                     }
-                    else if (attacker is MonsterStats monster && monster.SO is MonsterSO monsterSO)
+                    else if (attacker is MonsterStats monster)
                     {
-                        abilityIds = monsterSO.AbilityIds;
+                        abilityIds = CharacterLibrary.GetMonsterData(monster.GetDisplayStats().name).AbilityIds;
+                    }
+                    else
+                    {
+                        abilityIds = new List<string> { "BasicAttack" };
                     }
 
                     var abilityId = abilityIds.Count > 0 ? abilityIds[Random.Range(0, abilityIds.Count)] : "BasicAttack";
@@ -131,43 +136,45 @@ namespace VirulentVentures
                     // Evasion check
                     if (Random.value <= target.Evasion / 100f)
                     {
-                        combatModel.LogMessage($"{target.Type.Id} dodges {attacker.Type.Id}'s attack!", uiConfig.TextColor);
+                        combatModel.LogMessage($"{target.GetDisplayStats().name} dodges {attacker.GetDisplayStats().name}'s attack!", uiConfig.TextColor);
                         continue;
                     }
 
                     int damage = attacker.Attack;
                     bool killed = false;
-                    if (target is HeroStats targetHero && targetHero.SO is HeroSO targetHeroSO)
+                    if (target is HeroStats targetHero)
                     {
-                        killed = targetHeroSO.TakeDamage(ref targetHero, damage);
+                        targetHero.Health = Mathf.Max(targetHero.Health - Mathf.Max(damage - targetHero.Defense, 0), 0);
+                        killed = targetHero.Health <= 0;
                     }
-                    else if (target is MonsterStats targetMonster && targetMonster.SO is MonsterSO targetMonsterSO)
+                    else if (target is MonsterStats targetMonster)
                     {
-                        killed = targetMonsterSO.TakeDamage(ref targetMonster, damage);
+                        targetMonster.Health = Mathf.Max(targetMonster.Health - Mathf.Max(damage - targetMonster.Defense, 0), 0);
+                        killed = targetMonster.Health <= 0;
                     }
 
                     if (killed)
                     {
-                        combatModel.LogMessage($"{attacker.Type.Id} kills {target.Type.Id}!", uiConfig.BogRotColor);
+                        combatModel.LogMessage($"{attacker.GetDisplayStats().name} kills {target.GetDisplayStats().name}!", uiConfig.BogRotColor);
                         combatModel.UpdateUnit(target);
                     }
                     else
                     {
-                        combatModel.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage!", uiConfig.TextColor);
+                        combatModel.LogMessage($"{attacker.GetDisplayStats().name} hits {target.GetDisplayStats().name} for {damage} damage!", uiConfig.TextColor);
                         combatModel.UpdateUnit(target, damage.ToString());
                     }
 
                     // Additional attacks based on Speed
                     bool extraAttack = false;
-                    if (attacker.Speed >= 7) // Speed 7-8: 2 attacks/round
+                    if (attacker.Speed >= combatConfig.SpeedTwoAttacksThreshold) // Speed 7-8: 2 attacks/round
                     {
                         extraAttack = true;
                     }
-                    else if (attacker.Speed >= 5 && combatModel.RoundNumber % 2 == 0) // Speed 5-6: 3 attacks/2 rounds
+                    else if (attacker.Speed >= combatConfig.SpeedThreePerTwoThreshold && combatModel.RoundNumber % 2 == 0) // Speed 5-6: 3 attacks/2 rounds
                     {
                         extraAttack = true;
                     }
-                    else if (attacker.Speed <= 2 && combatModel.RoundNumber % 2 == 1) // Speed 1-2: 1 attack/every other round
+                    else if (attacker.Speed <= combatConfig.SpeedOnePerTwoThreshold && combatModel.RoundNumber % 2 == 1) // Speed 1-2: 1 attack/every other round
                     {
                         continue; // Skip attack in even rounds
                     }
@@ -179,34 +186,42 @@ namespace VirulentVentures
 
                         if (Random.value <= target.Evasion / 100f)
                         {
-                            combatModel.LogMessage($"{target.Type.Id} dodges {attacker.Type.Id}'s extra attack!", uiConfig.TextColor);
+                            combatModel.LogMessage($"{target.GetDisplayStats().name} dodges {attacker.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
                             continue;
                         }
 
                         damage = attacker.Attack;
                         killed = false;
-                        if (target is HeroStats targetHero2 && targetHero2.SO is HeroSO targetHeroSO2)
+                        if (target is HeroStats targetHero2)
                         {
-                            killed = targetHeroSO2.TakeDamage(ref targetHero2, damage);
+                            targetHero2.Health = Mathf.Max(targetHero2.Health - Mathf.Max(damage - targetHero2.Defense, 0), 0);
+                            killed = targetHero2.Health <= 0;
                         }
-                        else if (target is MonsterStats targetMonster2 && targetMonster2.SO is MonsterSO targetMonsterSO2)
+                        else if (target is MonsterStats targetMonster2)
                         {
-                            killed = targetMonsterSO2.TakeDamage(ref targetMonster2, damage);
+                            targetMonster2.Health = Mathf.Max(targetMonster2.Health - Mathf.Max(damage - targetMonster2.Defense, 0), 0);
+                            killed = targetMonster2.Health <= 0;
                         }
 
                         if (killed)
                         {
-                            combatModel.LogMessage($"{attacker.Type.Id} kills {target.Type.Id} with extra attack!", uiConfig.BogRotColor);
+                            combatModel.LogMessage($"{attacker.GetDisplayStats().name} kills {target.GetDisplayStats().name} with extra attack!", uiConfig.BogRotColor);
                             combatModel.UpdateUnit(target);
                         }
                         else
                         {
-                            combatModel.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage with extra attack!", uiConfig.TextColor);
+                            combatModel.LogMessage($"{attacker.GetDisplayStats().name} hits {target.GetDisplayStats().name} for {damage} damage with extra attack!", uiConfig.TextColor);
                             combatModel.UpdateUnit(target, damage.ToString());
                         }
                     }
 
                     yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                }
+
+                if (combatModel.RoundNumber >= combatConfig.MaxRounds)
+                {
+                    combatModel.EndBattle();
+                    yield break;
                 }
 
                 combatModel.IncrementRound();
@@ -221,7 +236,7 @@ namespace VirulentVentures
 
         private bool CheckRetreat(List<ICombatUnit> characters)
         {
-            return characters.OfType<HeroStats>().Any(h => h.Morale <= (combatConfig?.RetreatMoraleThreshold ?? 20));
+            return characters.OfType<HeroStats>().Any(h => h.Morale <= combatConfig.RetreatMoraleThreshold);
         }
 
         public void SetCombatSpeed(float speed)

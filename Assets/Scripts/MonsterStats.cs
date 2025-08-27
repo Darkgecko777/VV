@@ -6,7 +6,7 @@ namespace VirulentVentures
     [Serializable]
     public class MonsterStats : ICombatUnit
     {
-        [SerializeField] private MonsterSO _monsterSO;
+        [SerializeField] private string _monsterId;
         [SerializeField] private int _health;
         [SerializeField] private int _maxHealth;
         [SerializeField] private int _attack;
@@ -16,27 +16,22 @@ namespace VirulentVentures
         [SerializeField] private Vector3 _position;
         [SerializeField] private string _abilityId;
 
-        public MonsterStats(MonsterSO monsterSO, Vector3 position)
+        public MonsterStats(string monsterId, Vector3 position)
         {
-            if (monsterSO == null || monsterSO.Stats == null || monsterSO.CharacterType == null || string.IsNullOrEmpty(monsterSO.CharacterType.Id))
-            {
-                Debug.LogWarning($"MonsterStats: Cannot initialize for {monsterSO?.CharacterType?.Id ?? "unknown"} - monsterSO or stats invalid");
-                return;
-            }
-            _monsterSO = monsterSO;
+            var data = CharacterLibrary.GetMonsterData(monsterId);
+            _monsterId = data.Id;
+            _health = data.Health;
+            _maxHealth = data.MaxHealth;
+            _attack = data.Attack;
+            _defense = data.Defense;
+            _speed = data.Speed;
+            _evasion = data.Evasion;
             _position = position;
-            var stats = monsterSO.Stats;
-            _health = stats.Health;
-            _maxHealth = stats.MaxHealth;
-            _attack = stats.Attack;
-            _defense = stats.Defense;
-            _speed = stats.Speed;
-            _evasion = stats.Evasion;
-            _abilityId = monsterSO.AbilityIds.Count > 0 ? monsterSO.AbilityIds[0] : "BasicAttack";
+            _abilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
         }
 
-        public ScriptableObject SO => _monsterSO;
-        public CharacterTypeSO Type => _monsterSO?.Stats?.Type;
+        public ScriptableObject SO => null; // No SO used
+        public CharacterTypeSO Type => null; // Replace with string ID
         public int Speed { get => _speed; set => _speed = Mathf.Clamp(value, 1, 8); }
         public int Health { get => _health; set => _health = Mathf.Max(0, value); }
         public int MaxHealth { get => _maxHealth; set => _maxHealth = value; }
@@ -52,14 +47,14 @@ namespace VirulentVentures
         public DisplayStats GetDisplayStats()
         {
             return new DisplayStats(
-                name: Type?.Id ?? "Unknown",
+                name: _monsterId,
                 health: Health,
                 maxHealth: MaxHealth,
                 attack: Attack,
                 defense: Defense,
                 speed: Speed,
                 evasion: Evasion,
-                morale: null, // Monsters don't use Morale
+                morale: null,
                 maxMorale: null,
                 isHero: false
             );

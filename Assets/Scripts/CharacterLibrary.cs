@@ -1,0 +1,216 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace VirulentVentures
+{
+    public static class CharacterLibrary
+    {
+        public struct CharacterData
+        {
+            public string Id;
+            public int Health;
+            public int MaxHealth;
+            public int Attack;
+            public int Defense;
+            public int Speed;
+            public int Evasion;
+            public int Morale; // 0 for monsters
+            public int MaxMorale; // 0 for monsters
+            public List<string> AbilityIds;
+            public bool CanBeCultist; // For heroes
+            public int PartyPosition; // For heroes, 1-7
+        }
+
+        private static readonly Dictionary<string, CharacterData> HeroData = new Dictionary<string, CharacterData>
+        {
+            {
+                "Fighter", new CharacterData
+                {
+                    Id = "Fighter",
+                    Health = 80,
+                    MaxHealth = 100,
+                    Attack = 25,
+                    Defense = 15,
+                    Speed = 5,
+                    Evasion = 20,
+                    Morale = 100,
+                    MaxMorale = 100,
+                    AbilityIds = new List<string> { "BasicAttack", "FighterAttack" },
+                    CanBeCultist = true,
+                    PartyPosition = 1
+                }
+            },
+            {
+                "Healer", new CharacterData
+                {
+                    Id = "Healer",
+                    Health = 60,
+                    MaxHealth = 80,
+                    Attack = 10,
+                    Defense = 5,
+                    Speed = 3,
+                    Evasion = 30,
+                    Morale = 100,
+                    MaxMorale = 100,
+                    AbilityIds = new List<string> { "BasicAttack", "HealerHeal" },
+                    CanBeCultist = false,
+                    PartyPosition = 2
+                }
+            },
+            {
+                "Scout", new CharacterData
+                {
+                    Id = "Scout",
+                    Health = 65,
+                    MaxHealth = 85,
+                    Attack = 15,
+                    Defense = 10,
+                    Speed = 6,
+                    Evasion = 40,
+                    Morale = 100,
+                    MaxMorale = 100,
+                    AbilityIds = new List<string> { "BasicAttack", "ScoutDefend" },
+                    CanBeCultist = true,
+                    PartyPosition = 3
+                }
+            },
+            {
+                "TreasureHunter", new CharacterData
+                {
+                    Id = "TreasureHunter",
+                    Health = 55,
+                    MaxHealth = 70,
+                    Attack = 12,
+                    Defense = 8,
+                    Speed = 4,
+                    Evasion = 35,
+                    Morale = 100,
+                    MaxMorale = 100,
+                    AbilityIds = new List<string> { "BasicAttack", "TreasureHunterBoost" },
+                    CanBeCultist = false,
+                    PartyPosition = 4
+                }
+            }
+        };
+
+        private static readonly Dictionary<string, CharacterData> MonsterData = new Dictionary<string, CharacterData>
+        {
+            {
+                "Ghoul", new CharacterData
+                {
+                    Id = "Ghoul",
+                    Health = 70,
+                    MaxHealth = 90,
+                    Attack = 20,
+                    Defense = 10,
+                    Speed = 4,
+                    Evasion = 15,
+                    Morale = 0,
+                    MaxMorale = 0,
+                    AbilityIds = new List<string> { "BasicAttack", "GhoulClaw", "GhoulRend" },
+                    CanBeCultist = false,
+                    PartyPosition = 0
+                }
+            },
+            {
+                "Wraith", new CharacterData
+                {
+                    Id = "Wraith",
+                    Health = 50,
+                    MaxHealth = 60,
+                    Attack = 15,
+                    Defense = 5,
+                    Speed = 6,
+                    Evasion = 25,
+                    Morale = 0,
+                    MaxMorale = 0,
+                    AbilityIds = new List<string> { "BasicAttack", "WraithStrike" },
+                    CanBeCultist = false,
+                    PartyPosition = 0
+                }
+            },
+            {
+                "Skeleton", new CharacterData
+                {
+                    Id = "Skeleton",
+                    Health = 60,
+                    MaxHealth = 80,
+                    Attack = 18,
+                    Defense = 12,
+                    Speed = 3,
+                    Evasion = 10,
+                    Morale = 0,
+                    MaxMorale = 0,
+                    AbilityIds = new List<string> { "BasicAttack", "SkeletonSlash" },
+                    CanBeCultist = false,
+                    PartyPosition = 0
+                }
+            },
+            {
+                "Vampire", new CharacterData
+                {
+                    Id = "Vampire",
+                    Health = 65,
+                    MaxHealth = 85,
+                    Attack = 22,
+                    Defense = 8,
+                    Speed = 5,
+                    Evasion = 30,
+                    Morale = 0,
+                    MaxMorale = 0,
+                    AbilityIds = new List<string> { "BasicAttack", "VampireBite" },
+                    CanBeCultist = false,
+                    PartyPosition = 0
+                }
+            }
+        };
+
+        public static CharacterData GetHeroData(string id)
+        {
+            if (HeroData.TryGetValue(id, out var data))
+            {
+                return data;
+            }
+            Debug.LogWarning($"CharacterLibrary: Hero ID {id} not found, returning default");
+            return new CharacterData
+            {
+                Id = id,
+                Health = 50,
+                MaxHealth = 50,
+                Attack = 10,
+                Defense = 5,
+                Speed = 3,
+                Evasion = 10,
+                Morale = 100,
+                MaxMorale = 100,
+                AbilityIds = new List<string> { "BasicAttack" },
+                CanBeCultist = false,
+                PartyPosition = 1
+            };
+        }
+
+        public static CharacterData GetMonsterData(string id)
+        {
+            if (MonsterData.TryGetValue(id, out var data))
+            {
+                return data;
+            }
+            Debug.LogWarning($"CharacterLibrary: Monster ID {id} not found, returning default");
+            return new CharacterData
+            {
+                Id = id,
+                Health = 50,
+                MaxHealth = 50,
+                Attack = 10,
+                Defense = 5,
+                Speed = 3,
+                Evasion = 10,
+                Morale = 0,
+                MaxMorale = 0,
+                AbilityIds = new List<string> { "BasicAttack" },
+                CanBeCultist = false,
+                PartyPosition = 0
+            };
+        }
+    }
+}

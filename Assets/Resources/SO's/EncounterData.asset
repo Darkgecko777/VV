@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21e5c33fe7638aa40a2391f554f49313, type: 3}
   m_Name: EncounterData
   m_EditorClassIdentifier: 
-  monsterSOs: []
+  monsterSOs:
+  - {fileID: 0}
+  - {fileID: 0}
   isCombatNode: 1
   positions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}

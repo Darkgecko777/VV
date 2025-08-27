@@ -7,13 +7,21 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "PartyData", menuName = "VirulentVentures/PartyData")]
     public class PartyData : ScriptableObject
     {
-        public List<HeroSO> HeroSOs;
+        [SerializeField] private string partyId; // Added for save/load
+        public List<string> HeroIds;
         public List<HeroStats> HeroStats;
         public bool AllowCultist;
 
+        public string PartyID
+        {
+            get => partyId;
+            set => partyId = value;
+        }
+
         public void Reset()
         {
-            HeroSOs = new List<HeroSO>();
+            partyId = "";
+            HeroIds = new List<string>();
             HeroStats = new List<HeroStats>();
             AllowCultist = false;
         }
@@ -41,11 +49,9 @@ namespace VirulentVentures
         public void GenerateHeroStats(Vector3[] positions)
         {
             HeroStats = new List<HeroStats>();
-            for (int i = 0; i < HeroSOs.Count && i < positions.Length; i++)
+            for (int i = 0; i < HeroIds.Count && i < positions.Length; i++)
             {
-                var stats = new HeroStats(HeroSOs[i], positions[i]);
-                HeroSOs[i].ApplyStats(stats);
-                stats.AbilityId = HeroSOs[i].AbilityIds.Count > 0 ? HeroSOs[i].AbilityIds[0] : "BasicAttack";
+                var stats = new HeroStats(HeroIds[i], positions[i]);
                 HeroStats.Add(stats);
             }
         }

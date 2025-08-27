@@ -12,7 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd4e70ff8c494454eab785aebda6a448, type: 3}
   m_Name: CombatConfig
   m_EditorClassIdentifier: 
-  CombatSpeed: 1
-  MinCombatSpeed: 0.5
-  MaxCombatSpeed: 4
-  RetreatMoraleThreshold: 20
+  combatSpeed: 1
+  minCombatSpeed: 0.5
+  maxCombatSpeed: 2
+  retreatMoraleThreshold: 20
+  maxRounds: 5
+  speedTwoAttacksThreshold: 7
+  speedThreePerTwoThreshold: 5
+  speedOneAttackThreshold: 3
+  speedOnePerTwoThreshold: 1
