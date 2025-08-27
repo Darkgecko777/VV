@@ -1,29 +1,33 @@
-using UnityEngine;
+using System;
 
 namespace VirulentVentures
 {
-    [System.Serializable]
+    [Serializable]
     public struct DisplayStats
     {
-        public string Name;
-        public int Health;
-        public int MaxHealth;
-        public int Attack;
-        public int Defense;
-        public int? Morale; // Null for monsters
-        public int? Sanity; // Null for monsters
-        public bool IsHero;
+        public string name;
+        public int health;
+        public int maxHealth;
+        public int attack;
+        public int defense;
+        public int speed;
+        public int evasion;
+        public int? morale;
+        public int? maxMorale;
+        public bool isHero;
 
-        public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int? morale, int? sanity, bool isHero)
+        public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int? morale, int? maxMorale, bool isHero)
         {
-            Name = name;
-            Health = health;
-            MaxHealth = maxHealth;
-            Attack = attack;
-            Defense = defense;
-            Morale = morale;
-            Sanity = sanity;
-            IsHero = isHero;
+            this.name = name;
+            this.health = health;
+            this.maxHealth = maxHealth;
+            this.attack = attack;
+            this.defense = defense;
+            this.speed = speed;
+            this.evasion = evasion;
+            this.morale = morale;
+            this.maxMorale = maxMorale;
+            this.isHero = isHero;
         }
     }
 }

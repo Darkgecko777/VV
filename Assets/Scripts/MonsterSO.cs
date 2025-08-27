@@ -39,14 +39,18 @@ namespace VirulentVentures
         {
             if (stats == null || characterType == null)
             {
+                Debug.LogWarning($"MonsterSO: Cannot apply stats for {characterType?.Id ?? "unknown"} - stats or characterType is null");
                 return;
             }
 
             target.Health = stats.Health;
             target.MaxHealth = stats.MaxHealth;
             target.Attack = stats.Attack;
-            target.Defense = stats.Defense;
-            target.SlowTickDelay = stats.SlowTickDelay;
+            target.Defense = stats.Defense; 
+            target.Speed = stats.Speed;
+            target.Evasion = stats.Evasion;
+            target.Morale = 0; // Monsters don't use Morale
+            target.MaxMorale = 0; // Monsters don't use MaxMorale
         }
 
         public void ApplySpecialAbility(MonsterStats target, PartyData partyData)
@@ -63,34 +67,28 @@ namespace VirulentVentures
 
         public bool TakeDamage(ref MonsterStats stats, int damage)
         {
-            int damageTaken = Mathf.Max(damage - stats.Defense, 0);
+            int damageTaken = Mathf.Max(damage - stats.Defense, 0); // Negative Defense handled later
             stats.Health = Mathf.Max(stats.Health - damageTaken, 0);
             return stats.Health <= 0;
-        }
-
-        public bool CheckDodge()
-        {
-            foreach (var abilityId in abilityIds)
-            {
-                AbilityData? ability = AbilityDatabase.GetMonsterAbility(abilityId);
-                if (ability.HasValue && ability.Value.CanDodge)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         private void OnValidate()
         {
             if (characterType == null || string.IsNullOrEmpty(characterType.Id))
             {
+                Debug.LogWarning("MonsterSO: CharacterType or its Id is null or empty");
                 return;
             }
             if (stats.Type == null)
             {
                 stats.Type = characterType;
             }
+            // Clamp stats to valid ranges
+            stats.Health = Mathf.Clamp(stats.Health, 0, stats.MaxHealth);
+            stats.Evasion = Mathf.Clamp(stats.Evasion, 0, 100);
+            stats.Speed = Mathf.Clamp(stats.Speed, 1, 8);
+            stats.Morale = 0; // Monsters don't use Morale
+            stats.MaxMorale = 0; // Monsters don't use MaxMorale
         }
     }
 }

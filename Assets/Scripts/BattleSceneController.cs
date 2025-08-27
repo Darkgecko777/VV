@@ -16,11 +16,11 @@ namespace VirulentVentures
 
         private CombatModel combatModel;
         private ExpeditionManager expeditionManager;
-        private bool isEndingBattle; // Guard to prevent recursive calls
+        private bool isEndingBattle;
 
         void Awake()
         {
-            combatModel = new CombatModel(); // Initialize early, as it's not reference-dependent
+            combatModel = new CombatModel();
         }
 
         void Start()
@@ -79,8 +79,8 @@ namespace VirulentVentures
 
             combatModel.IsBattleActive = true;
             combatModel.InitializeUnits(heroStats, monsterStats);
-            visualController.InitializeUnits(combatModel.Units.Select(u => (u.unit, u.go)).ToList()); // Project to match visualController signature
-            uiController.InitializeUI(combatModel.Units); // Full list with DisplayStats
+            visualController.InitializeUnits(combatModel.Units.Select(u => (u.unit, u.go)).ToList());
+            uiController.InitializeUI(combatModel.Units);
 
             combatModel.IncrementRound();
             while (combatModel.IsBattleActive)
@@ -92,19 +92,18 @@ namespace VirulentVentures
                     yield break;
                 }
 
-                var unitList = combatModel.Units.Select(u => u.unit).ToList();
-                var aliveUnits = unitList.Where(u => u.Health > 0).ToList();
-                if (aliveUnits.Count == 0)
+                var unitList = combatModel.Units.Select(u => u.unit).Where(u => u.Health > 0).OrderByDescending(u => u.Speed).ToList();
+                if (unitList.Count == 0)
                 {
                     combatModel.EndBattle();
                     yield break;
                 }
 
-                foreach (var attacker in aliveUnits)
+                foreach (var attacker in unitList)
                 {
                     var targets = attacker is HeroStats
-                        ? combatModel.Units.Select(u => u.unit).Where(u => u is MonsterStats && u.Health > 0).ToList()
-                        : combatModel.Units.Select(u => u.unit).Where(u => u is HeroStats && u.Health > 0).ToList();
+                        ? unitList.Where(u => u is MonsterStats && u.Health > 0).ToList()
+                        : unitList.Where(u => u is HeroStats && u.Health > 0).ToList();
 
                     List<string> abilityIds = new List<string>();
                     if (attacker is HeroStats hero && hero.SO is HeroSO heroSO)
@@ -129,6 +128,13 @@ namespace VirulentVentures
                     var target = GetRandomAliveTarget(targets);
                     if (target == null) continue;
 
+                    // Evasion check
+                    if (Random.value <= target.Evasion / 100f)
+                    {
+                        combatModel.LogMessage($"{target.Type.Id} dodges {attacker.Type.Id}'s attack!", uiConfig.TextColor);
+                        continue;
+                    }
+
                     int damage = attacker.Attack;
                     bool killed = false;
                     if (target is HeroStats targetHero && targetHero.SO is HeroSO targetHeroSO)
@@ -151,8 +157,59 @@ namespace VirulentVentures
                         combatModel.UpdateUnit(target, damage.ToString());
                     }
 
+                    // Additional attacks based on Speed
+                    bool extraAttack = false;
+                    if (attacker.Speed >= 7) // Speed 7-8: 2 attacks/round
+                    {
+                        extraAttack = true;
+                    }
+                    else if (attacker.Speed >= 5 && combatModel.RoundNumber % 2 == 0) // Speed 5-6: 3 attacks/2 rounds
+                    {
+                        extraAttack = true;
+                    }
+                    else if (attacker.Speed <= 2 && combatModel.RoundNumber % 2 == 1) // Speed 1-2: 1 attack/every other round
+                    {
+                        continue; // Skip attack in even rounds
+                    }
+
+                    if (extraAttack)
+                    {
+                        target = GetRandomAliveTarget(targets);
+                        if (target == null) continue;
+
+                        if (Random.value <= target.Evasion / 100f)
+                        {
+                            combatModel.LogMessage($"{target.Type.Id} dodges {attacker.Type.Id}'s extra attack!", uiConfig.TextColor);
+                            continue;
+                        }
+
+                        damage = attacker.Attack;
+                        killed = false;
+                        if (target is HeroStats targetHero2 && targetHero2.SO is HeroSO targetHeroSO2)
+                        {
+                            killed = targetHeroSO2.TakeDamage(ref targetHero2, damage);
+                        }
+                        else if (target is MonsterStats targetMonster2 && targetMonster2.SO is MonsterSO targetMonsterSO2)
+                        {
+                            killed = targetMonsterSO2.TakeDamage(ref targetMonster2, damage);
+                        }
+
+                        if (killed)
+                        {
+                            combatModel.LogMessage($"{attacker.Type.Id} kills {target.Type.Id} with extra attack!", uiConfig.BogRotColor);
+                            combatModel.UpdateUnit(target);
+                        }
+                        else
+                        {
+                            combatModel.LogMessage($"{attacker.Type.Id} hits {target.Type.Id} for {damage} damage with extra attack!", uiConfig.TextColor);
+                            combatModel.UpdateUnit(target, damage.ToString());
+                        }
+                    }
+
                     yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
                 }
+
+                combatModel.IncrementRound();
             }
         }
 
@@ -164,7 +221,7 @@ namespace VirulentVentures
 
         private bool CheckRetreat(List<ICombatUnit> characters)
         {
-            return characters.Where(c => c is HeroStats).Cast<HeroStats>().Any(h => h.Morale <= (combatConfig?.RetreatMoraleThreshold ?? 20));
+            return characters.OfType<HeroStats>().Any(h => h.Morale <= (combatConfig?.RetreatMoraleThreshold ?? 20));
         }
 
         public void SetCombatSpeed(float speed)
@@ -177,7 +234,7 @@ namespace VirulentVentures
 
         private void EndBattle()
         {
-            if (isEndingBattle) return; // Prevent recursive calls
+            if (isEndingBattle) return;
             isEndingBattle = true;
 
             combatModel.EndBattle();
@@ -192,7 +249,7 @@ namespace VirulentVentures
                 uiController.FadeToScene(() => expeditionManager.TransitionToExpeditionScene());
             }
 
-            isEndingBattle = false; // Reset guard
+            isEndingBattle = false;
         }
 
         private bool ValidateReferences()

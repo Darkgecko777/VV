@@ -47,6 +47,7 @@ namespace VirulentVentures
         {
             if (stats == null || characterType == null)
             {
+                Debug.LogWarning($"HeroSO: Cannot apply stats for {characterType?.Id ?? "unknown"} - stats or characterType is null");
                 return;
             }
 
@@ -54,7 +55,10 @@ namespace VirulentVentures
             target.MaxHealth = stats.MaxHealth;
             target.Attack = stats.Attack;
             target.Defense = stats.Defense;
-            target.SlowTickDelay = stats.SlowTickDelay;
+            target.Speed = stats.Speed;
+            target.Evasion = stats.Evasion;
+            target.Morale = stats.Morale;
+            target.MaxMorale = stats.MaxMorale;
         }
 
         public void ApplySpecialAbility(HeroStats target, PartyData partyData)
@@ -71,7 +75,7 @@ namespace VirulentVentures
 
         public bool TakeDamage(ref HeroStats stats, int damage)
         {
-            int damageTaken = Mathf.Max(damage - stats.Defense, 0);
+            int damageTaken = Mathf.Max(damage - stats.Defense, 0); // Negative Defense handled later
             stats.Health = Mathf.Max(stats.Health - damageTaken, 0);
             return stats.Health <= 0;
         }
@@ -80,6 +84,7 @@ namespace VirulentVentures
         {
             if (characterType == null || string.IsNullOrEmpty(characterType.Id))
             {
+                Debug.LogWarning("HeroSO: CharacterType or its Id is null or empty");
                 return;
             }
             if (stats.Type == null)
@@ -90,6 +95,11 @@ namespace VirulentVentures
             {
                 partyPosition = Mathf.Clamp(partyPosition, 1, 7);
             }
+            // Clamp stats to valid ranges
+            stats.Health = Mathf.Clamp(stats.Health, 0, stats.MaxHealth);
+            stats.Evasion = Mathf.Clamp(stats.Evasion, 0, 100);
+            stats.Morale = Mathf.Clamp(stats.Morale, 0, stats.MaxMorale);
+            stats.Speed = Mathf.Clamp(stats.Speed, 1, 8);
         }
     }
 }

@@ -106,11 +106,18 @@ namespace VirulentVentures
         {
             if (!isInitialized) return;
             var unitEntry = units.Find(u => u.unit == unit);
-            if (unitEntry.go != null && unit.Health <= 0)
+            if (unitEntry.go != null)
             {
-                unitEntry.animator.Jiggle(false);
-                Destroy(unitEntry.go, 0.5f);
-                units.Remove(unitEntry);
+                if (unit.Health <= 0)
+                {
+                    unitEntry.animator.Jiggle(false);
+                    Destroy(unitEntry.go, 0.5f);
+                    units.Remove(unitEntry);
+                }
+                else if (unit is HeroStats hero && hero.Morale <= 20) // Visual cue for low Morale
+                {
+                    unitEntry.animator.Jiggle(true); // Shaky sprite for retreat risk
+                }
             }
         }
 
@@ -120,7 +127,7 @@ namespace VirulentVentures
             var unitEntry = units.Find(u => u.unit == unit);
             if (unitEntry.animator != null)
             {
-                unitEntry.animator.Jiggle(unit is HeroStats);
+                unitEntry.animator.Jiggle(unit is HeroStats); // Jiggle on damage
             }
         }
 
@@ -134,9 +141,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (visualConfig == null || characterPositions == null || mainCamera == null || backgroundSprite == null)
+            if (visualConfig == null || characterPositions == null || mainCamera == null)
             {
-                Debug.LogError($"BattleVisualController: Missing references! VisualConfig: {visualConfig != null}, CharacterPositions: {characterPositions != null}, MainCamera: {mainCamera != null}, BackgroundSprite: {backgroundSprite != null}");
+                Debug.LogError($"BattleVisualController: Missing references! VisualConfig: {visualConfig != null}, CharacterPositions: {characterPositions != null}, MainCamera: {mainCamera != null}");
                 return false;
             }
             if (!mainCamera.orthographic)

@@ -90,85 +90,134 @@ namespace VirulentVentures
         public void InitializeUI(List<(ICombatUnit unit, GameObject go, DisplayStats displayStats)> combatUnits)
         {
             unitPanels = new Dictionary<ICombatUnit, VisualElement>();
+            heroesContainer.Clear();
+            monstersContainer.Clear();
+
             foreach (var (unit, _, displayStats) in combatUnits)
             {
-                if (displayStats.Health <= 0) continue;
-
-                VisualElement container = displayStats.IsHero ? heroesContainer : monstersContainer;
-                VisualElement panel = new VisualElement { name = $"{displayStats.Name}Panel" };
+                VisualElement panel = new VisualElement { name = $"{displayStats.name}-panel" };
                 panel.AddToClassList("unit-panel");
 
-                // Health bar
-                VisualElement healthBar = new VisualElement { name = "HealthBar" };
+                VisualElement healthBar = new VisualElement { name = $"{displayStats.name}-health" };
                 healthBar.AddToClassList("health-bar");
-                healthBar.style.width = 100;
-                healthBar.style.height = 10;
-                healthBar.style.backgroundColor = uiConfig.BogRotColor;
-
-                VisualElement healthFill = new VisualElement { name = "HealthFill" };
-                healthFill.AddToClassList("health-fill");
-                healthFill.style.width = Length.Percent((float)displayStats.Health / displayStats.MaxHealth * 100);
-                healthFill.style.height = Length.Percent(100);
-                healthFill.style.backgroundColor = Color.red;
+                VisualElement healthFill = new VisualElement { name = $"{displayStats.name}-health-fill" };
+                healthFill.AddToClassList(displayStats.isHero ? "health-fill-hero" : "health-fill-monster");
                 healthBar.Add(healthFill);
-
-                // Stat labels
-                Label statLabel = new Label
-                {
-                    text = $"{displayStats.Name}: {displayStats.Health}/{displayStats.MaxHealth}" +
-                           (displayStats.IsHero ? $"\nMorale: {displayStats.Morale}\nSanity: {displayStats.Sanity}" : ""),
-                    name = "StatLabel"
-                };
-                statLabel.AddToClassList("stat-label");
-                statLabel.style.color = uiConfig.TextColor;
-                statLabel.style.unityFont = uiConfig.PixelFont;
-
                 panel.Add(healthBar);
-                panel.Add(statLabel);
-                container.Add(panel);
+
+                Label nameLabel = new Label { text = displayStats.name, name = $"{displayStats.name}-name" };
+                nameLabel.AddToClassList("stat-label");
+                panel.Add(nameLabel);
+
+                Label healthLabel = new Label { text = $"Health: {displayStats.health}/{displayStats.maxHealth}", name = $"{displayStats.name}-health-label" };
+                healthLabel.AddToClassList("stat-label");
+                panel.Add(healthLabel);
+
+                Label attackLabel = new Label { text = $"Attack: {displayStats.attack}", name = $"{displayStats.name}-attack" };
+                attackLabel.AddToClassList("stat-label");
+                panel.Add(attackLabel);
+
+                Label defenseLabel = new Label { text = $"Defense: {displayStats.defense}", name = $"{displayStats.name}-defense" };
+                defenseLabel.AddToClassList("stat-label");
+                panel.Add(defenseLabel);
+
+                Label speedLabel = new Label { text = $"Speed: {displayStats.speed}", name = $"{displayStats.name}-speed" };
+                speedLabel.AddToClassList("stat-label");
+                panel.Add(speedLabel);
+
+                Label evasionLabel = new Label { text = $"Evasion: {displayStats.evasion}%", name = $"{displayStats.name}-evasion" };
+                evasionLabel.AddToClassList("stat-label");
+                panel.Add(evasionLabel);
+
+                if (displayStats.isHero && displayStats.morale.HasValue && displayStats.maxMorale.HasValue)
+                {
+                    Label moraleLabel = new Label { text = $"Morale: {displayStats.morale.Value}/{displayStats.maxMorale.Value}", name = $"{displayStats.name}-morale" };
+                    moraleLabel.AddToClassList("stat-label");
+                    panel.Add(moraleLabel);
+                }
+
+                if (displayStats.isHero)
+                {
+                    heroesContainer.Add(panel);
+                }
+                else
+                {
+                    monstersContainer.Add(panel);
+                }
+
                 unitPanels.Add(unit, panel);
+                UpdateUnitPanel(unit, displayStats);
             }
         }
 
         public void SubscribeToModel(CombatModel model)
         {
-            model.OnUnitUpdated += UpdateUnit;
+            model.OnUnitUpdated += UpdateUnitPanel;
             model.OnLogMessage += LogMessage;
             model.OnDamagePopup += ShowDamagePopup;
         }
 
-        public void UpdateUnit(ICombatUnit unit, DisplayStats displayStats)
+        private void UpdateUnitPanel(ICombatUnit unit, DisplayStats displayStats)
         {
             if (!unitPanels.ContainsKey(unit)) return;
 
             var panel = unitPanels[unit];
-            var statLabel = panel.Q<Label>("StatLabel");
-            var healthFill = panel.Q<VisualElement>("HealthFill");
+            var healthLabel = panel.Q<Label>($"{displayStats.name}-health-label");
+            var attackLabel = panel.Q<Label>($"{displayStats.name}-attack");
+            var defenseLabel = panel.Q<Label>($"{displayStats.name}-defense");
+            var speedLabel = panel.Q<Label>($"{displayStats.name}-speed");
+            var evasionLabel = panel.Q<Label>($"{displayStats.name}-evasion");
+            var moraleLabel = panel.Q<Label>($"{displayStats.name}-morale");
 
-            statLabel.text = $"{displayStats.Name}: {displayStats.Health}/{displayStats.MaxHealth}" +
-                             (displayStats.IsHero ? $"\nMorale: {displayStats.Morale}\nSanity: {displayStats.Sanity}" : "");
-            healthFill.style.width = Length.Percent((float)displayStats.Health / displayStats.MaxHealth * 100);
+            if (healthLabel != null)
+            {
+                healthLabel.text = $"Health: {displayStats.health}/{displayStats.maxHealth}";
+            }
+            if (attackLabel != null)
+            {
+                attackLabel.text = $"Attack: {displayStats.attack}";
+            }
+            if (defenseLabel != null)
+            {
+                defenseLabel.text = $"Defense: {displayStats.defense}";
+            }
+            if (speedLabel != null)
+            {
+                speedLabel.text = $"Speed: {displayStats.speed}";
+            }
+            if (evasionLabel != null)
+            {
+                evasionLabel.text = $"Evasion: {displayStats.evasion}%";
+            }
+            if (moraleLabel != null && displayStats.isHero && displayStats.morale.HasValue && displayStats.maxMorale.HasValue)
+            {
+                moraleLabel.text = $"Morale: {displayStats.morale.Value}/{displayStats.maxMorale.Value}";
+            }
 
-            if (displayStats.Health <= 0)
+            var healthFill = panel.Q<VisualElement>($"{displayStats.name}-health-fill");
+            if (healthFill != null)
+            {
+                float healthPercent = displayStats.maxHealth > 0 ? (float)displayStats.health / displayStats.maxHealth : 0f;
+                healthFill.style.width = Length.Percent(healthPercent * 100);
+            }
+
+            if (displayStats.health <= 0)
             {
                 panel.style.display = DisplayStyle.None;
-                unitPanels.Remove(unit);
             }
         }
 
-        public void ShowDamagePopup(ICombatUnit unit, string message)
+        private void ShowDamagePopup(ICombatUnit unit, string message)
         {
-            if (!unitPanels.ContainsKey(unit)) return;
-
-            if (visualController == null)
+            if (!unitPanels.ContainsKey(unit) || visualController == null)
             {
-                Debug.LogError("BattleUIController: BattleVisualController not assigned!");
+                Debug.LogError($"BattleUIController: No panel or VisualController for unit {unit.Type?.Id ?? "unknown"}!");
                 return;
             }
             var unitEntry = visualController.GetUnits().Find(u => u.unit == unit);
             if (unitEntry.go == null)
             {
-                Debug.LogError($"BattleUIController: No GameObject for unit {unit.Type.Id}!");
+                Debug.LogError($"BattleUIController: No GameObject for unit {unit.Type?.Id ?? "unknown"}!");
                 return;
             }
 

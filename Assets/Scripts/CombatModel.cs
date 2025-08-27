@@ -11,7 +11,7 @@ namespace VirulentVentures
         public int RoundNumber { get; private set; }
 
         public event Action<string, Color> OnLogMessage;
-        public event Action<ICombatUnit, DisplayStats> OnUnitUpdated; // Updated to include DisplayStats
+        public event Action<ICombatUnit, DisplayStats> OnUnitUpdated;
         public event Action<ICombatUnit, string> OnDamagePopup;
         public event Action OnBattleEnded;
 
@@ -58,7 +58,7 @@ namespace VirulentVentures
             if (unitEntry.unit != null)
             {
                 Units.Remove(unitEntry);
-                Units.Add((unit, unitEntry.go, unit.GetDisplayStats())); // Refresh display stats
+                Units.Add((unit, unitEntry.go, unit.GetDisplayStats())); // Refresh with new DisplayStats
                 OnUnitUpdated?.Invoke(unit, unit.GetDisplayStats());
                 if (damageMessage != null)
                 {
