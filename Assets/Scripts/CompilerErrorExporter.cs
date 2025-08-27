@@ -26,7 +26,7 @@ namespace VirulentVentures
             public LogEntry[] logs;
         }
 
-        // Export compiler errors and warnings from Unity's Editor.log to a JSON file
+        // Export compiler errors, warnings, and USS validation warnings from Unity's Editor.log to JSON
         [MenuItem("Tools/Export Compiler Errors")]
         private static void ExportCompilerErrors()
         {
@@ -64,7 +64,8 @@ namespace VirulentVentures
                     }
                 }
 
-                var errorLines = logLines.Select((line, index) => new { Line = line, Index = index })
+                // Scan for C# compiler errors/warnings
+                var csErrorLines = logLines.Select((line, index) => new { Line = line, Index = index })
                     .Where(item => Regex.IsMatch(item.Line, @"(error|warning) CS\d+:"))
                     .Select(item => new LogEntry
                     {
@@ -72,24 +73,39 @@ namespace VirulentVentures
                         type = item.Line.Contains("error CS") ? "Error" : "Warning",
                         message = item.Line,
                         stackTrace = "" // Editor.log doesn't provide stack traces for compiler errors
-                    })
+                    });
+
+                // Scan for USS validation warnings (e.g., "Assets/UI/BattleScene.uss (line \d+): warning: Expected...")
+                var ussWarningLines = logLines.Select((line, index) => new { Line = line, Index = index })
+                    .Where(item => Regex.IsMatch(item.Line, @"Assets/UI/.*\.uss \(line \d+\): warning: Expected"))
+                    .Select(item => new LogEntry
+                    {
+                        timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        type = "USS Warning",
+                        message = item.Line,
+                        stackTrace = ""
+                    });
+
+                // Combine C# and USS entries, sorted by original log order
+                var allEntries = csErrorLines.Concat(ussWarningLines)
+                    .OrderBy(entry => Array.IndexOf(logLines, entry.message)) // Preserve log order
                     .ToArray();
 
-                LogWrapper wrapper = new LogWrapper { logs = errorLines };
-                if (errorLines.Length == 0)
+                LogWrapper wrapper = new LogWrapper { logs = allEntries };
+                if (allEntries.Length == 0)
                 {
                     wrapper.logs = new LogEntry[] { new LogEntry
                     {
                         timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
                         type = "Info",
-                        message = "No compiler errors or warnings found in recent Editor.log entries.",
+                        message = "No compiler errors, warnings, or USS validation warnings found in recent Editor.log entries.",
                         stackTrace = ""
                     }};
                 }
 
                 string json = JsonUtility.ToJson(wrapper, true);
                 File.WriteAllText(outputPath, json);
-                Debug.Log($"CompilerErrorExporter: Exported {errorLines.Length} compiler errors/warnings to {outputPath}");
+                Debug.Log($"CompilerErrorExporter: Exported {allEntries.Length} entries to {outputPath}");
             }
             catch (Exception e)
             {
