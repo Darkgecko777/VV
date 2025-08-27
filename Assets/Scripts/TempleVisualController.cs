@@ -57,12 +57,12 @@ namespace VirulentVentures
             {
                 VisualElement portrait = new VisualElement();
                 portrait.AddToClassList("portrait");
-                if (i < heroes.Count && heroes[i] != null && heroes[i].SO is HeroSO heroSO && heroSO.Stats != null)
+                if (i < heroes.Count && heroes[i] != null)
                 {
-                    string characterID = heroSO.Stats.Type?.Id;
+                    string characterID = heroes[i].HeroId; // Use public getter
                     if (string.IsNullOrEmpty(characterID))
                     {
-                        Debug.LogWarning($"TempleVisualController: Hero {i + 1} has null/empty Type.Id, skipping sprite.");
+                        Debug.LogWarning($"TempleVisualController: Hero {i + 1} has null/empty HeroId, skipping sprite.");
                     }
                     else
                     {

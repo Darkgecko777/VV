@@ -36,6 +36,8 @@ namespace VirulentVentures
             _abilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
         }
 
+        public string HeroId => _heroId; // Added public getter
+
         public ScriptableObject SO => null; // No SO used
         public CharacterTypeSO Type => null; // Replace with string ID
         public int Speed { get => _speed; set => _speed = Mathf.Clamp(value, 1, 8); }

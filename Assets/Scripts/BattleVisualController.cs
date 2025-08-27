@@ -68,9 +68,9 @@ namespace VirulentVentures
                 renderer.sortingOrder = unit is HeroStats ? heroIndex : monsterIndex + 10;
                 renderer.transform.localScale = new Vector3(2f, 2f, 1f);
 
-                if (unit is HeroStats heroStats && heroStats.SO is HeroSO heroSO)
+                if (unit is HeroStats)
                 {
-                    Sprite sprite = visualConfig.GetCombatSprite(heroSO.CharacterType.Id);
+                    Sprite sprite = visualConfig.GetCombatSprite(unit.Type.Id); // Use string ID
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
@@ -79,9 +79,9 @@ namespace VirulentVentures
                     unitObj.transform.position = position;
                     heroIndex++;
                 }
-                else if (unit is MonsterStats monsterStats && monsterStats.SO is MonsterSO monsterSO)
+                else if (unit is MonsterStats)
                 {
-                    Sprite sprite = visualConfig.GetEnemySprite(monsterSO.CharacterType.Id);
+                    Sprite sprite = visualConfig.GetEnemySprite(unit.Type.Id); // Use string ID
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
