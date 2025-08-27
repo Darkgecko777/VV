@@ -64,29 +64,41 @@ namespace VirulentVentures
             string[] biomes = { "Swamp", "Ruin", "HauntedForest" };
             int nodeCount = testMode ? 3 : Random.Range(8, 13);
             int combatNodes = Mathf.FloorToInt(nodeCount * 0.5f);
+            // NEW: Ensure at least one non-combat node for alternation
+            int nonCombatNodes = nodeCount - combatNodes - 1; // -1 for Temple node
             List<NodeData> nodes = new List<NodeData>();
             int level = 1;
 
+            // Add Temple node first
             nodes.Add(new NodeData(null, "Temple", "Temple", false, "The Temple of Cleansing"));
 
-            for (int i = 1; i < nodeCount - combatNodes; i++)
+            // NEW: Alternate non-combat and combat nodes
+            int pairs = Mathf.Min(nonCombatNodes, combatNodes); // Number of alternating pairs
+            for (int i = 0; i < pairs; i++)
+            {
+                string biome = biomes[Random.Range(0, biomes.Length)];
+                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
+                level++;
+                biome = biomes[Random.Range(0, biomes.Length)];
+                nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
+                level++;
+            }
+
+            // NEW: Add remaining non-combat nodes if any
+            for (int i = pairs; i < nonCombatNodes; i++)
             {
                 string biome = biomes[Random.Range(0, biomes.Length)];
                 nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
                 level++;
             }
 
-            for (int i = 0; i < combatNodes; i++)
+            // NEW: Add remaining combat nodes if any
+            for (int i = pairs; i < combatNodes; i++)
             {
                 string biome = biomes[Random.Range(0, biomes.Length)];
                 nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
                 level++;
             }
-
-            var shuffledNodes = new List<NodeData> { nodes[0] };
-            var otherNodes = nodes.Skip(1).OrderBy(_ => Random.value).ToList();
-            shuffledNodes.AddRange(otherNodes);
-            nodes = shuffledNodes;
 
             // Generate party if none exists or user didn't select heroes
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)

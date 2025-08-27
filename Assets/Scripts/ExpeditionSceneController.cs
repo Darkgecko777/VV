@@ -23,6 +23,10 @@ namespace VirulentVentures
             ExpeditionManager.Instance.OnExpeditionGenerated += UpdateScene;
             ExpeditionManager.Instance.OnCombatStarted += () => { /* Optional: Handle combat start visuals/logic */ };
 
+            // NEW: Subscribe to node updates and scene transitions for in-scene UI refreshes
+            ExpeditionManager.Instance.OnNodeUpdated += HandleNodeUpdate;
+            ExpeditionManager.Instance.OnSceneTransitionCompleted += HandleNodeUpdate;
+
             // Initialize UI with current expedition data
             UpdateScene();
         }
@@ -37,6 +41,10 @@ namespace VirulentVentures
             {
                 ExpeditionManager.Instance.OnExpeditionGenerated -= UpdateScene;
                 ExpeditionManager.Instance.OnCombatStarted -= null;
+
+                // NEW: Unsubscribe from node updates and scene transitions
+                ExpeditionManager.Instance.OnNodeUpdated -= HandleNodeUpdate;
+                ExpeditionManager.Instance.OnSceneTransitionCompleted -= HandleNodeUpdate;
             }
         }
 
@@ -48,6 +56,12 @@ namespace VirulentVentures
         private void UpdateScene()
         {
             uiController.UpdateUI();
+        }
+
+        // NEW: Handler for node changes (advances or post-transition)
+        private void HandleNodeUpdate(System.Collections.Generic.List<NodeData> nodes, int currentIndex)
+        {
+            UpdateScene();
         }
 
         private bool ValidateReferences()

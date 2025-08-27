@@ -27,14 +27,27 @@ namespace VirulentVentures
 
             if (monsterIds == null || monsterIds.Count == 0 || monsterIds.Count > 4)
             {
-                Debug.LogError($"EncounterData: Invalid monster setup! MonsterIds count: {monsterIds?.Count ?? 0}, must be 1-4");
-                return monsters;
+                Debug.LogWarning($"EncounterData: Invalid monster setup! MonsterIds count: {monsterIds?.Count ?? 0}, must be 1-4");
+                return monsters; // Keep this check since it’s critical for valid monster data
             }
 
-            if (positions == null || positions.monsterPositions == null || positions.monsterPositions.Length < monsterIds.Count)
+            // Fallback to default CharacterPositions if positions is null
+            if (positions == null)
             {
-                Debug.LogError($"EncounterData: Invalid monster positions! Positions: {positions != null}, Length: {positions?.monsterPositions?.Length ?? 0}, Required: {monsterIds.Count}");
-                return monsters;
+                Debug.LogWarning($"EncounterData: CharacterPositions not assigned for {name}. Using default positions.");
+                positions = ScriptableObject.CreateInstance<CharacterPositions>(); // Uses defaults from CharacterPositions.cs
+            }
+
+            if (positions.monsterPositions == null || positions.monsterPositions.Length < monsterIds.Count)
+            {
+                Debug.LogWarning($"EncounterData: Invalid monster positions for {name}. Expected {monsterIds.Count} positions, got {positions?.monsterPositions?.Length ?? 0}. Using defaults.");
+                positions.monsterPositions = new Vector3[] // Fallback to defaults from CharacterPositions.cs
+                {
+            new Vector3(1.5f, 0f, 0f),
+            new Vector3(3.5f, 0f, 0f),
+            new Vector3(5.5f, 0f, 0f),
+            new Vector3(7.5f, 0f, 0f)
+                };
             }
 
             for (int i = 0; i < monsterIds.Count; i++)
@@ -49,7 +62,6 @@ namespace VirulentVentures
                 GameObject monsterObj = new GameObject($"Monster{i + 1}_{monsterData.Id}");
                 monsterObj.transform.position = positions.monsterPositions[i];
                 var renderer = monsterObj.AddComponent<SpriteRenderer>();
-                // Sprite assignment handled by BattleVisualController
                 renderer.sortingLayerName = "Characters";
                 renderer.transform.localScale = new Vector3(2f, 2f, 1f);
                 var monsterStats = new MonsterStats(monsterIds[i], positions.monsterPositions[i]);
