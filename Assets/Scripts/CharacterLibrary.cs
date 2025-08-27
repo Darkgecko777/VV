@@ -14,11 +14,11 @@ namespace VirulentVentures
             public int Defense;
             public int Speed;
             public int Evasion;
-            public int Morale; // 0 for monsters
-            public int MaxMorale; // 0 for monsters
+            public int Morale;
+            public int MaxMorale;
             public List<string> AbilityIds;
-            public bool CanBeCultist; // For heroes
-            public int PartyPosition; // For heroes, 1-7
+            public bool CanBeCultist;
+            public int PartyPosition;
         }
 
         private static readonly Dictionary<string, CharacterData> HeroData = new Dictionary<string, CharacterData>
@@ -78,15 +78,15 @@ namespace VirulentVentures
                 "TreasureHunter", new CharacterData
                 {
                     Id = "TreasureHunter",
-                    Health = 55,
-                    MaxHealth = 70,
-                    Attack = 12,
-                    Defense = 8,
+                    Health = 70,
+                    MaxHealth = 90,
+                    Attack = 20,
+                    Defense = 12,
                     Speed = 4,
                     Evasion = 35,
                     Morale = 100,
                     MaxMorale = 100,
-                    AbilityIds = new List<string> { "BasicAttack", "TreasureHunterBoost" },
+                    AbilityIds = new List<string> { "BasicAttack", "TreasureFind" },
                     CanBeCultist = false,
                     PartyPosition = 4
                 }
@@ -99,15 +99,15 @@ namespace VirulentVentures
                 "Ghoul", new CharacterData
                 {
                     Id = "Ghoul",
-                    Health = 70,
-                    MaxHealth = 90,
-                    Attack = 20,
-                    Defense = 10,
+                    Health = 50,
+                    MaxHealth = 70,
+                    Attack = 15,
+                    Defense = 5,
                     Speed = 4,
-                    Evasion = 15,
+                    Evasion = 20,
                     Morale = 0,
                     MaxMorale = 0,
-                    AbilityIds = new List<string> { "BasicAttack", "GhoulClaw", "GhoulRend" },
+                    AbilityIds = new List<string> { "BasicAttack", "GhoulClaw" },
                     CanBeCultist = false,
                     PartyPosition = 0
                 }
@@ -116,12 +116,12 @@ namespace VirulentVentures
                 "Wraith", new CharacterData
                 {
                     Id = "Wraith",
-                    Health = 50,
-                    MaxHealth = 60,
-                    Attack = 15,
-                    Defense = 5,
+                    Health = 60,
+                    MaxHealth = 80,
+                    Attack = 18,
+                    Defense = 10,
                     Speed = 6,
-                    Evasion = 25,
+                    Evasion = 40,
                     Morale = 0,
                     MaxMorale = 0,
                     AbilityIds = new List<string> { "BasicAttack", "WraithStrike" },
@@ -133,10 +133,10 @@ namespace VirulentVentures
                 "Skeleton", new CharacterData
                 {
                     Id = "Skeleton",
-                    Health = 60,
-                    MaxHealth = 80,
-                    Attack = 18,
-                    Defense = 12,
+                    Health = 55,
+                    MaxHealth = 75,
+                    Attack = 12,
+                    Defense = 15,
                     Speed = 3,
                     Evasion = 10,
                     Morale = 0,
@@ -211,6 +211,11 @@ namespace VirulentVentures
                 CanBeCultist = false,
                 PartyPosition = 0
             };
+        }
+
+        public static List<string> GetMonsterIds()
+        {
+            return new List<string>(MonsterData.Keys);
         }
     }
 }

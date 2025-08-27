@@ -41,7 +41,7 @@ namespace VirulentVentures
                 effect: (target, partyData) =>
                 {
                     // Basic attack uses character's Attack stat; damage applied in auto-battler
-                    string targetId = target is HeroStats hero ? hero.Type.Id : (target as MonsterStats).Type.Id;
+                    string targetId = target is HeroStats hero ? hero.Id : (target as MonsterStats).Id;
                     Debug.Log($"{targetId} uses Basic Attack!");
                 },
                 isCommon: true
@@ -55,7 +55,7 @@ namespace VirulentVentures
                     if (target is HeroStats hero && hero.Health < hero.MaxHealth * 0.3f)
                     {
                         hero.Attack += 3;
-                        Debug.Log($"{hero.Type.Id} boosts attack by 3!");
+                        Debug.Log($"{hero.Id} boosts attack by 3!");
                     }
                 }
             ));
@@ -65,13 +65,13 @@ namespace VirulentVentures
                 animationTrigger: "HealerHeal",
                 effect: (target, partyData) =>
                 {
-                    if (target is HeroStats hero && partyData != null)
+                    if (target is HeroStats hero && partyData.HeroStats.Any(h => h.Health < h.MaxHealth))
                     {
-                        HeroStats lowestAlly = partyData.FindLowestHealthAlly();
-                        if (lowestAlly != null && lowestAlly.Health > 0)
+                        var lowestHealthAlly = partyData.FindLowestHealthAlly();
+                        if (lowestHealthAlly != null)
                         {
-                            lowestAlly.Health = Mathf.Min(lowestAlly.Health + 5, lowestAlly.MaxHealth);
-                            Debug.Log($"{hero.Type.Id} heals {lowestAlly.Type.Id} for 5 HP!");
+                            lowestHealthAlly.Health = Mathf.Min(lowestHealthAlly.Health + 10, lowestHealthAlly.MaxHealth);
+                            Debug.Log($"{hero.Id} heals {lowestHealthAlly.Id} for 10!");
                         }
                     }
                 }
@@ -85,20 +85,7 @@ namespace VirulentVentures
                     if (target is HeroStats hero)
                     {
                         hero.Defense += 2;
-                        Debug.Log($"{hero.Type.Id} boosts defense by 2!");
-                    }
-                }
-            ));
-
-            heroAbilities.Add("TreasureHunterBoost", new AbilityData(
-                id: "TreasureHunterBoost",
-                animationTrigger: "TreasureHunterBoost",
-                effect: (target, partyData) =>
-                {
-                    if (target is HeroStats hero)
-                    {
-                        hero.Morale = Mathf.Min(hero.Morale + 5, 100);
-                        Debug.Log($"{hero.Type.Id} boosts morale by 5!");
+                        Debug.Log($"{hero.Id} boosts defense by 2!");
                     }
                 }
             ));
@@ -111,9 +98,10 @@ namespace VirulentVentures
                 animationTrigger: "BasicAttack",
                 effect: (target, partyData) =>
                 {
-                    // Shared basic attack; damage based on Attack stat (applied in auto-battler)
-                    string targetId = target is MonsterStats monster ? monster.Type.Id : (target as HeroStats).Type.Id;
-                    Debug.Log($"{targetId} uses Basic Attack!");
+                    if (target is MonsterStats monster)
+                    {
+                        Debug.Log($"{monster.Id} uses Basic Attack!");
+                    }
                 },
                 isCommon: true
             ));
@@ -126,7 +114,7 @@ namespace VirulentVentures
                     // No-op for monsters with no special ability
                     if (target is MonsterStats monster)
                     {
-                        Debug.Log($"{monster.Type.Id} uses default ability (no effect).");
+                        Debug.Log($"{monster.Id} uses default ability (no effect).");
                     }
                 }
             ));
@@ -139,7 +127,7 @@ namespace VirulentVentures
                     // Damage based on Attack stat (applied in auto-battler)
                     if (target is MonsterStats monster)
                     {
-                        Debug.Log($"{monster.Type.Id} uses Claw Attack!");
+                        Debug.Log($"{monster.Id} uses Claw Attack!");
                     }
                 }
             ));
@@ -151,7 +139,7 @@ namespace VirulentVentures
                 {
                     if (target is MonsterStats monster)
                     {
-                        Debug.Log($"{monster.Type.Id} uses Rend!"); // Removed morale reduction as monsters lack Morale
+                        Debug.Log($"{monster.Id} uses Rend!"); // Removed morale reduction as monsters lack Morale
                     }
                 }
             ));
@@ -164,7 +152,7 @@ namespace VirulentVentures
                 {
                     if (target is MonsterStats monster)
                     {
-                        Debug.Log($"{monster.Type.Id} uses Wraith Strike!");
+                        Debug.Log($"{monster.Id} uses Wraith Strike!");
                     }
                 },
                 canDodge: true // Ethereal dodge

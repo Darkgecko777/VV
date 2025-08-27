@@ -80,7 +80,7 @@ namespace VirulentVentures
             combatModel.IsBattleActive = true;
             combatModel.InitializeUnits(heroStats, monsterStats);
             visualController.InitializeUnits(combatModel.Units.Select(u => (u.unit, u.go)).ToList());
-            uiController.InitializeUI(combatModel.Units);
+            uiController.InitializeUnitPanels(combatModel.Units.Select(u => (u.unit, u.go, u.unit.GetDisplayStats())).ToList());
 
             combatModel.IncrementRound();
             while (combatModel.IsBattleActive)
@@ -99,119 +99,111 @@ namespace VirulentVentures
                     yield break;
                 }
 
-                foreach (var attacker in unitList)
+                foreach (var unit in unitList)
                 {
-                    var targets = attacker is HeroStats
-                        ? unitList.Where(u => u is MonsterStats && u.Health > 0).ToList()
-                        : unitList.Where(u => u is HeroStats && u.Health > 0).ToList();
+                    var ability = AbilityDatabase.GetHeroAbility(unit.AbilityId) ?? AbilityDatabase.GetMonsterAbility(unit.AbilityId);
+                    if (ability == null || ability.Value.Effect == null) continue;
 
-                    // Get ability IDs from CharacterLibrary
-                    List<string> abilityIds;
-                    if (attacker is HeroStats hero)
-                    {
-                        abilityIds = CharacterLibrary.GetHeroData(hero.GetDisplayStats().name).AbilityIds;
-                    }
-                    else if (attacker is MonsterStats monster)
-                    {
-                        abilityIds = CharacterLibrary.GetMonsterData(monster.GetDisplayStats().name).AbilityIds;
-                    }
-                    else
-                    {
-                        abilityIds = new List<string> { "BasicAttack" };
-                    }
-
-                    var abilityId = abilityIds.Count > 0 ? abilityIds[Random.Range(0, abilityIds.Count)] : "BasicAttack";
-                    AbilityData? ability = attacker is HeroStats
-                        ? AbilityDatabase.GetHeroAbility(abilityId)
-                        : AbilityDatabase.GetMonsterAbility(abilityId);
-
-                    if (ability.HasValue)
-                    {
-                        ability.Value.Effect?.Invoke(attacker, expeditionManager.GetExpedition().Party);
-                    }
+                    var targets = unit is HeroStats ? combatModel.Units.Select(u => u.unit).OfType<MonsterStats>().Where(m => m.Health > 0).Cast<ICombatUnit>().ToList()
+                                                   : combatModel.Units.Select(u => u.unit).OfType<HeroStats>().Where(h => h.Health > 0).Cast<ICombatUnit>().ToList();
 
                     var target = GetRandomAliveTarget(targets);
                     if (target == null) continue;
 
-                    // Evasion check
-                    if (Random.value <= target.Evasion / 100f)
-                    {
-                        combatModel.LogMessage($"{target.GetDisplayStats().name} dodges {attacker.GetDisplayStats().name}'s attack!", uiConfig.TextColor);
-                        continue;
-                    }
+                    ability.Value.Effect?.Invoke(target, expeditionManager.GetExpedition().Party);
 
-                    int damage = attacker.Attack;
+                    int damage = unit.Attack;
                     bool killed = false;
+
                     if (target is HeroStats targetHero)
                     {
+                        int evasionRoll = Random.Range(0, 100);
+                        if (evasionRoll < targetHero.Evasion)
+                        {
+                            combatModel.LogMessage($"{targetHero.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s attack!", uiConfig.TextColor);
+                            continue;
+                        }
+
                         targetHero.Health = Mathf.Max(targetHero.Health - Mathf.Max(damage - targetHero.Defense, 0), 0);
                         killed = targetHero.Health <= 0;
+                        if (!killed && targetHero.Morale > 0)
+                        {
+                            targetHero.Morale -= 5;
+                            combatModel.LogMessage($"{unit.GetDisplayStats().name} reduces {targetHero.GetDisplayStats().name}'s morale by 5!", uiConfig.BogRotColor);
+                        }
                     }
                     else if (target is MonsterStats targetMonster)
                     {
+                        int evasionRoll = Random.Range(0, 100);
+                        if (ability.Value.CanDodge && evasionRoll < targetMonster.Evasion)
+                        {
+                            combatModel.LogMessage($"{targetMonster.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s attack!", uiConfig.TextColor);
+                            continue;
+                        }
+
                         targetMonster.Health = Mathf.Max(targetMonster.Health - Mathf.Max(damage - targetMonster.Defense, 0), 0);
                         killed = targetMonster.Health <= 0;
                     }
 
                     if (killed)
                     {
-                        combatModel.LogMessage($"{attacker.GetDisplayStats().name} kills {target.GetDisplayStats().name}!", uiConfig.BogRotColor);
+                        combatModel.LogMessage($"{unit.GetDisplayStats().name} kills {target.GetDisplayStats().name}!", uiConfig.BogRotColor);
                         combatModel.UpdateUnit(target);
                     }
                     else
                     {
-                        combatModel.LogMessage($"{attacker.GetDisplayStats().name} hits {target.GetDisplayStats().name} for {damage} damage!", uiConfig.TextColor);
+                        combatModel.LogMessage($"{unit.GetDisplayStats().name} hits {target.GetDisplayStats().name} for {damage} damage!", uiConfig.TextColor);
                         combatModel.UpdateUnit(target, damage.ToString());
                     }
 
-                    // Additional attacks based on Speed
-                    bool extraAttack = false;
-                    if (attacker.Speed >= combatConfig.SpeedTwoAttacksThreshold) // Speed 7-8: 2 attacks/round
+                    if (unit.Speed >= combatConfig.SpeedTwoAttacksThreshold)
                     {
-                        extraAttack = true;
-                    }
-                    else if (attacker.Speed >= combatConfig.SpeedThreePerTwoThreshold && combatModel.RoundNumber % 2 == 0) // Speed 5-6: 3 attacks/2 rounds
-                    {
-                        extraAttack = true;
-                    }
-                    else if (attacker.Speed <= combatConfig.SpeedOnePerTwoThreshold && combatModel.RoundNumber % 2 == 1) // Speed 1-2: 1 attack/every other round
-                    {
-                        continue; // Skip attack in even rounds
-                    }
+                        var extraTarget = GetRandomAliveTarget(targets);
+                        if (extraTarget == null) continue;
 
-                    if (extraAttack)
-                    {
-                        target = GetRandomAliveTarget(targets);
-                        if (target == null) continue;
-
-                        if (Random.value <= target.Evasion / 100f)
-                        {
-                            combatModel.LogMessage($"{target.GetDisplayStats().name} dodges {attacker.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
-                            continue;
-                        }
-
-                        damage = attacker.Attack;
+                        ability.Value.Effect?.Invoke(extraTarget, expeditionManager.GetExpedition().Party);
+                        damage = unit.Attack;
                         killed = false;
-                        if (target is HeroStats targetHero2)
+
+                        if (extraTarget is HeroStats targetHero2)
                         {
+                            int evasionRoll = Random.Range(0, 100);
+                            if (evasionRoll < targetHero2.Evasion)
+                            {
+                                combatModel.LogMessage($"{targetHero2.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
+                                continue;
+                            }
+
                             targetHero2.Health = Mathf.Max(targetHero2.Health - Mathf.Max(damage - targetHero2.Defense, 0), 0);
                             killed = targetHero2.Health <= 0;
+                            if (!killed && targetHero2.Morale > 0)
+                            {
+                                targetHero2.Morale -= 5;
+                                combatModel.LogMessage($"{unit.GetDisplayStats().name} reduces {targetHero2.GetDisplayStats().name}'s morale by 5 with extra attack!", uiConfig.BogRotColor);
+                            }
                         }
-                        else if (target is MonsterStats targetMonster2)
+                        else if (extraTarget is MonsterStats targetMonster2)
                         {
+                            int evasionRoll = Random.Range(0, 100);
+                            if (ability.Value.CanDodge && evasionRoll < targetMonster2.Evasion)
+                            {
+                                combatModel.LogMessage($"{targetMonster2.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
+                                continue;
+                            }
+
                             targetMonster2.Health = Mathf.Max(targetMonster2.Health - Mathf.Max(damage - targetMonster2.Defense, 0), 0);
                             killed = targetMonster2.Health <= 0;
                         }
 
                         if (killed)
                         {
-                            combatModel.LogMessage($"{attacker.GetDisplayStats().name} kills {target.GetDisplayStats().name} with extra attack!", uiConfig.BogRotColor);
-                            combatModel.UpdateUnit(target);
+                            combatModel.LogMessage($"{unit.GetDisplayStats().name} kills {extraTarget.GetDisplayStats().name} with extra attack!", uiConfig.BogRotColor);
+                            combatModel.UpdateUnit(extraTarget);
                         }
                         else
                         {
-                            combatModel.LogMessage($"{attacker.GetDisplayStats().name} hits {target.GetDisplayStats().name} for {damage} damage with extra attack!", uiConfig.TextColor);
-                            combatModel.UpdateUnit(target, damage.ToString());
+                            combatModel.LogMessage($"{unit.GetDisplayStats().name} hits {extraTarget.GetDisplayStats().name} for {damage} damage with extra attack!", uiConfig.TextColor);
+                            combatModel.UpdateUnit(extraTarget, damage.ToString());
                         }
                     }
 

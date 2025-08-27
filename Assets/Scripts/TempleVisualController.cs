@@ -59,10 +59,10 @@ namespace VirulentVentures
                 portrait.AddToClassList("portrait");
                 if (i < heroes.Count && heroes[i] != null)
                 {
-                    string characterID = heroes[i].HeroId; // Use public getter
+                    string characterID = heroes[i].Id;
                     if (string.IsNullOrEmpty(characterID))
                     {
-                        Debug.LogWarning($"TempleVisualController: Hero {i + 1} has null/empty HeroId, skipping sprite.");
+                        Debug.LogWarning($"TempleVisualController: Hero {i + 1} has null/empty Id, skipping sprite.");
                     }
                     else
                     {

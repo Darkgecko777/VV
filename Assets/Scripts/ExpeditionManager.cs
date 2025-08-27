@@ -25,10 +25,9 @@ namespace VirulentVentures
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
-        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" }; // String IDs instead of HeroSO
+        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EncounterData combatEncounterData;
-        [SerializeField] private bool autoProcessNodes = true;
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
         private const string CURRENT_VERSION = "1.0";
@@ -83,39 +82,23 @@ namespace VirulentVentures
                     partyData.HeroStats = wrapper.partyData.HeroStats;
                     partyData.PartyID = wrapper.partyData.PartyID;
                 }
-                else
-                {
-                    PlayerPrefs.DeleteKey("PartySave");
-                }
-            }
-
-            if (partyData == null || partyData.HeroStats == null || partyData.HeroStats.Count == 0)
-            {
-                partyData = GetFallbackParty();
             }
         }
 
-        public void GenerateExpedition(List<NodeData> nodes)
+        public void SetExpedition(List<NodeData> nodes, PartyData party)
         {
+            if (nodes == null || nodes.Count == 0 || party == null)
+            {
+                Debug.LogError("ExpeditionManager: Cannot set expedition with invalid nodes or party!");
+                return;
+            }
+
             expeditionData.SetNodes(nodes);
             expeditionData.CurrentNodeIndex = 0;
-            expeditionData.SetParty(partyData);
+            expeditionData.SetParty(party);
+            SaveProgress();
             OnExpeditionGenerated?.Invoke();
-            OnNodeUpdated?.Invoke(nodes, 0);
-        }
-
-        public PartyData GetFallbackParty()
-        {
-            PartyData fallbackParty = new PartyData { PartyID = "FallbackParty" };
-            fallbackParty.HeroStats = new List<HeroStats>();
-            for (int i = 0; i < fallbackHeroIds.Count; i++)
-            {
-                string heroId = fallbackHeroIds[i];
-                Vector3 position = defaultPositions.heroPositions[i];
-                HeroStats heroStats = new HeroStats(heroId, position);
-                fallbackParty.HeroStats.Add(heroStats);
-            }
-            return fallbackParty;
+            Debug.Log("ExpeditionManager: Expedition set successfully!");
         }
 
         public void TransitionToTemplePlanningScene()
@@ -140,7 +123,7 @@ namespace VirulentVentures
             }
             if (!expeditionData.IsValid())
             {
-                Debug.LogError("ExpeditionManager: Cannot transition to ExpeditionScene, invalid expedition data!");
+                Debug.LogError("ExpeditionManager: Cannot transition to ExpeditionScene, invalid expedition!");
                 return;
             }
             isTransitioning = true;
@@ -226,7 +209,6 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            // Update to remove SO references if needed
             if (expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null)
             {
                 Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, DefaultPositions: {defaultPositions != null}, CombatEncounterData: {combatEncounterData != null}");

@@ -66,66 +66,14 @@ namespace VirulentVentures
                 popoutContainer.style.display = DisplayStyle.None;
                 OnContinueClicked?.Invoke();
             };
-
-            // Subscribe to ExpeditionManager events
-            ExpeditionManager.Instance.OnExpeditionGenerated += UpdateUI;
-            ExpeditionManager.Instance.OnNodeUpdated += (nodes, index) => UpdateUI();
-            ExpeditionManager.Instance.OnCombatStarted += FadeToCombat;
-
-            UpdateUI();
-        }
-
-        void OnDestroy()
-        {
-            if (ExpeditionManager.Instance != null)
-            {
-                ExpeditionManager.Instance.OnExpeditionGenerated -= UpdateUI;
-                ExpeditionManager.Instance.OnNodeUpdated -= (nodes, index) => UpdateUI();
-                ExpeditionManager.Instance.OnCombatStarted -= FadeToCombat;
-            }
-            if (continueButton != null)
-            {
-                continueButton.clicked -= null;
-            }
         }
 
         public void UpdateUI()
         {
-            var expeditionData = ExpeditionManager.Instance.GetExpedition();
-            if (visualConfig != null) UpdatePortraits(expeditionData?.Party);
-            UpdateFlavourText(expeditionData);
-        }
-
-        private void UpdatePortraits(PartyData party)
-        {
-            if (portraitContainer == null) return;
-            portraitContainer.Clear();
-            if (party == null || party.HeroStats.Count == 0) return;
-
-            for (int i = 0; i < party.HeroStats.Count; i++)
+            ExpeditionData expeditionData = ExpeditionManager.Instance.GetExpedition();
+            if (expeditionData == null)
             {
-                VisualElement portrait = new VisualElement
-                {
-                    name = $"Portrait{i + 1}",
-                    style = { width = 64, height = 64 }
-                };
-                if (visualConfig != null)
-                {
-                    Sprite sprite = visualConfig.GetPortrait(party.HeroStats[i].Type.Id);
-                    if (sprite != null)
-                    {
-                        portrait.style.backgroundImage = new StyleBackground(sprite);
-                    }
-                }
-                portrait.AddToClassList("portrait");
-                portraitContainer.Add(portrait);
-            }
-        }
-
-        private void UpdateFlavourText(ExpeditionData expeditionData)
-        {
-            if (expeditionData == null || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count || popoutContainer == null || flavourText == null)
-            {
+                Debug.LogWarning("ExpeditionUIController: ExpeditionData is null, skipping UI update.");
                 popoutContainer.style.display = DisplayStyle.None;
                 continueButton.style.display = DisplayStyle.Flex;
                 continueButton.text = "Continue";
@@ -153,6 +101,25 @@ namespace VirulentVentures
                 popoutContainer.style.display = DisplayStyle.Flex;
                 continueButton.style.display = DisplayStyle.Flex;
                 continueButton.text = "Continue";
+            }
+        }
+
+        public void UpdatePortraits(PartyData partyData)
+        {
+            if (portraitContainer == null) return;
+            portraitContainer.Clear();
+
+            var heroes = partyData.GetHeroes();
+            for (int i = 0; i < heroes.Count; i++)
+            {
+                VisualElement portrait = new VisualElement();
+                portrait.AddToClassList("portrait");
+                Sprite sprite = visualConfig.GetPortrait(heroes[i].Id);
+                if (sprite != null)
+                {
+                    portrait.style.backgroundImage = new StyleBackground(sprite);
+                }
+                portraitContainer.Add(portrait);
             }
         }
 

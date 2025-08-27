@@ -16,6 +16,8 @@ namespace VirulentVentures
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
         [SerializeField] private EncounterData combatEncounterData;
         [SerializeField] private bool testMode = true; // For testing: true = 3 nodes, false = 8-12 nodes
+        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
+        [SerializeField] private CharacterPositions defaultPositions;
 
         private bool isExpeditionGenerated = false;
 
@@ -38,13 +40,14 @@ namespace VirulentVentures
         {
             if (expeditionData == null || partyData == null || availableViruses == null || visualConfig == null ||
                 visualController == null || uiController == null || combatNodeGenerator == null ||
-                nonCombatNodeGenerator == null || combatEncounterData == null)
+                nonCombatNodeGenerator == null || combatEncounterData == null || defaultPositions == null)
             {
                 Debug.LogError($"TemplePlanningController: Missing references! ExpeditionData: {expeditionData != null}, " +
                     $"PartyData: {partyData != null}, AvailableViruses: {availableViruses != null}, " +
                     $"VisualConfig: {visualConfig != null}, VisualController: {visualController != null}, " +
                     $"UIController: {uiController != null}, CombatNodeGenerator: {combatNodeGenerator != null}, " +
-                    $"NonCombatNodeGenerator: {nonCombatNodeGenerator != null}, CombatEncounterData: {combatEncounterData != null}");
+                    $"NonCombatNodeGenerator: {nonCombatNodeGenerator != null}, CombatEncounterData: {combatEncounterData != null}, " +
+                    $"DefaultPositions: {defaultPositions != null}");
                 return false;
             }
             return true;
@@ -58,50 +61,42 @@ namespace VirulentVentures
                 return;
             }
 
-            // Generate nodes
+            string[] biomes = { "Swamp", "Ruin", "HauntedForest" };
+            int nodeCount = testMode ? 3 : Random.Range(8, 13);
+            int combatNodes = Mathf.FloorToInt(nodeCount * 0.5f);
             List<NodeData> nodes = new List<NodeData>();
-            nodes.Add(new NodeData(new List<MonsterStats>(), "Temple", "Temple", false, "")); // Starting Temple node
+            int level = 1;
 
-            if (testMode)
+            nodes.Add(new NodeData(null, "Temple", "Temple", false, "The Temple of Cleansing"));
+
+            for (int i = 1; i < nodeCount - combatNodes; i++)
             {
-                // Testing: 1 non-combat + 1 combat
-                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1));
-                nodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", 1, combatEncounterData));
-            }
-            else
-            {
-                // Full mode: 8-12 nodes
-                int totalNodes = Random.Range(8, 13); // 8-12 nodes
-                int combatNodes = Mathf.FloorToInt(totalNodes * 0.4f); // ~40% combat
-                int nonCombatNodes = totalNodes - combatNodes - 1; // -1 for Temple
-                string[] biomes = { "Swamp", "Ruins", "HauntedForest" }; // From vision doc
-                int level = 1; // Starting difficulty
-
-                // Generate non-combat nodes
-                for (int i = 0; i < nonCombatNodes; i++)
-                {
-                    string biome = biomes[Random.Range(0, biomes.Length)];
-                    nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
-                    level++; // Incremental difficulty
-                }
-
-                // Generate combat nodes
-                for (int i = 0; i < combatNodes; i++)
-                {
-                    string biome = biomes[Random.Range(0, biomes.Length)];
-                    nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
-                    level++;
-                }
-
-                // Shuffle nodes (except Temple at start)
-                var shuffledNodes = new List<NodeData> { nodes[0] }; // Keep Temple first
-                var otherNodes = nodes.Skip(1).OrderBy(_ => Random.value).ToList();
-                shuffledNodes.AddRange(otherNodes);
-                nodes = shuffledNodes;
+                string biome = biomes[Random.Range(0, biomes.Length)];
+                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
+                level++;
             }
 
-            // Pass nodes to ExpeditionManager
-            ExpeditionManager.Instance.GenerateExpedition(nodes);
+            for (int i = 0; i < combatNodes; i++)
+            {
+                string biome = biomes[Random.Range(0, biomes.Length)];
+                nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
+                level++;
+            }
+
+            var shuffledNodes = new List<NodeData> { nodes[0] };
+            var otherNodes = nodes.Skip(1).OrderBy(_ => Random.value).ToList();
+            shuffledNodes.AddRange(otherNodes);
+            nodes = shuffledNodes;
+
+            // Generate party if none exists or user didn't select heroes
+            if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
+            {
+                partyData.HeroIds = new List<string>(fallbackHeroIds);
+                partyData.GenerateHeroStats(defaultPositions.heroPositions);
+                partyData.PartyID = System.Guid.NewGuid().ToString();
+            }
+
+            ExpeditionManager.Instance.SetExpedition(nodes, partyData);
             isExpeditionGenerated = expeditionData.IsValid();
 
             visualController.UpdatePartyVisuals(partyData);

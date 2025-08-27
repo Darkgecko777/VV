@@ -6,7 +6,20 @@ namespace VirulentVentures
 {
     public class CombatNodeGenerator : MonoBehaviour
     {
-        [SerializeField] private List<string> monsterPool = new List<string> { "Ghoul", "Wraith", "Skeleton", "Vampire" }; // Populated with CharacterLibrary IDs
+        [SerializeField] private List<string> monsterPool; // Populated in Awake to avoid Inspector override
+
+        void Awake()
+        {
+            if (monsterPool == null || monsterPool.Count == 0)
+            {
+                monsterPool = CharacterLibrary.GetMonsterIds();
+                if (monsterPool.Count == 0)
+                {
+                    Debug.LogWarning("CombatNodeGenerator: CharacterLibrary.GetMonsterIds returned empty, using fallback monster IDs.");
+                    monsterPool = new List<string> { "Ghoul", "Wraith", "Skeleton", "Vampire" };
+                }
+            }
+        }
 
         private bool ValidateReferences(EncounterData encounterData)
         {

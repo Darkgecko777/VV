@@ -4,8 +4,7 @@ namespace VirulentVentures
 {
     public interface ICombatUnit
     {
-        ScriptableObject SO { get; }
-        CharacterTypeSO Type { get; }
+        string Id { get; }
         int Speed { get; set; } // Int for 1-8 range
         int Health { get; set; }
         int MaxHealth { get; set; }

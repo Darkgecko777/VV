@@ -6,7 +6,6 @@ namespace VirulentVentures
     [Serializable]
     public class CharacterStatsData
     {
-        [SerializeField] private CharacterTypeSO type;
         [SerializeField] private int health;
         [SerializeField] private int maxHealth;
         [SerializeField] private int attack;
@@ -16,7 +15,6 @@ namespace VirulentVentures
         [SerializeField] private int morale; // New: 0-100% for retreat (heroes only)
         [SerializeField] private int maxMorale; // New: Cap for Morale
 
-        public CharacterTypeSO Type { get => type; set => type = value; }
         public int Health { get => health; set => health = value; }
         public int MaxHealth { get => maxHealth; set => maxHealth = value; }
         public int Attack { get => attack; set => attack = value; }

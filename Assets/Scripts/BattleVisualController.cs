@@ -61,7 +61,7 @@ namespace VirulentVentures
             {
                 if (unit.Health <= 0) continue;
 
-                GameObject unitObj = new GameObject(unit.Type.Id);
+                GameObject unitObj = new GameObject(unit.Id);
                 var renderer = unitObj.AddComponent<SpriteRenderer>();
                 var animator = unitObj.AddComponent<SpriteAnimation>();
                 renderer.sortingLayerName = "Characters";
@@ -70,7 +70,7 @@ namespace VirulentVentures
 
                 if (unit is HeroStats)
                 {
-                    Sprite sprite = visualConfig.GetCombatSprite(unit.Type.Id); // Use string ID
+                    Sprite sprite = visualConfig.GetCombatSprite(unit.Id);
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;
@@ -81,7 +81,7 @@ namespace VirulentVentures
                 }
                 else if (unit is MonsterStats)
                 {
-                    Sprite sprite = visualConfig.GetEnemySprite(unit.Type.Id); // Use string ID
+                    Sprite sprite = visualConfig.GetEnemySprite(unit.Id);
                     if (sprite != null)
                     {
                         renderer.sprite = sprite;

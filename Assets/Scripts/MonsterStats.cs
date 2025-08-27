@@ -30,8 +30,8 @@ namespace VirulentVentures
             _abilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
         }
 
-        public ScriptableObject SO => null; // No SO used
-        public CharacterTypeSO Type => null; // Replace with string ID
+        public string Id => _monsterId;
+
         public int Speed { get => _speed; set => _speed = Mathf.Clamp(value, 1, 8); }
         public int Health { get => _health; set => _health = Mathf.Max(0, value); }
         public int MaxHealth { get => _maxHealth; set => _maxHealth = value; }
