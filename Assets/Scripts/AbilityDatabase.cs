@@ -8,7 +8,7 @@ namespace VirulentVentures
     {
         public string Id { get; private set; }
         public string AnimationTrigger { get; private set; }
-        public System.Action<object, PartyData> Effect { get; private set; } // Supports HeroStats or MonsterStats
+        public System.Action<object, PartyData> Effect { get; private set; } // Supports CharacterStats for both heroes and monsters
         public bool IsCommon { get; private set; } // Flags common attacks
         public bool CanDodge { get; private set; } // For monster dodge (ethereal)
 
@@ -41,7 +41,7 @@ namespace VirulentVentures
                 effect: (target, partyData) =>
                 {
                     // Basic attack uses character's Attack stat; damage applied in auto-battler
-                    string targetId = target is HeroStats hero ? hero.Id : (target as MonsterStats).Id;
+                    string targetId = target is CharacterStats stats ? stats.Id : string.Empty;
                     Debug.Log($"{targetId} uses Basic Attack!");
                 },
                 isCommon: true
@@ -52,10 +52,10 @@ namespace VirulentVentures
                 animationTrigger: "FighterAttack",
                 effect: (target, partyData) =>
                 {
-                    if (target is HeroStats hero && hero.Health < hero.MaxHealth * 0.3f)
+                    if (target is CharacterStats stats && stats.IsHero && stats.Health < stats.MaxHealth * 0.3f)
                     {
-                        hero.Attack += 3;
-                        Debug.Log($"{hero.Id} boosts attack by 3!");
+                        stats.Attack += 3;
+                        Debug.Log($"{stats.Id} boosts attack by 3!");
                     }
                 }
             ));
@@ -65,13 +65,13 @@ namespace VirulentVentures
                 animationTrigger: "HealerHeal",
                 effect: (target, partyData) =>
                 {
-                    if (target is HeroStats hero && partyData.HeroStats.Any(h => h.Health < h.MaxHealth))
+                    if (target is CharacterStats stats && stats.IsHero && partyData.HeroStats.Any(h => h.Health < h.MaxHealth))
                     {
                         var lowestHealthAlly = partyData.FindLowestHealthAlly();
                         if (lowestHealthAlly != null)
                         {
                             lowestHealthAlly.Health = Mathf.Min(lowestHealthAlly.Health + 10, lowestHealthAlly.MaxHealth);
-                            Debug.Log($"{hero.Id} heals {lowestHealthAlly.Id} for 10!");
+                            Debug.Log($"{stats.Id} heals {lowestHealthAlly.Id} for 10!");
                         }
                     }
                 }
@@ -82,10 +82,10 @@ namespace VirulentVentures
                 animationTrigger: "ScoutDefend",
                 effect: (target, partyData) =>
                 {
-                    if (target is HeroStats hero)
+                    if (target is CharacterStats stats && stats.IsHero)
                     {
-                        hero.Defense += 2;
-                        Debug.Log($"{hero.Id} boosts defense by 2!");
+                        stats.Defense += 2;
+                        Debug.Log($"{stats.Id} boosts defense by 2!");
                     }
                 }
             ));
@@ -98,9 +98,9 @@ namespace VirulentVentures
                 animationTrigger: "BasicAttack",
                 effect: (target, partyData) =>
                 {
-                    if (target is MonsterStats monster)
+                    if (target is CharacterStats stats && !stats.IsHero)
                     {
-                        Debug.Log($"{monster.Id} uses Basic Attack!");
+                        Debug.Log($"{stats.Id} uses Basic Attack!");
                     }
                 },
                 isCommon: true
@@ -112,9 +112,9 @@ namespace VirulentVentures
                 effect: (target, partyData) =>
                 {
                     // No-op for monsters with no special ability
-                    if (target is MonsterStats monster)
+                    if (target is CharacterStats stats && !stats.IsHero)
                     {
-                        Debug.Log($"{monster.Id} uses default ability (no effect).");
+                        Debug.Log($"{stats.Id} uses default ability (no effect).");
                     }
                 }
             ));
@@ -125,9 +125,9 @@ namespace VirulentVentures
                 effect: (target, partyData) =>
                 {
                     // Damage based on Attack stat (applied in auto-battler)
-                    if (target is MonsterStats monster)
+                    if (target is CharacterStats stats && !stats.IsHero)
                     {
-                        Debug.Log($"{monster.Id} uses Claw Attack!");
+                        Debug.Log($"{stats.Id} uses Claw Attack!");
                     }
                 }
             ));
@@ -137,9 +137,9 @@ namespace VirulentVentures
                 animationTrigger: "GhoulRend",
                 effect: (target, partyData) =>
                 {
-                    if (target is MonsterStats monster)
+                    if (target is CharacterStats stats && !stats.IsHero)
                     {
-                        Debug.Log($"{monster.Id} uses Rend!"); // Removed morale reduction as monsters lack Morale
+                        Debug.Log($"{stats.Id} uses Rend!"); // Removed morale reduction as monsters lack Morale
                     }
                 }
             ));
@@ -150,9 +150,9 @@ namespace VirulentVentures
                 animationTrigger: "WraithStrike",
                 effect: (target, partyData) =>
                 {
-                    if (target is MonsterStats monster)
+                    if (target is CharacterStats stats && !stats.IsHero)
                     {
-                        Debug.Log($"{monster.Id} uses Wraith Strike!");
+                        Debug.Log($"{stats.Id} uses Wraith Strike!");
                     }
                 },
                 canDodge: true // Ethereal dodge

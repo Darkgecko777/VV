@@ -18,7 +18,7 @@ namespace VirulentVentures
         public struct UnitUpdateData
         {
             public ICombatUnit unit;
-            public DisplayStats displayStats;
+            public CharacterStats.DisplayStats displayStats;
         }
 
         [System.Serializable]
@@ -31,7 +31,7 @@ namespace VirulentVentures
         [System.Serializable]
         public struct BattleInitData
         {
-            public List<(ICombatUnit unit, GameObject go, DisplayStats stats)> units;
+            public List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats stats)> units;
         }
 
         [System.Serializable]
@@ -68,14 +68,14 @@ namespace VirulentVentures
         public event Action<ExpeditionGeneratedData> OnExpeditionUpdated;
         public event Action<NodeUpdateData> OnNodeUpdated;
         public event Action<NodeUpdateData> OnSceneTransitionCompleted;
-        public event Action OnContinueClicked; // New event for continue button
+        public event Action OnContinueClicked;
 
         public void RaiseLogMessage(string message, Color color)
         {
             OnLogMessage?.Invoke(new LogData { message = message, color = color });
         }
 
-        public void RaiseUnitUpdated(ICombatUnit unit, DisplayStats displayStats)
+        public void RaiseUnitUpdated(ICombatUnit unit, CharacterStats.DisplayStats displayStats)
         {
             OnUnitUpdated?.Invoke(new UnitUpdateData { unit = unit, displayStats = displayStats });
         }
@@ -83,6 +83,11 @@ namespace VirulentVentures
         public void RaiseDamagePopup(ICombatUnit unit, string message)
         {
             OnDamagePopup?.Invoke(new DamagePopupData { unit = unit, message = message });
+        }
+
+        public void RaiseBattleInitialized(List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats stats)> units)
+        {
+            OnBattleInitialized?.Invoke(new BattleInitData { units = units });
         }
 
         public void RaiseBattleEnded()
@@ -93,11 +98,6 @@ namespace VirulentVentures
         public void RaiseRetreatTriggered()
         {
             OnRetreatTriggered?.Invoke();
-        }
-
-        public void RaiseBattleInitialized(List<(ICombatUnit unit, GameObject go, DisplayStats stats)> units)
-        {
-            OnBattleInitialized?.Invoke(new BattleInitData { units = units });
         }
 
         public void RaiseExpeditionGenerated(ExpeditionData expeditionData, PartyData partyData)

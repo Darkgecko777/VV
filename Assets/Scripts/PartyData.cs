@@ -7,9 +7,9 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "PartyData", menuName = "VirulentVentures/PartyData")]
     public class PartyData : ScriptableObject
     {
-        [SerializeField] private string partyId; // Added for save/load
+        [SerializeField] private string partyId;
         public List<string> HeroIds;
-        public List<HeroStats> HeroStats;
+        public List<CharacterStats> HeroStats;
         public bool AllowCultist;
 
         public string PartyID
@@ -22,36 +22,36 @@ namespace VirulentVentures
         {
             partyId = "";
             HeroIds = new List<string>();
-            HeroStats = new List<HeroStats>();
+            HeroStats = new List<CharacterStats>();
             AllowCultist = false;
         }
 
-        public List<HeroStats> GetHeroes()
+        public List<CharacterStats> GetHeroes()
         {
-            return HeroStats;
+            return HeroStats.Where(h => h.Type == CharacterType.Hero).ToList();
         }
 
-        public List<HeroStats> CheckDeadStatus()
+        public List<CharacterStats> CheckDeadStatus()
         {
-            return HeroStats.FindAll(h => h.Health > 0);
+            return HeroStats.FindAll(h => h.Type == CharacterType.Hero && h.Health > 0);
         }
 
-        public HeroStats FindLowestHealthAlly()
+        public CharacterStats FindLowestHealthAlly()
         {
-            return HeroStats.Find(h => h.Health > 0 && h.Health == HeroStats.Min(hs => hs.Health));
+            return HeroStats.Find(h => h.Type == CharacterType.Hero && h.Health > 0 && h.Health == HeroStats.Where(hs => hs.Type == CharacterType.Hero).Min(hs => hs.Health));
         }
 
-        public HeroStats[] FindAllies()
+        public CharacterStats[] FindAllies()
         {
-            return HeroStats.ToArray();
+            return HeroStats.Where(h => h.Type == CharacterType.Hero).ToArray();
         }
 
         public void GenerateHeroStats(Vector3[] positions)
         {
-            HeroStats = new List<HeroStats>();
+            HeroStats = new List<CharacterStats>();
             for (int i = 0; i < HeroIds.Count && i < positions.Length; i++)
             {
-                var stats = new HeroStats(HeroIds[i], positions[i]);
+                var stats = new CharacterStats(HeroIds[i], positions[i], CharacterType.Hero);
                 HeroStats.Add(stats);
             }
         }

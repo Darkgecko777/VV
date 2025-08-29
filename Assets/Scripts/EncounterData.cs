@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace VirulentVentures
@@ -13,14 +13,14 @@ namespace VirulentVentures
         public bool IsCombatNode => isCombatNode;
         public CharacterPositions Positions { get => positions; set => positions = value; }
 
-        public List<MonsterStats> SpawnMonsters()
+        public List<CharacterStats> SpawnMonsters()
         {
-            List<MonsterStats> monsters = new List<MonsterStats>();
+            List<CharacterStats> monsters = new List<CharacterStats>();
 
             if (monsterIds == null || monsterIds.Count == 0 || monsterIds.Count > 4)
             {
                 Debug.LogWarning($"EncounterData: Invalid monster setup! MonsterIds count: {monsterIds?.Count ?? 0}, must be 1-4");
-                return monsters; // Keep this check since it�s critical for valid monster data
+                return monsters; // Keep this check since it’s critical for valid monster data
             }
 
             // Fallback to default CharacterPositions if positions is null
@@ -35,10 +35,10 @@ namespace VirulentVentures
                 Debug.LogWarning($"EncounterData: Invalid monster positions for {name}. Expected {monsterIds.Count} positions, got {positions?.monsterPositions?.Length ?? 0}. Using defaults.");
                 positions.monsterPositions = new Vector3[] // Fallback to defaults from CharacterPositions.cs
                 {
-            new Vector3(1.5f, 0f, 0f),
-            new Vector3(3.5f, 0f, 0f),
-            new Vector3(5.5f, 0f, 0f),
-            new Vector3(7.5f, 0f, 0f)
+                    new Vector3(1.5f, 0f, 0f),
+                    new Vector3(3.5f, 0f, 0f),
+                    new Vector3(5.5f, 0f, 0f),
+                    new Vector3(7.5f, 0f, 0f)
                 };
             }
 
@@ -56,7 +56,7 @@ namespace VirulentVentures
                 var renderer = monsterObj.AddComponent<SpriteRenderer>();
                 renderer.sortingLayerName = "Characters";
                 renderer.transform.localScale = new Vector3(2f, 2f, 1f);
-                var monsterStats = new MonsterStats(monsterIds[i], positions.monsterPositions[i]);
+                var monsterStats = new CharacterStats(monsterIds[i], positions.monsterPositions[i], CharacterType.Monster);
                 monsters.Add(monsterStats);
             }
 

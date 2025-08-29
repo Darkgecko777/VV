@@ -19,6 +19,22 @@ namespace VirulentVentures
             public List<string> AbilityIds;
             public bool CanBeCultist;
             public int PartyPosition;
+
+            public CharacterStats.DisplayStats GetDisplayStats(bool isHero)
+            {
+                return new CharacterStats.DisplayStats(
+                    name: Id,
+                    health: Health,
+                    maxHealth: MaxHealth,
+                    attack: Attack,
+                    defense: Defense,
+                    speed: Mathf.Clamp(Speed, 1, 8),
+                    evasion: Mathf.Clamp(Evasion, 0, 100),
+                    morale: isHero ? Mathf.Clamp(Morale, 0, MaxMorale) : (int?)null,
+                    maxMorale: isHero ? MaxMorale : (int?)null,
+                    isHero: isHero
+                );
+            }
         }
 
         private static readonly Dictionary<string, CharacterData> HeroData = new Dictionary<string, CharacterData>
@@ -102,9 +118,9 @@ namespace VirulentVentures
                     Health = 50,
                     MaxHealth = 70,
                     Attack = 15,
-                    Defense = 5,
+                    Defense = 10,
                     Speed = 4,
-                    Evasion = 20,
+                    Evasion = 25,
                     Morale = 0,
                     MaxMorale = 0,
                     AbilityIds = new List<string> { "BasicAttack", "GhoulClaw" },
@@ -119,7 +135,7 @@ namespace VirulentVentures
                     Health = 60,
                     MaxHealth = 80,
                     Attack = 18,
-                    Defense = 10,
+                    Defense = 5,
                     Speed = 6,
                     Evasion = 40,
                     Morale = 0,

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -167,6 +167,12 @@ namespace VirulentVentures
             {
                 if (unit.Health <= 0) continue;
 
+                if (string.IsNullOrEmpty(stats.name))
+                {
+                    Debug.LogWarning($"BattleViewController: Invalid DisplayStats for unit {unit.Id}");
+                    continue;
+                }
+
                 VisualElement panel = CreateUnitPanel(stats);
                 unitPanels[unit] = panel;
                 if (stats.isHero)
@@ -176,38 +182,25 @@ namespace VirulentVentures
 
                 GameObject unitObj = new GameObject(unit.Id);
                 var renderer = unitObj.AddComponent<SpriteRenderer>();
+                renderer.sortingLayerName = stats.isHero ? "Heroes" : "Monsters";
+                renderer.sortingOrder = stats.isHero ? heroIndex++ : monsterIndex++;
                 var animator = unitObj.AddComponent<SpriteAnimation>();
-                renderer.sortingLayerName = "Characters";
-                renderer.sortingOrder = stats.isHero ? heroIndex : monsterIndex + 10;
-                renderer.transform.localScale = new Vector3(2f, 2f, 1f);
-
-                Sprite sprite = stats.isHero ? visualConfig.GetCombatSprite(unit.Id) : visualConfig.GetEnemySprite(unit.Id);
-                if (sprite != null)
-                {
-                    renderer.sprite = sprite;
-                }
-
-                Vector3 position = stats.isHero
-                    ? (heroIndex < heroPositions.Length ? heroPositions[heroIndex] : Vector3.zero)
-                    : (monsterIndex < monsterPositions.Length ? monsterPositions[monsterIndex] : Vector3.zero);
+                Vector3 position = stats.isHero ? heroPositions[unit.PartyPosition - 1] : monsterPositions[unit.PartyPosition];
                 unitObj.transform.position = position;
-
                 units.Add((unit, unitObj, animator));
-
-                if (stats.isHero) heroIndex++;
-                else monsterIndex++;
             }
         }
 
-        private VisualElement CreateUnitPanel(DisplayStats stats)
+        private VisualElement CreateUnitPanel(CharacterStats.DisplayStats stats)
         {
-            VisualElement panel = new VisualElement();
-            panel.AddToClassList("unit-panel");
+            if (string.IsNullOrEmpty(stats.name))
+            {
+                Debug.LogWarning($"BattleViewController: Invalid DisplayStats for unit, name is empty");
+                return new VisualElement();
+            }
 
-            Label nameLabel = new Label(stats.name);
-            nameLabel.AddToClassList("stat-label");
-            nameLabel.name = "name-label";
-            panel.Add(nameLabel);
+            VisualElement panel = new VisualElement();
+            panel.AddToClassList(stats.isHero ? "hero-panel" : "monster-panel");
 
             VisualElement healthBar = new VisualElement();
             healthBar.AddToClassList("health-bar");
@@ -216,6 +209,10 @@ namespace VirulentVentures
             healthFill.style.width = new StyleLength(new Length((float)stats.health / stats.maxHealth * 100, LengthUnit.Percent));
             healthBar.Add(healthFill);
             panel.Add(healthBar);
+
+            Label nameLabel = new Label(stats.name);
+            nameLabel.AddToClassList("name-label");
+            panel.Add(nameLabel);
 
             if (stats.isHero)
             {
@@ -253,6 +250,12 @@ namespace VirulentVentures
             if (!isInitialized || !unitPanels.TryGetValue(data.unit, out var panel)) return;
 
             var stats = data.displayStats;
+            if (string.IsNullOrEmpty(stats.name))
+            {
+                Debug.LogWarning($"BattleViewController: Invalid DisplayStats for unit {data.unit.Id} in UpdateUnitPanel");
+                return;
+            }
+
             var healthFill = panel.Q<VisualElement>(className: stats.isHero ? "health-fill-hero" : "health-fill-monster");
             healthFill.style.width = new StyleLength(new Length((float)stats.health / stats.maxHealth * 100, LengthUnit.Percent));
 
@@ -304,7 +307,7 @@ namespace VirulentVentures
             var unitEntry = units.Find(u => u.unit == data.unit);
             if (unitEntry.animator != null)
             {
-                unitEntry.animator.Jiggle(data.unit is HeroStats);
+                unitEntry.animator.Jiggle(data.unit is CharacterStats cs ? cs.IsHero : false);
             }
         }
 

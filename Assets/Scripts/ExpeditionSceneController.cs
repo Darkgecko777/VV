@@ -7,6 +7,10 @@ namespace VirulentVentures
     {
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private ExpeditionData expeditionData;
+        [SerializeField] private PartyData partyData;
+        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
+        [SerializeField] private CharacterPositions defaultPositions;
+        [SerializeField] private EncounterData combatEncounterData;
 
         void Awake()
         {
@@ -17,10 +21,14 @@ namespace VirulentVentures
         {
             eventBus.OnNodeUpdated += HandleNodeUpdate;
             eventBus.OnSceneTransitionCompleted += HandleNodeUpdate;
-            eventBus.OnContinueClicked += HandleContinueClicked; // Handle continue button
+            eventBus.OnContinueClicked += HandleContinueClicked;
 
-            var expeditionData = ExpeditionManager.Instance.GetExpedition();
-            HandleNodeUpdate(new EventBusSO.NodeUpdateData { nodes = expeditionData.NodeData, currentIndex = expeditionData.CurrentNodeIndex });
+            var expedition = ExpeditionManager.Instance.GetExpedition();
+            if (!expedition.IsValid())
+            {
+                GenerateExpedition();
+            }
+            HandleNodeUpdate(new EventBusSO.NodeUpdateData { nodes = expedition.NodeData, currentIndex = expedition.CurrentNodeIndex });
         }
 
         void OnDestroy()
@@ -30,27 +38,50 @@ namespace VirulentVentures
                 eventBus.OnNodeUpdated -= HandleNodeUpdate;
                 eventBus.OnSceneTransitionCompleted -= HandleNodeUpdate;
                 eventBus.OnContinueClicked -= HandleContinueClicked;
-                Debug.Log("ExpeditionSceneController: Unsubscribed from EventBusSO");
             }
+        }
+
+        private void GenerateExpedition()
+        {
+            partyData.Reset();
+            partyData.HeroIds = fallbackHeroIds;
+            partyData.GenerateHeroStats(defaultPositions.heroPositions);
+            partyData.AllowCultist = false; // Prototype
+
+            var nodes = new List<NodeData>();
+            var nonCombatGenerator = gameObject.AddComponent<NonCombatNodeGenerator>();
+            var combatGenerator = gameObject.AddComponent<CombatNodeGenerator>();
+            var nonCombatNode = nonCombatGenerator.GenerateNonCombatNode("Swamp", 1);
+            var combatNode = combatGenerator.GenerateCombatNode("Swamp", 1, combatEncounterData);
+            nodes.Add(nonCombatNode);
+            nodes.Add(combatNode);
+            Destroy(nonCombatGenerator);
+            Destroy(combatGenerator);
+
+            expeditionData.SetNodes(nodes);
+            expeditionData.CurrentNodeIndex = 0;
+            expeditionData.SetParty(partyData);
+
+            eventBus.RaiseExpeditionGenerated(expeditionData, partyData);
+            eventBus.RaisePartyUpdated(partyData);
+            eventBus.RaiseNodeUpdated(nodes, 0);
         }
 
         private void HandleNodeUpdate(EventBusSO.NodeUpdateData data)
         {
-            // Removed RaiseNodeUpdated to prevent recursive loop
-            Debug.Log($"ExpeditionSceneController: Handled node update for index {data.currentIndex}, nodes count: {data.nodes?.Count ?? 0}");
+            // Existing code
         }
 
         private void HandleContinueClicked()
         {
             ExpeditionManager.Instance.OnContinueClicked();
-            Debug.Log("ExpeditionSceneController: Handled continue click");
         }
 
         private bool ValidateReferences()
         {
-            if (eventBus == null || expeditionData == null)
+            // Add partyData, fallbackHeroIds, defaultPositions, combatEncounterData to check
+            if (eventBus == null || expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null)
             {
-                Debug.LogError($"ExpeditionSceneController: Missing references! EventBus: {eventBus != null}, ExpeditionData: {expeditionData != null}");
                 return false;
             }
             return true;

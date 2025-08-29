@@ -27,7 +27,7 @@ namespace VirulentVentures
             string flavourText = texts[Random.Range(0, texts.Length)];
 
             return new NodeData(
-                monsters: new List<MonsterStats>(),
+                monsters: new List<CharacterStats>(),
                 nodeType: "NonCombat",
                 biome: biome,
                 isCombat: false,

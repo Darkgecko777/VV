@@ -25,9 +25,6 @@ namespace VirulentVentures
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
-        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
-        [SerializeField] private CharacterPositions defaultPositions;
-        [SerializeField] private EncounterData combatEncounterData;
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
         private const string CURRENT_VERSION = "1.0";
@@ -67,113 +64,59 @@ namespace VirulentVentures
                     expeditionData.CurrentNodeIndex = wrapper.expeditionData.CurrentNodeIndex;
                     expeditionData.SetParty(wrapper.expeditionData.Party);
                 }
-                else
-                {
-                    PlayerPrefs.DeleteKey("ExpeditionSave");
-                }
             }
-
             string partySaveData = PlayerPrefs.GetString("PartySave", "");
-            if (!string.IsNullOrEmpty(partySaveData) && partyData != null && (partyData.HeroStats == null || partyData.HeroStats.Count == 0))
+            if (!string.IsNullOrEmpty(partySaveData))
             {
                 var wrapper = JsonUtility.FromJson<SaveDataWrapper>(partySaveData);
                 if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.partyData != null)
                 {
-                    partyData.HeroStats = wrapper.partyData.HeroStats;
-                    partyData.PartyID = wrapper.partyData.PartyID;
+                    partyData = wrapper.partyData;
                 }
             }
-        }
-
-        void OnDestroy()
-        {
-            OnNodeUpdated = null;
-            OnExpeditionGenerated = null;
-            OnCombatStarted = null;
-            OnSceneTransitionCompleted = null;
-            Debug.Log("ExpeditionManager: Cleared all event subscriptions on destroy");
-        }
-
-        public void SetExpedition(List<NodeData> nodes, PartyData party)
-        {
-            if (nodes == null || nodes.Count == 0 || party == null)
-            {
-                Debug.LogError("ExpeditionManager: Cannot set expedition with invalid nodes or party!");
-                return;
-            }
-
-            expeditionData.SetNodes(nodes);
-            expeditionData.SetParty(party);
-            Debug.Log("ExpeditionManager: Expedition set successfully!");
-            OnExpeditionGenerated?.Invoke();
-        }
-
-        public void TransitionToExpeditionScene()
-        {
-            if (isTransitioning)
-            {
-                return;
-            }
-            if (!expeditionData.IsValid())
-            {
-                Debug.LogError("ExpeditionManager: Cannot transition to ExpeditionScene, invalid expedition!");
-                return;
-            }
-            isTransitioning = true;
-            SceneManager.LoadSceneAsync("ExpeditionScene", LoadSceneMode.Single).completed += _ =>
-            {
-                isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            };
-        }
-
-        public void TransitionToBattleScene()
-        {
-            if (isTransitioning)
-            {
-                return;
-            }
-            if (!expeditionData.IsValid() || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
-            {
-                Debug.LogError("ExpeditionManager: Cannot transition to BattleScene, invalid expedition or node index!");
-                return;
-            }
-            isTransitioning = true;
-            SceneManager.LoadSceneAsync("BattleScene", LoadSceneMode.Single).completed += _ =>
-            {
-                OnCombatStarted?.Invoke();
-                isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            };
-        }
-
-        public void ProcessCurrentNode()
-        {
-            if (isTransitioning || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
-            {
-                EndExpedition();
-                return;
-            }
-            NodeData node = expeditionData.NodeData[expeditionData.CurrentNodeIndex];
-            OnNodeUpdated?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            if (node.IsCombat)
-            {
-                TransitionToBattleScene();
-            }
+            PostLoad();
         }
 
         public void OnContinueClicked()
         {
+            var expedition = GetExpedition();
+            if (expedition.CurrentNodeIndex < expedition.NodeData.Count - 1)
+            {
+                expedition.CurrentNodeIndex++;
+                OnNodeUpdated?.Invoke(expedition.NodeData, expedition.CurrentNodeIndex);
+            }
+            else
+            {
+                EndExpedition();
+            }
+        }
+
+        public void TransitionToExpeditionScene()
+        {
             if (isTransitioning) return;
-            expeditionData.CurrentNodeIndex++;
-            SaveProgress();
-            ProcessCurrentNode();
+            isTransitioning = true;
+            SceneManager.LoadSceneAsync("Expedition", LoadSceneMode.Single).completed += _ =>
+            {
+                isTransitioning = false;
+                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+            };
+        }
+
+        public void TransitionToCombatScene()
+        {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            SceneManager.LoadSceneAsync("Combat", LoadSceneMode.Single).completed += _ =>
+            {
+                isTransitioning = false;
+                OnCombatStarted?.Invoke();
+                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+            };
         }
 
         public void EndExpedition()
         {
             expeditionData.Reset();
-            partyData.Reset();
             PlayerPrefs.DeleteKey("ExpeditionSave");
             PlayerPrefs.DeleteKey("PartySave");
             TransitionToTemplePlanningScene();
@@ -200,11 +143,30 @@ namespace VirulentVentures
             return expeditionData;
         }
 
+        public void PostLoad()
+        {
+            if (partyData == null) return;
+            foreach (var hero in partyData.HeroStats)
+            {
+                var data = CharacterLibrary.GetHeroData(hero.Id);
+                hero.AbilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
+                hero.Speed = data.Speed;
+            }
+            foreach (var node in expeditionData.NodeData)
+            {
+                foreach (var monster in node.Monsters)
+                {
+                    var data = CharacterLibrary.GetMonsterData(monster.Id);
+                    monster.AbilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
+                }
+            }
+        }
+
         private bool ValidateReferences()
         {
-            if (expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null)
+            if (expeditionData == null || partyData == null)
             {
-                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, DefaultPositions: {defaultPositions != null}, CombatEncounterData: {combatEncounterData != null}");
+                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}");
                 return false;
             }
             return true;

@@ -80,11 +80,17 @@ namespace VirulentVentures
                 hero.Morale = hero.MaxMorale;
             }
 
-            ExpeditionManager.Instance.SetExpedition(nodes, partyData);
+            if (expeditionData == null)
+            {
+                Debug.LogError("TemplePlanningController: expeditionData is null in GenerateExpedition!");
+                return;
+            }
+            expeditionData.SetNodes(nodes);
+            expeditionData.SetParty(partyData);
             isExpeditionGenerated = expeditionData.IsValid();
 
             eventBus.RaisePartyUpdated(partyData);
-            eventBus.RaiseExpeditionUpdated(expeditionData, partyData); // Use new event for UI updates
+            eventBus.RaiseExpeditionUpdated(expeditionData, partyData);
         }
 
         private void LaunchExpedition()
@@ -114,7 +120,7 @@ namespace VirulentVentures
 
             expeditionData.NodeData[data.nodeIndex].SeededViruses.Add(virus);
             Debug.Log($"TemplePlanningController: Seeded {virus.VirusID} to Node {data.nodeIndex}");
-            eventBus.RaiseExpeditionUpdated(expeditionData, partyData); // Use new event for UI updates
+            eventBus.RaiseExpeditionUpdated(expeditionData, partyData);
         }
 
         private bool ValidateReferences()
