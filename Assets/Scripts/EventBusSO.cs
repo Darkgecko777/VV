@@ -48,6 +48,13 @@ namespace VirulentVentures
             public int nodeIndex;
         }
 
+        [System.Serializable]
+        public struct NodeUpdateData
+        {
+            public List<NodeData> nodes;
+            public int currentIndex;
+        }
+
         public event Action<LogData> OnLogMessage;
         public event Action<UnitUpdateData> OnUnitUpdated;
         public event Action<DamagePopupData> OnDamagePopup;
@@ -58,7 +65,10 @@ namespace VirulentVentures
         public event Action<VirusSeededData> OnVirusSeeded;
         public event Action<PartyData> OnPartyUpdated;
         public event Action OnLaunchExpedition;
-        public event Action<ExpeditionGeneratedData> OnExpeditionUpdated; // New event for UI updates
+        public event Action<ExpeditionGeneratedData> OnExpeditionUpdated;
+        public event Action<NodeUpdateData> OnNodeUpdated;
+        public event Action<NodeUpdateData> OnSceneTransitionCompleted;
+        public event Action OnContinueClicked; // New event for continue button
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -113,6 +123,21 @@ namespace VirulentVentures
         public void RaiseExpeditionUpdated(ExpeditionData expeditionData, PartyData partyData)
         {
             OnExpeditionUpdated?.Invoke(new ExpeditionGeneratedData { expeditionData = expeditionData, partyData = partyData });
+        }
+
+        public void RaiseNodeUpdated(List<NodeData> nodes, int currentIndex)
+        {
+            OnNodeUpdated?.Invoke(new NodeUpdateData { nodes = nodes, currentIndex = currentIndex });
+        }
+
+        public void RaiseSceneTransitionCompleted(List<NodeData> nodes, int currentIndex)
+        {
+            OnSceneTransitionCompleted?.Invoke(new NodeUpdateData { nodes = nodes, currentIndex = currentIndex });
+        }
+
+        public void RaiseContinueClicked()
+        {
+            OnContinueClicked?.Invoke();
         }
     }
 }

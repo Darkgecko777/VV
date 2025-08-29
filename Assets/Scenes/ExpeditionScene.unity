@@ -119,73 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &593796592
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 593796595}
-  - component: {fileID: 593796594}
-  - component: {fileID: 593796593}
-  m_Layer: 0
-  m_Name: ExpeditionUIController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &593796593
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 593796592}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a91406338b300a34bb3ecfbcee76a467, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  uiDocument: {fileID: 593796594}
-  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
-  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
---- !u!114 &593796594
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 593796592}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_PanelSettings: {fileID: 11400000, guid: f732ea1ef27771d4fae8bf8004f7c329, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: e5b929917b8388d4baf177354b6b3340, type: 3}
-  m_SortingOrder: 0
-  m_WorldSpaceSizeMode: 1
-  m_WorldSpaceWidth: 1920
-  m_WorldSpaceHeight: 1080
---- !u!4 &593796595
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 593796592}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.5, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &833675104
 GameObject:
   m_ObjectHideFlags: 0
@@ -323,7 +256,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!1 &835002390
+--- !u!1 &1297501101
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -331,39 +264,61 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 835002392}
-  - component: {fileID: 835002391}
+  - component: {fileID: 1297501104}
+  - component: {fileID: 1297501103}
+  - component: {fileID: 1297501102}
   m_Layer: 0
-  m_Name: ExpeditionVisualController
+  m_Name: ExpeditionViewController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &835002391
+--- !u!114 &1297501102
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 835002390}
+  m_GameObject: {fileID: 1297501101}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6cf05502b3e9f24fadf727b7b29d215, type: 3}
+  m_Script: {fileID: 11500000, guid: 52fac558c60aebd4a856f05ec9ff3aeb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiDocument: {fileID: 593796594}
+  uiDocument: {fileID: 1297501103}
   visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
---- !u!4 &835002392
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+--- !u!114 &1297501103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1297501101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_PanelSettings: {fileID: 11400000, guid: f732ea1ef27771d4fae8bf8004f7c329, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: e5b929917b8388d4baf177354b6b3340, type: 3}
+  m_SortingOrder: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+--- !u!4 &1297501104
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 835002390}
+  m_GameObject: {fileID: 1297501101}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.5, y: 0, z: 0}
+  m_LocalPosition: {x: -2.525106, y: 1.4585422, z: 0.06824295}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -398,11 +353,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3813da28da7f3c1478a9c6db7910bd09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiDocument: {fileID: 593796594}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   expeditionData: {fileID: 11400000, guid: dbd010dc53fbedf4ead5b8a30d6b6ccd, type: 2}
-  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
-  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
-  uiController: {fileID: 593796593}
 --- !u!4 &2116178931
 Transform:
   m_ObjectHideFlags: 0
@@ -424,5 +376,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 833675107}
   - {fileID: 2116178931}
-  - {fileID: 835002392}
-  - {fileID: 593796595}
+  - {fileID: 1297501104}

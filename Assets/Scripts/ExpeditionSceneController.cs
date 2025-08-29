@@ -1,15 +1,12 @@
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace VirulentVentures
 {
     public class ExpeditionSceneController : MonoBehaviour
     {
-        [SerializeField] private UIDocument uiDocument;
+        [SerializeField] private EventBusSO eventBus;
         [SerializeField] private ExpeditionData expeditionData;
-        [SerializeField] private VisualConfig visualConfig;
-        [SerializeField] private UIConfig uiConfig;
-        [SerializeField] private ExpeditionUIController uiController;
 
         void Awake()
         {
@@ -18,57 +15,42 @@ namespace VirulentVentures
 
         void Start()
         {
-            // Subscribe to UIController events
-            uiController.OnContinueClicked += HandleContinueClicked;
-            ExpeditionManager.Instance.OnExpeditionGenerated += UpdateScene;
-            ExpeditionManager.Instance.OnCombatStarted += () => { /* Optional: Handle combat start visuals/logic */ };
+            eventBus.OnNodeUpdated += HandleNodeUpdate;
+            eventBus.OnSceneTransitionCompleted += HandleNodeUpdate;
+            eventBus.OnContinueClicked += HandleContinueClicked; // Handle continue button
 
-            // NEW: Subscribe to node updates and scene transitions for in-scene UI refreshes
-            ExpeditionManager.Instance.OnNodeUpdated += HandleNodeUpdate;
-            ExpeditionManager.Instance.OnSceneTransitionCompleted += HandleNodeUpdate;
-
-            // Initialize UI with current expedition data
-            UpdateScene();
+            var expeditionData = ExpeditionManager.Instance.GetExpedition();
+            HandleNodeUpdate(new EventBusSO.NodeUpdateData { nodes = expeditionData.NodeData, currentIndex = expeditionData.CurrentNodeIndex });
         }
 
         void OnDestroy()
         {
-            if (uiController != null)
+            if (eventBus != null)
             {
-                uiController.OnContinueClicked -= HandleContinueClicked;
+                eventBus.OnNodeUpdated -= HandleNodeUpdate;
+                eventBus.OnSceneTransitionCompleted -= HandleNodeUpdate;
+                eventBus.OnContinueClicked -= HandleContinueClicked;
+                Debug.Log("ExpeditionSceneController: Unsubscribed from EventBusSO");
             }
-            if (ExpeditionManager.Instance != null)
-            {
-                ExpeditionManager.Instance.OnExpeditionGenerated -= UpdateScene;
-                ExpeditionManager.Instance.OnCombatStarted -= null;
+        }
 
-                // NEW: Unsubscribe from node updates and scene transitions
-                ExpeditionManager.Instance.OnNodeUpdated -= HandleNodeUpdate;
-                ExpeditionManager.Instance.OnSceneTransitionCompleted -= HandleNodeUpdate;
-            }
+        private void HandleNodeUpdate(EventBusSO.NodeUpdateData data)
+        {
+            // Removed RaiseNodeUpdated to prevent recursive loop
+            Debug.Log($"ExpeditionSceneController: Handled node update for index {data.currentIndex}, nodes count: {data.nodes?.Count ?? 0}");
         }
 
         private void HandleContinueClicked()
         {
             ExpeditionManager.Instance.OnContinueClicked();
-        }
-
-        private void UpdateScene()
-        {
-            uiController.UpdateUI();
-        }
-
-        // NEW: Handler for node changes (advances or post-transition)
-        private void HandleNodeUpdate(System.Collections.Generic.List<NodeData> nodes, int currentIndex)
-        {
-            UpdateScene();
+            Debug.Log("ExpeditionSceneController: Handled continue click");
         }
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || expeditionData == null || visualConfig == null || uiConfig == null || uiController == null)
+            if (eventBus == null || expeditionData == null)
             {
-                Debug.LogError($"ExpeditionSceneController: Missing references! UIDocument: {uiDocument != null}, ExpeditionData: {expeditionData != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, UIController: {uiController != null}");
+                Debug.LogError($"ExpeditionSceneController: Missing references! EventBus: {eventBus != null}, ExpeditionData: {expeditionData != null}");
                 return false;
             }
             return true;
