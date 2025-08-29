@@ -23,7 +23,7 @@ namespace VirulentVentures
         {
             var data = CharacterLibrary.GetHeroData(heroId);
             _heroId = data.Id;
-            _health = data.Health;
+            _health = data.MaxHealth; // Changed to initialize at max
             _maxHealth = data.MaxHealth;
             _attack = data.Attack;
             _defense = data.Defense;

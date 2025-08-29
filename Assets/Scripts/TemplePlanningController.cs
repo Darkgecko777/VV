@@ -10,97 +10,60 @@ namespace VirulentVentures
         [SerializeField] private PartyData partyData;
         [SerializeField] private List<VirusData> availableViruses;
         [SerializeField] private VisualConfig visualConfig;
-        [SerializeField] private TempleVisualController visualController;
-        [SerializeField] private TempleUIController uiController;
         [SerializeField] private CombatNodeGenerator combatNodeGenerator;
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
         [SerializeField] private EncounterData combatEncounterData;
-        [SerializeField] private bool testMode = true; // For testing: true = 3 nodes, false = 8-12 nodes
+        [SerializeField] private bool testMode = true;
         [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
         [SerializeField] private CharacterPositions defaultPositions;
+        [SerializeField] private EventBusSO eventBus;
 
         private bool isExpeditionGenerated = false;
 
         void Awake()
         {
             if (!ValidateReferences()) return;
-            uiController.OnGenerateClicked += GenerateExpedition;
-            uiController.OnLaunchClicked += LaunchExpedition;
-            uiController.OnSeedVirusClicked += SeedVirus;
+            eventBus.OnExpeditionGenerated += GenerateExpedition;
+            eventBus.OnVirusSeeded += SeedVirus;
+            eventBus.OnLaunchExpedition += LaunchExpedition;
         }
 
         void Start()
         {
-            uiController.InitializeUI(availableViruses, expeditionData);
-            visualController.InitializeEmptyPortraits();
-            UpdateLaunchButtonState();
+            isExpeditionGenerated = expeditionData.IsValid();
         }
 
-        private bool ValidateReferences()
+        void OnDestroy()
         {
-            if (expeditionData == null || partyData == null || availableViruses == null || visualConfig == null ||
-                visualController == null || uiController == null || combatNodeGenerator == null ||
-                nonCombatNodeGenerator == null || combatEncounterData == null || defaultPositions == null)
+            if (eventBus != null)
             {
-                Debug.LogError($"TemplePlanningController: Missing references! ExpeditionData: {expeditionData != null}, " +
-                    $"PartyData: {partyData != null}, AvailableViruses: {availableViruses != null}, " +
-                    $"VisualConfig: {visualConfig != null}, VisualController: {visualController != null}, " +
-                    $"UIController: {uiController != null}, CombatNodeGenerator: {combatNodeGenerator != null}, " +
-                    $"NonCombatNodeGenerator: {nonCombatNodeGenerator != null}, CombatEncounterData: {combatEncounterData != null}, " +
-                    $"DefaultPositions: {defaultPositions != null}");
-                return false;
+                eventBus.OnExpeditionGenerated -= GenerateExpedition;
+                eventBus.OnVirusSeeded -= SeedVirus;
+                eventBus.OnLaunchExpedition -= LaunchExpedition;
             }
-            return true;
         }
 
-        public void GenerateExpedition()
+        private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData _)
         {
-            if (isExpeditionGenerated)
-            {
-                Debug.LogWarning("TemplePlanningController: Expedition already generated!");
-                return;
-            }
-
-            string[] biomes = { "Swamp", "Ruin", "HauntedForest" };
-            int nodeCount = testMode ? 3 : Random.Range(8, 13);
-            int combatNodes = Mathf.FloorToInt(nodeCount * 0.5f);
-            // NEW: Ensure at least one non-combat node for alternation
-            int nonCombatNodes = nodeCount - combatNodes - 1; // -1 for Temple node
             List<NodeData> nodes = new List<NodeData>();
+            int nodeCount = testMode ? 3 : Random.Range(8, 13);
+            string[] biomes = { "Ruins", "Swamp", "Forest" };
             int level = 1;
 
-            // Add Temple node first
-            nodes.Add(new NodeData(null, "Temple", "Temple", false, "The Temple of Cleansing"));
-
-            // NEW: Alternate non-combat and combat nodes
-            int pairs = Mathf.Min(nonCombatNodes, combatNodes); // Number of alternating pairs
-            for (int i = 0; i < pairs; i++)
+            for (int i = 0; i < nodeCount; i++)
             {
                 string biome = biomes[Random.Range(0, biomes.Length)];
-                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
-                level++;
-                biome = biomes[Random.Range(0, biomes.Length)];
-                nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
+                if (Random.Range(0, 2) == 0)
+                {
+                    nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
+                }
+                else
+                {
+                    nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
+                }
                 level++;
             }
 
-            // NEW: Add remaining non-combat nodes if any
-            for (int i = pairs; i < nonCombatNodes; i++)
-            {
-                string biome = biomes[Random.Range(0, biomes.Length)];
-                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
-                level++;
-            }
-
-            // NEW: Add remaining combat nodes if any
-            for (int i = pairs; i < combatNodes; i++)
-            {
-                string biome = biomes[Random.Range(0, biomes.Length)];
-                nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
-                level++;
-            }
-
-            // Generate party if none exists or user didn't select heroes
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
                 partyData.HeroIds = new List<string>(fallbackHeroIds);
@@ -108,16 +71,20 @@ namespace VirulentVentures
                 partyData.PartyID = System.Guid.NewGuid().ToString();
             }
 
+            foreach (var hero in partyData.HeroStats)
+            {
+                hero.Health = hero.MaxHealth;
+                hero.Morale = hero.MaxMorale;
+            }
+
             ExpeditionManager.Instance.SetExpedition(nodes, partyData);
             isExpeditionGenerated = expeditionData.IsValid();
 
-            visualController.UpdatePartyVisuals(partyData);
-            visualController.UpdateNodeVisuals(expeditionData);
-            uiController.UpdateNodeDropdown(expeditionData);
-            UpdateLaunchButtonState();
+            eventBus.RaisePartyUpdated(partyData);
+            eventBus.RaiseExpeditionGenerated(expeditionData, partyData);
         }
 
-        public void LaunchExpedition()
+        private void LaunchExpedition()
         {
             if (!isExpeditionGenerated || !expeditionData.IsValid())
             {
@@ -127,29 +94,40 @@ namespace VirulentVentures
             ExpeditionManager.Instance.TransitionToExpeditionScene();
         }
 
-        public void SeedVirus(string virusID, int nodeIndex)
+        private void SeedVirus(EventBusSO.VirusSeededData data)
         {
-            if (!isExpeditionGenerated || nodeIndex < 0 || nodeIndex >= expeditionData.NodeData.Count)
+            if (!isExpeditionGenerated || data.nodeIndex < 0 || data.nodeIndex >= expeditionData.NodeData.Count)
             {
-                Debug.LogWarning($"TemplePlanningController: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {nodeIndex}");
+                Debug.LogWarning($"TemplePlanningController: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {data.nodeIndex}");
                 return;
             }
 
-            VirusData virus = availableViruses.Find(v => v.VirusID == virusID);
+            VirusData virus = availableViruses.Find(v => v.VirusID == data.virusID);
             if (virus == null)
             {
-                Debug.LogWarning($"TemplePlanningController: Virus {virusID} not found!");
+                Debug.LogWarning($"TemplePlanningController: Virus {data.virusID} not found!");
                 return;
             }
 
-            expeditionData.NodeData[nodeIndex].SeededViruses.Add(virus);
-            Debug.Log($"TemplePlanningController: Seeded {virus.VirusID} to Node {nodeIndex}");
-            visualController.UpdateNodeVisuals(expeditionData);
+            expeditionData.NodeData[data.nodeIndex].SeededViruses.Add(virus);
+            Debug.Log($"TemplePlanningController: Seeded {virus.VirusID} to Node {data.nodeIndex}");
+            eventBus.RaiseExpeditionGenerated(expeditionData, partyData);
         }
 
-        private void UpdateLaunchButtonState()
+        private bool ValidateReferences()
         {
-            uiController.SetLaunchButtonEnabled(isExpeditionGenerated && expeditionData.IsValid());
+            if (expeditionData == null || partyData == null || availableViruses == null || visualConfig == null ||
+                combatNodeGenerator == null || nonCombatNodeGenerator == null || combatEncounterData == null ||
+                defaultPositions == null || eventBus == null)
+            {
+                Debug.LogError($"TemplePlanningController: Missing references! ExpeditionData: {expeditionData != null}, " +
+                    $"PartyData: {partyData != null}, AvailableViruses: {availableViruses != null}, " +
+                    $"VisualConfig: {visualConfig != null}, CombatNodeGenerator: {combatNodeGenerator != null}, " +
+                    $"NonCombatNodeGenerator: {nonCombatNodeGenerator != null}, CombatEncounterData: {combatEncounterData != null}, " +
+                    $"DefaultPositions: {defaultPositions != null}, EventBus: {eventBus != null}");
+                return false;
+            }
+            return true;
         }
     }
 }

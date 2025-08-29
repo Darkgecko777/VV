@@ -37,7 +37,7 @@
     left: 586px;
     top: 0px;
     opacity: 1;
-    overflow: visible;
+    overflow: scroll;
     padding: 10px;
 }
 
@@ -69,10 +69,9 @@
     left: 760px;
     bottom: 10px;
     opacity: 1;
-    display: none; /* Hidden until battle ends */
 }
 
-#ContinueButton {
+.button {
     background-color: #333333;
     border-color: #1A1A1A;
     border-width: 2px;
@@ -105,8 +104,9 @@
     width: 180px;
     margin-bottom: 5px;
     opacity: 1;
-    overflow: visible;
+    overflow: hidden; /* Clip fill */
     position: relative;
+    display: flex; /* Ensure layout */
 }
 
 .health-bar-multislot {
@@ -117,8 +117,9 @@
     width: 360px;
     margin-bottom: 5px;
     opacity: 1;
-    overflow: visible;
+    overflow: hidden;
     position: relative;
+    display: flex;
 }
 
 .health-fill-hero {
@@ -148,7 +149,7 @@
 .stat-label {
     color: #A5FF66; /* Green for virus pop */
     font-size: 14px;
-    margin-bottom: 2px;
+    margin-bottom: 5px; /* Add spacing */
     opacity: 1;
 }
 
@@ -158,9 +159,9 @@
     background-color: rgba(0, 0, 0, 0.7);
     padding: 10px;
     width: 728px;
-    height: 420px;
+    height: 440px;
     opacity: 1;
-    overflow: scroll;
+    overflow: visible;
 }
 
 .damage-popup {

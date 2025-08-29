@@ -9,14 +9,11 @@ namespace VirulentVentures
         public List<(ICombatUnit unit, GameObject go, DisplayStats displayStats)> Units { get; private set; }
         public bool IsBattleActive { get; set; }
         public int RoundNumber { get; private set; }
+        private readonly EventBusSO eventBus;
 
-        public event Action<string, Color> OnLogMessage;
-        public event Action<ICombatUnit, DisplayStats> OnUnitUpdated;
-        public event Action<ICombatUnit, string> OnDamagePopup;
-        public event Action OnBattleEnded;
-
-        public CombatModel()
+        public CombatModel(EventBusSO bus)
         {
+            eventBus = bus ?? throw new ArgumentNullException(nameof(bus), "EventBusSO cannot be null");
             Units = new List<(ICombatUnit, GameObject, DisplayStats)>();
             IsBattleActive = false;
             RoundNumber = 0;
@@ -29,27 +26,32 @@ namespace VirulentVentures
             {
                 if (hero.Health > 0)
                 {
-                    Units.Add((hero, null, hero.GetDisplayStats()));
+                    var stats = hero.GetDisplayStats();
+                    Debug.Log($"Initializing Hero {stats.name}: Health={stats.health}/{stats.maxHealth}, Morale={stats.morale}/{stats.maxMorale}");
+                    Units.Add((hero, null, stats));
                 }
             }
             foreach (var monster in monsterStats)
             {
                 if (monster.Health > 0)
                 {
-                    Units.Add((monster, null, monster.GetDisplayStats()));
+                    var stats = monster.GetDisplayStats();
+                    Debug.Log($"Initializing Monster {stats.name}: Health={stats.health}/{stats.maxHealth}");
+                    Units.Add((monster, null, stats));
                 }
             }
+            eventBus.RaiseBattleInitialized(Units);
         }
 
         public void IncrementRound()
         {
             RoundNumber++;
-            OnLogMessage?.Invoke($"Round {RoundNumber} begins!", Color.white);
+            eventBus.RaiseLogMessage($"Round {RoundNumber} begins!", Color.white);
         }
 
         public void LogMessage(string message, Color color)
         {
-            OnLogMessage?.Invoke(message, color);
+            eventBus.RaiseLogMessage(message, color);
         }
 
         public void UpdateUnit(ICombatUnit unit, string damageMessage = null)
@@ -58,11 +60,12 @@ namespace VirulentVentures
             if (unitEntry.unit != null)
             {
                 Units.Remove(unitEntry);
-                Units.Add((unit, unitEntry.go, unit.GetDisplayStats())); // Refresh with new DisplayStats
-                OnUnitUpdated?.Invoke(unit, unit.GetDisplayStats());
+                var newStats = unit.GetDisplayStats();
+                Units.Add((unit, unitEntry.go, newStats));
+                eventBus.RaiseUnitUpdated(unit, newStats);
                 if (damageMessage != null)
                 {
-                    OnDamagePopup?.Invoke(unit, damageMessage);
+                    eventBus.RaiseDamagePopup(unit, damageMessage);
                 }
             }
         }
@@ -70,7 +73,7 @@ namespace VirulentVentures
         public void EndBattle()
         {
             IsBattleActive = false;
-            OnBattleEnded?.Invoke();
+            eventBus.RaiseBattleEnded();
         }
     }
 }

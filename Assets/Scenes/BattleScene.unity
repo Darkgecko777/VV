@@ -256,6 +256,77 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 20, y: 0, z: 0}
+--- !u!1 &520237045
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 520237048}
+  - component: {fileID: 520237047}
+  - component: {fileID: 520237046}
+  m_Layer: 0
+  m_Name: BattleViewController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &520237046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 520237045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_PanelSettings: {fileID: 11400000, guid: 1d465a38ba3df9f49999136fbadca5d3, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 279e09c874667a4499e5c984870c11d6, type: 3}
+  m_SortingOrder: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+--- !u!114 &520237047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 520237045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b771399cd2b1ae5429b329736d44e831, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
+  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
+  uiDocument: {fileID: 520237046}
+  mainCamera: {fileID: 519420031}
+  characterPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
+  backgroundSprite: {fileID: 4771802001370111548, guid: b4ead30647ae19c4692634354b4c7d7b, type: 3}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+--- !u!4 &520237048
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 520237045}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.525106, y: 1.4585422, z: 0.06824295}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -370,10 +441,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
-  uiController: {fileID: 2000169339}
-  visualController: {fileID: 940074842}
   visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   battleCamera: {fileID: 519420031}
 --- !u!4 &621176281
 Transform:
@@ -390,122 +460,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &940074841
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 940074843}
-  - component: {fileID: 940074842}
-  m_Layer: 0
-  m_Name: BattleVisualController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &940074842
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 940074841}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 952a621e597ccc84b9516ebe4c5195f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
-  characterPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
-  backgroundSprite: {fileID: 4771802001370111548, guid: b4ead30647ae19c4692634354b4c7d7b, type: 3}
-  mainCamera: {fileID: 519420031}
---- !u!4 &940074843
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 940074841}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.5, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2000169337
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2000169340}
-  - component: {fileID: 2000169339}
-  - component: {fileID: 2000169338}
-  m_Layer: 0
-  m_Name: BattleUIController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2000169338
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2000169337}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_PanelSettings: {fileID: 11400000, guid: 1d465a38ba3df9f49999136fbadca5d3, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: 279e09c874667a4499e5c984870c11d6, type: 3}
-  m_SortingOrder: 0
-  m_WorldSpaceSizeMode: 1
-  m_WorldSpaceWidth: 1920
-  m_WorldSpaceHeight: 1080
---- !u!114 &2000169339
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2000169337}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 37f530dfc8346bc4298dc33cccdf09cf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
-  uiDocument: {fileID: 2000169338}
-  mainCamera: {fileID: 519420031}
-  visualController: {fileID: 940074842}
---- !u!4 &2000169340
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2000169337}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.5, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -513,5 +467,4 @@ SceneRoots:
   - {fileID: 519420032}
   - {fileID: 619394802}
   - {fileID: 621176281}
-  - {fileID: 940074843}
-  - {fileID: 2000169340}
+  - {fileID: 520237048}

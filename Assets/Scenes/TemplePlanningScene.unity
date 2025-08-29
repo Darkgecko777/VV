@@ -172,6 +172,75 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &335239194
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 335239195}
+  - component: {fileID: 335239197}
+  - component: {fileID: 335239196}
+  m_Layer: 0
+  m_Name: TempleViewController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &335239195
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 335239194}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.525106, y: 1.4585422, z: 0.06824295}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &335239196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 335239194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_PanelSettings: {fileID: 11400000, guid: 0d0d879368479084e9ef9075486f13de, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: a5948c30965c8aa44bc6446bbb944c96, type: 3}
+  m_SortingOrder: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+--- !u!114 &335239197
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 335239194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2eee0fac621960a469a690e976410949, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiDocument: {fileID: 335239196}
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
+  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  availableViruses: []
 --- !u!1 &363512853
 GameObject:
   m_ObjectHideFlags: 0
@@ -230,133 +299,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &688150214
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 688150217}
-  - component: {fileID: 688150216}
-  - component: {fileID: 688150215}
-  m_Layer: 0
-  m_Name: TemplePlanningUIController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &688150215
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 688150214}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c604e5b57ae5f8942b3f77784c7c4374, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  uiDocument: {fileID: 688150216}
-  planningManager: {fileID: 2139730224}
-  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
-  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
---- !u!114 &688150216
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 688150214}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_PanelSettings: {fileID: 11400000, guid: 0d0d879368479084e9ef9075486f13de, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: a5948c30965c8aa44bc6446bbb944c96, type: 3}
-  m_SortingOrder: 0
-  m_WorldSpaceSizeMode: 1
-  m_WorldSpaceWidth: 1920
-  m_WorldSpaceHeight: 1080
---- !u!4 &688150217
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 688150214}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.5, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &966045760
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 966045762}
-  - component: {fileID: 966045761}
-  - component: {fileID: 966045763}
-  m_Layer: 0
-  m_Name: TempleVisualController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &966045761
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 966045760}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95883095d25c4414da6058536ea3d9e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
-  uiDocument: {fileID: 688150216}
---- !u!4 &966045762
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 966045760}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.5, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &966045763
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 966045760}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 825870d60b86641418648430845c1e08, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1542003243
 GameObject:
   m_ObjectHideFlags: 0
@@ -527,18 +469,17 @@ MonoBehaviour:
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
   availableViruses: []
   visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
-  visualController: {fileID: 966045761}
-  uiController: {fileID: 688150215}
   combatNodeGenerator: {fileID: 363512855}
   nonCombatNodeGenerator: {fileID: 363512854}
   combatEncounterData: {fileID: 11400000, guid: cb2f1c90e6f1dd54ea59e6686e020c98, type: 2}
-  testMode: 1
+  testMode: 0
   fallbackHeroIds:
   - Fighter
   - Healer
   - Scout
   - TreasureHunter
   defaultPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
 --- !u!4 &2139730225
 Transform:
   m_ObjectHideFlags: 0
@@ -560,7 +501,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 1542003246}
   - {fileID: 2139730225}
-  - {fileID: 966045762}
-  - {fileID: 688150217}
   - {fileID: 363512856}
   - {fileID: 279643037}
+  - {fileID: 335239195}

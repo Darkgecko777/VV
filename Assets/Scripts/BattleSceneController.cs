@@ -8,10 +8,9 @@ namespace VirulentVentures
     public class BattleSceneController : MonoBehaviour
     {
         [SerializeField] private CombatConfig combatConfig;
-        [SerializeField] private BattleUIController uiController;
-        [SerializeField] private BattleVisualController visualController;
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private UIConfig uiConfig;
+        [SerializeField] private EventBusSO eventBus;
         [SerializeField] private Camera battleCamera;
 
         private CombatModel combatModel;
@@ -20,7 +19,7 @@ namespace VirulentVentures
 
         void Awake()
         {
-            combatModel = new CombatModel();
+            combatModel = new CombatModel(eventBus);
         }
 
         void Start()
@@ -31,27 +30,15 @@ namespace VirulentVentures
                 Debug.LogError("BattleSceneController: Failed to find ExpeditionManager!");
                 return;
             }
-
             if (!ValidateReferences()) return;
 
-            uiController.SubscribeToModel(combatModel);
-            visualController.SubscribeToModel(combatModel);
-            uiController.OnContinueClicked += EndBattle;
-            combatModel.OnBattleEnded += EndBattle;
-
+            eventBus.OnBattleEnded += EndBattle;
             StartCoroutine(RunBattle());
         }
 
         void OnDestroy()
         {
-            if (uiController != null)
-            {
-                uiController.OnContinueClicked -= EndBattle;
-            }
-            if (combatModel != null)
-            {
-                combatModel.OnBattleEnded -= EndBattle;
-            }
+            eventBus.OnBattleEnded -= EndBattle;
         }
 
         private IEnumerator RunBattle()
@@ -68,7 +55,7 @@ namespace VirulentVentures
                 yield break;
             }
 
-            var heroStats = expeditionManager.GetExpedition().Party.GetHeroes();
+            var heroStats = expeditionData.Party.GetHeroes();
             var monsterStats = expeditionData.NodeData[expeditionData.CurrentNodeIndex].Monsters;
 
             if (heroStats == null || monsterStats == null || heroStats.Count == 0 || monsterStats.Count == 0)
@@ -78,16 +65,14 @@ namespace VirulentVentures
             }
 
             combatModel.IsBattleActive = true;
-            combatModel.InitializeUnits(heroStats, monsterStats);
-            visualController.InitializeUnits(combatModel.Units.Select(u => (u.unit, u.go)).ToList());
-            uiController.InitializeUnitPanels(combatModel.Units.Select(u => (u.unit, u.go, u.unit.GetDisplayStats())).ToList());
-
+            combatModel.InitializeUnits(heroStats, monsterStats); // Triggers OnBattleInitialized via CombatModel
             combatModel.IncrementRound();
             while (combatModel.IsBattleActive)
             {
                 if (CheckRetreat(combatModel.Units.Select(u => u.unit).ToList()))
                 {
                     combatModel.LogMessage("Party morale too low, retreating!", uiConfig.BogRotColor);
+                    eventBus.RaiseRetreatTriggered();
                     combatModel.EndBattle();
                     yield break;
                 }
@@ -101,109 +86,59 @@ namespace VirulentVentures
 
                 foreach (var unit in unitList)
                 {
-                    var ability = AbilityDatabase.GetHeroAbility(unit.AbilityId) ?? AbilityDatabase.GetMonsterAbility(unit.AbilityId);
-                    if (ability == null || ability.Value.Effect == null) continue;
+                    var abilityId = unit.AbilityId;
+                    AbilityData? ability = unit is HeroStats ? AbilityDatabase.GetHeroAbility(abilityId) : AbilityDatabase.GetMonsterAbility(abilityId);
+                    if (ability == null) continue;
 
-                    var targets = unit is HeroStats ? combatModel.Units.Select(u => u.unit).OfType<MonsterStats>().Where(m => m.Health > 0).Cast<ICombatUnit>().ToList()
-                                                   : combatModel.Units.Select(u => u.unit).OfType<HeroStats>().Where(h => h.Health > 0).Cast<ICombatUnit>().ToList();
-
+                    var targets = unit is HeroStats ? combatModel.Units.Select(u => u.unit).Where(u => u is MonsterStats && u.Health > 0).ToList()
+                                                  : combatModel.Units.Select(u => u.unit).Where(u => u is HeroStats && u.Health > 0).ToList();
                     var target = GetRandomAliveTarget(targets);
                     if (target == null) continue;
 
-                    ability.Value.Effect?.Invoke(target, expeditionManager.GetExpedition().Party);
-
-                    int damage = unit.Attack;
+                    int damage = Mathf.Max(unit.Attack - target.Defense, 0);
                     bool killed = false;
 
-                    if (target is HeroStats targetHero)
+                    if (ability.Value.Effect != null)
                     {
-                        int evasionRoll = Random.Range(0, 100);
-                        if (evasionRoll < targetHero.Evasion)
-                        {
-                            combatModel.LogMessage($"{targetHero.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s attack!", uiConfig.TextColor);
-                            continue;
-                        }
-
-                        targetHero.Health = Mathf.Max(targetHero.Health - Mathf.Max(damage - targetHero.Defense, 0), 0);
-                        killed = targetHero.Health <= 0;
-                        if (!killed && targetHero.Morale > 0)
-                        {
-                            targetHero.Morale -= 5;
-                            combatModel.LogMessage($"{unit.GetDisplayStats().name} reduces {targetHero.GetDisplayStats().name}'s morale by 5!", uiConfig.BogRotColor);
-                        }
+                        ability.Value.Effect(target, expeditionData.Party);
                     }
-                    else if (target is MonsterStats targetMonster)
-                    {
-                        int evasionRoll = Random.Range(0, 100);
-                        if (ability.Value.CanDodge && evasionRoll < targetMonster.Evasion)
-                        {
-                            combatModel.LogMessage($"{targetMonster.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s attack!", uiConfig.TextColor);
-                            continue;
-                        }
 
-                        targetMonster.Health = Mathf.Max(targetMonster.Health - Mathf.Max(damage - targetMonster.Defense, 0), 0);
-                        killed = targetMonster.Health <= 0;
-                    }
+                    target.Health = Mathf.Max(target.Health - damage, 0);
+                    killed = target.Health <= 0;
+                    combatModel.UpdateUnit(target, damage.ToString());
 
                     if (killed)
                     {
                         combatModel.LogMessage($"{unit.GetDisplayStats().name} kills {target.GetDisplayStats().name}!", uiConfig.BogRotColor);
-                        combatModel.UpdateUnit(target);
                     }
                     else
                     {
                         combatModel.LogMessage($"{unit.GetDisplayStats().name} hits {target.GetDisplayStats().name} for {damage} damage!", uiConfig.TextColor);
-                        combatModel.UpdateUnit(target, damage.ToString());
                     }
 
                     if (unit.Speed >= combatConfig.SpeedTwoAttacksThreshold)
                     {
                         var extraTarget = GetRandomAliveTarget(targets);
-                        if (extraTarget == null) continue;
-
-                        ability.Value.Effect?.Invoke(extraTarget, expeditionManager.GetExpedition().Party);
-                        damage = unit.Attack;
-                        killed = false;
-
-                        if (extraTarget is HeroStats targetHero2)
+                        if (extraTarget != null)
                         {
-                            int evasionRoll = Random.Range(0, 100);
-                            if (evasionRoll < targetHero2.Evasion)
+                            if (Random.Range(0, 100) < extraTarget.Evasion)
                             {
-                                combatModel.LogMessage($"{targetHero2.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
+                                combatModel.LogMessage($"{extraTarget.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
                                 continue;
                             }
 
-                            targetHero2.Health = Mathf.Max(targetHero2.Health - Mathf.Max(damage - targetHero2.Defense, 0), 0);
-                            killed = targetHero2.Health <= 0;
-                            if (!killed && targetHero2.Morale > 0)
-                            {
-                                targetHero2.Morale -= 5;
-                                combatModel.LogMessage($"{unit.GetDisplayStats().name} reduces {targetHero2.GetDisplayStats().name}'s morale by 5 with extra attack!", uiConfig.BogRotColor);
-                            }
-                        }
-                        else if (extraTarget is MonsterStats targetMonster2)
-                        {
-                            int evasionRoll = Random.Range(0, 100);
-                            if (ability.Value.CanDodge && evasionRoll < targetMonster2.Evasion)
-                            {
-                                combatModel.LogMessage($"{targetMonster2.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
-                                continue;
-                            }
-
-                            targetMonster2.Health = Mathf.Max(targetMonster2.Health - Mathf.Max(damage - targetMonster2.Defense, 0), 0);
-                            killed = targetMonster2.Health <= 0;
-                        }
-
-                        if (killed)
-                        {
-                            combatModel.LogMessage($"{unit.GetDisplayStats().name} kills {extraTarget.GetDisplayStats().name} with extra attack!", uiConfig.BogRotColor);
-                            combatModel.UpdateUnit(extraTarget);
-                        }
-                        else
-                        {
-                            combatModel.LogMessage($"{unit.GetDisplayStats().name} hits {extraTarget.GetDisplayStats().name} for {damage} damage with extra attack!", uiConfig.TextColor);
+                            damage = Mathf.Max(unit.Attack - extraTarget.Defense, 0);
+                            extraTarget.Health = Mathf.Max(extraTarget.Health - damage, 0);
+                            killed = extraTarget.Health <= 0;
                             combatModel.UpdateUnit(extraTarget, damage.ToString());
+                            if (killed)
+                            {
+                                combatModel.LogMessage($"{unit.GetDisplayStats().name} kills {extraTarget.GetDisplayStats().name} with extra attack!", uiConfig.BogRotColor);
+                            }
+                            else
+                            {
+                                combatModel.LogMessage($"{unit.GetDisplayStats().name} hits {extraTarget.GetDisplayStats().name} for {damage} damage with extra attack!", uiConfig.TextColor);
+                            }
                         }
                     }
 
@@ -249,11 +184,11 @@ namespace VirulentVentures
             bool partyDead = expeditionManager.GetExpedition().Party.CheckDeadStatus().Count == 0;
             if (partyDead)
             {
-                uiController.FadeToScene(() => expeditionManager.EndExpedition());
+                expeditionManager.EndExpedition();
             }
             else
             {
-                uiController.FadeToScene(() => expeditionManager.TransitionToExpeditionScene());
+                expeditionManager.TransitionToExpeditionScene();
             }
 
             isEndingBattle = false;
@@ -261,9 +196,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (combatConfig == null || uiController == null || visualController == null || expeditionManager == null || visualConfig == null || uiConfig == null || battleCamera == null)
+            if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || battleCamera == null)
             {
-                Debug.LogError($"BattleSceneController: Missing references! CombatConfig: {combatConfig != null}, UIController: {uiController != null}, VisualController: {visualController != null}, ExpeditionManager: {expeditionManager != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, BattleCamera: {battleCamera != null}");
+                Debug.LogError($"BattleSceneController: Missing references! CombatConfig: {combatConfig != null}, EventBus: {eventBus != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, BattleCamera: {battleCamera != null}");
                 return false;
             }
             return true;
