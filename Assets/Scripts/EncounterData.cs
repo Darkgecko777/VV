@@ -13,14 +13,6 @@ namespace VirulentVentures
         public bool IsCombatNode => isCombatNode;
         public CharacterPositions Positions { get => positions; set => positions = value; }
 
-        private void OnEnable()
-        {
-            if (positions == null)
-            {
-                Debug.LogWarning($"EncounterData: CharacterPositions not assigned in Inspector for {name}. Please assign a CharacterPositions asset.");
-            }
-        }
-
         public List<MonsterStats> SpawnMonsters()
         {
             List<MonsterStats> monsters = new List<MonsterStats>();

@@ -43,8 +43,11 @@ namespace VirulentVentures
             }
         }
 
-        private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData _)
+        private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData data)
         {
+            // Only generate if triggered by UI (null data), not by updates
+            if (data.expeditionData != null || data.partyData != null) return;
+
             List<NodeData> nodes = new List<NodeData>();
             int nodeCount = testMode ? 3 : Random.Range(8, 13);
             string[] biomes = { "Ruins", "Swamp", "Forest" };
@@ -81,7 +84,7 @@ namespace VirulentVentures
             isExpeditionGenerated = expeditionData.IsValid();
 
             eventBus.RaisePartyUpdated(partyData);
-            eventBus.RaiseExpeditionGenerated(expeditionData, partyData);
+            eventBus.RaiseExpeditionUpdated(expeditionData, partyData); // Use new event for UI updates
         }
 
         private void LaunchExpedition()
@@ -111,7 +114,7 @@ namespace VirulentVentures
 
             expeditionData.NodeData[data.nodeIndex].SeededViruses.Add(virus);
             Debug.Log($"TemplePlanningController: Seeded {virus.VirusID} to Node {data.nodeIndex}");
-            eventBus.RaiseExpeditionGenerated(expeditionData, partyData);
+            eventBus.RaiseExpeditionUpdated(expeditionData, partyData); // Use new event for UI updates
         }
 
         private bool ValidateReferences()

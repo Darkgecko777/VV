@@ -81,11 +81,24 @@ namespace VirulentVentures
             if (backgroundObject != null)
             {
                 Destroy(backgroundObject);
+                Debug.Log("BattleViewController: Destroyed backgroundObject");
             }
             if (eventBus != null)
             {
                 UnsubscribeFromEventBus();
             }
+            if (root != null)
+            {
+                root.Clear(); // Explicitly clear UI Toolkit elements
+                Debug.Log("BattleViewController: Cleared root VisualElement on destroy");
+            }
+            unitPanels.Clear();
+            units.Clear();
+            heroesContainer = null;
+            monstersContainer = null;
+            combatLogContainer = null;
+            continueButton = null;
+            fadePanel = null;
         }
 
         private void InitializeUIElements()
@@ -154,7 +167,6 @@ namespace VirulentVentures
             {
                 if (unit.Health <= 0) continue;
 
-                // UI Panel
                 VisualElement panel = CreateUnitPanel(stats);
                 unitPanels[unit] = panel;
                 if (stats.isHero)
@@ -162,7 +174,6 @@ namespace VirulentVentures
                 else
                     monstersContainer.Add(panel);
 
-                // Visual Sprite
                 GameObject unitObj = new GameObject(unit.Id);
                 var renderer = unitObj.AddComponent<SpriteRenderer>();
                 var animator = unitObj.AddComponent<SpriteAnimation>();
@@ -381,6 +392,7 @@ namespace VirulentVentures
             eventBus.OnBattleEnded -= EnableContinueButton;
             eventBus.OnBattleEnded -= FadeToScene;
             eventBus.OnBattleInitialized -= InitializeUnits;
+            Debug.Log("BattleViewController: Unsubscribed from EventBusSO");
         }
 
         private bool ValidateReferences()

@@ -85,6 +85,15 @@ namespace VirulentVentures
             }
         }
 
+        void OnDestroy()
+        {
+            OnNodeUpdated = null;
+            OnExpeditionGenerated = null;
+            OnCombatStarted = null;
+            OnSceneTransitionCompleted = null;
+            Debug.Log("ExpeditionManager: Cleared all event subscriptions on destroy");
+        }
+
         public void SetExpedition(List<NodeData> nodes, PartyData party)
         {
             if (nodes == null || nodes.Count == 0 || party == null)
@@ -94,25 +103,9 @@ namespace VirulentVentures
             }
 
             expeditionData.SetNodes(nodes);
-            expeditionData.CurrentNodeIndex = 0;
             expeditionData.SetParty(party);
-            SaveProgress();
-            OnExpeditionGenerated?.Invoke();
             Debug.Log("ExpeditionManager: Expedition set successfully!");
-        }
-
-        public void TransitionToTemplePlanningScene()
-        {
-            if (isTransitioning)
-            {
-                return;
-            }
-            isTransitioning = true;
-            SceneManager.LoadSceneAsync("TemplePlanningScene", LoadSceneMode.Single).completed += _ =>
-            {
-                isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            };
+            OnExpeditionGenerated?.Invoke();
         }
 
         public void TransitionToExpeditionScene()
@@ -215,6 +208,20 @@ namespace VirulentVentures
                 return false;
             }
             return true;
+        }
+
+        private void TransitionToTemplePlanningScene()
+        {
+            if (isTransitioning)
+            {
+                return;
+            }
+            isTransitioning = true;
+            SceneManager.LoadSceneAsync("TemplePlanning", LoadSceneMode.Single).completed += _ =>
+            {
+                isTransitioning = false;
+                OnSceneTransitionCompleted?.Invoke(null, 0);
+            };
         }
     }
 }

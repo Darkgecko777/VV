@@ -22,6 +22,7 @@ namespace VirulentVentures
         private VisualElement portraitContainer;
         private VisualElement nodeContainer;
         private bool isInitialized;
+        private VisualElement root;
 
         void Awake()
         {
@@ -31,7 +32,7 @@ namespace VirulentVentures
                 return;
             }
 
-            var root = uiDocument.rootVisualElement;
+            root = uiDocument.rootVisualElement;
             virusDropdown = root.Q<DropdownField>("VirusDropdown");
             nodeDropdown = root.Q<DropdownField>("NodeDropdown");
             generateButton = root.Q<Button>("GenerateButton");
@@ -66,6 +67,18 @@ namespace VirulentVentures
             {
                 UnsubscribeFromEventBus();
             }
+            if (root != null)
+            {
+                root.Clear(); // Explicitly clear UI Toolkit elements
+                Debug.Log("TempleViewController: Cleared root VisualElement on destroy");
+            }
+            virusDropdown = null;
+            nodeDropdown = null;
+            generateButton = null;
+            launchButton = null;
+            seedVirusButton = null;
+            portraitContainer = null;
+            nodeContainer = null;
         }
 
         private void InitializeUI()
@@ -219,16 +232,17 @@ namespace VirulentVentures
 
         private void SubscribeToEventBus()
         {
-            eventBus.OnExpeditionGenerated += UpdateNodeVisuals;
+            eventBus.OnExpeditionUpdated += UpdateNodeVisuals;
             eventBus.OnVirusSeeded += UpdateVirusNode;
             eventBus.OnPartyUpdated += UpdatePartyVisuals;
         }
 
         private void UnsubscribeFromEventBus()
         {
-            eventBus.OnExpeditionGenerated -= UpdateNodeVisuals;
+            eventBus.OnExpeditionUpdated -= UpdateNodeVisuals;
             eventBus.OnVirusSeeded -= UpdateVirusNode;
             eventBus.OnPartyUpdated -= UpdatePartyVisuals;
+            Debug.Log("TempleViewController: Unsubscribed from EventBusSO");
         }
 
         private bool ValidateReferences()

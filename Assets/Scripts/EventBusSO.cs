@@ -58,6 +58,7 @@ namespace VirulentVentures
         public event Action<VirusSeededData> OnVirusSeeded;
         public event Action<PartyData> OnPartyUpdated;
         public event Action OnLaunchExpedition;
+        public event Action<ExpeditionGeneratedData> OnExpeditionUpdated; // New event for UI updates
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -107,6 +108,11 @@ namespace VirulentVentures
         public void RaiseLaunchExpedition()
         {
             OnLaunchExpedition?.Invoke();
+        }
+
+        public void RaiseExpeditionUpdated(ExpeditionData expeditionData, PartyData partyData)
+        {
+            OnExpeditionUpdated?.Invoke(new ExpeditionGeneratedData { expeditionData = expeditionData, partyData = partyData });
         }
     }
 }
