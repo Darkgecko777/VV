@@ -7,6 +7,21 @@ namespace VirulentVentures
     public class CombatNodeGenerator : MonoBehaviour
     {
         [SerializeField] private List<string> monsterPool; // Populated in Awake to avoid Inspector override
+        private readonly Dictionary<string, string[]> flavourTextPool = new Dictionary<string, string[]>
+        {
+            { "Swamp", new[] {
+                "A horde emerges from the bog.",
+                "Mire-dwellers lurk in the mist.",
+                "Fetid claws rise from the swamp.",
+                "Dark shapes stir in the muck."
+            } },
+            { "Ruins", new[] {
+                "Spectral foes guard the ruins.",
+                "Ancient sentinels awaken.",
+                "Crumbled stone hides lurking fiends.",
+                "Echoes summon shadowed beasts."
+            } }
+        };
 
         void Awake()
         {
@@ -45,12 +60,15 @@ namespace VirulentVentures
             }
             encounterData.InitializeEncounter(selectedIds);
 
+            string[] texts = flavourTextPool.ContainsKey(biome) ? flavourTextPool[biome] : new[] { $"A {biome.ToLower()}-infested encounter." };
+            string flavourText = texts[Random.Range(0, texts.Length)];
+
             return new NodeData(
                 monsters: encounterData.SpawnMonsters(),
                 nodeType: "Combat",
                 biome: biome,
                 isCombat: true,
-                flavourText: $"A {biome.ToLower()}-infested encounter.",
+                flavourText: flavourText,
                 seededViruses: new List<VirusData>()
             );
         }

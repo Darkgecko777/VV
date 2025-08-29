@@ -30,6 +30,10 @@ MonoBehaviour:
     combatSprite: {fileID: 21300000, guid: ce0992ec2e88ef34cb61f593f64a317c, type: 3}
   - enemyID: Ghoul
     combatSprite: {fileID: -8095136766332345138, guid: b8576ef16bbfcce44abfee44601e108a, type: 3}
+  - enemyID: Vampire
+    combatSprite: {fileID: 21300000, guid: f014e0ae258af614ea495ee34e610bb8, type: 3}
+  - enemyID: Skeleton
+    combatSprite: {fileID: 21300000, guid: dbd28691148b2c04898f4081975894d8, type: 3}
   nodeVisuals:
   - nodeType: Combat
     highlightColor: {r: 0.8, g: 0.2, b: 0.2, a: 1}

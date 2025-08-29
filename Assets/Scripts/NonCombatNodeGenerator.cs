@@ -7,8 +7,18 @@ namespace VirulentVentures
     {
         private readonly Dictionary<string, string[]> flavourTextPool = new Dictionary<string, string[]>
         {
-            { "Swamp", new[] { "A foggy camp with eerie whispers.", "A murky pool hides ancient secrets." } },
-            { "Ruins", new[] { "Crumbling stones echo with lost voices.", "A forgotten altar pulses faintly." } }
+            { "Swamp", new[] {
+                "A foggy camp with eerie whispers.",
+                "A murky pool hides ancient secrets.",
+                "A rotting log stirs with unseen eyes.",
+                "Mossy vines pulse faintly in the mist."
+            } },
+            { "Ruins", new[] {
+                "Crumbling stones echo with lost voices.",
+                "A forgotten altar pulses faintly.",
+                "Faded runes glow faintly.",
+                "Broken arches whisper of past glories."
+            } }
         };
 
         public NodeData GenerateNonCombatNode(string biome, int level)
