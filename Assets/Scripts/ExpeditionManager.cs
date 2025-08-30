@@ -33,8 +33,6 @@ namespace VirulentVentures
 
         public static ExpeditionManager Instance => instance;
         public bool IsTransitioning => isTransitioning;
-        public event Action<List<NodeData>, int> OnNodeUpdated;
-        public event Action OnExpeditionGenerated;
         public event Action OnCombatStarted;
         public event Action<List<NodeData>, int> OnSceneTransitionCompleted;
 

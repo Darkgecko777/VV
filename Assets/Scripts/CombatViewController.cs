@@ -1,409 +1,237 @@
-﻿using System;
-using System.Collections;
+﻿using UnityEngine;
+using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.UIElements;
+using VirulentVentures;
 
-namespace VirulentVentures
+public class CombatViewController : MonoBehaviour
 {
-    public class CombatViewController : MonoBehaviour
+    [SerializeField] private VisualConfig visualConfig;
+    [SerializeField] private UIConfig uiConfig;
+    [SerializeField] private EventBusSO eventBus;
+    [SerializeField] private CharacterPositions characterPositions;
+    private VisualElement root;
+    private List<(VisualElement panel, Label health, Label morale, ICombatUnit unit)> heroPanels = new List<(VisualElement, Label, Label, ICombatUnit)>();
+    private List<(VisualElement panel, Label health, ICombatUnit unit)> monsterPanels = new List<(VisualElement, Label, ICombatUnit)>();
+    private ListView combatLog;
+    private List<string> logMessages = new List<string>();
+    private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
+
+    void Awake()
     {
-        [SerializeField] private UIConfig uiConfig;
-        [SerializeField] private VisualConfig visualConfig;
-        [SerializeField] private UIDocument uiDocument;
-        [SerializeField] private Camera mainCamera;
-        [SerializeField] private CharacterPositions characterPositions;
-        [SerializeField] private Sprite backgroundSprite;
-        [SerializeField] private EventBusSO eventBus;
+        if (!ValidateReferences()) return;
+        SetupUI();
+        eventBus.OnCombatInitialized += InitializeCombat;
+        eventBus.OnUnitUpdated += UpdateUnit;
+        eventBus.OnDamagePopup += ShowDamagePopup;
+        eventBus.OnLogMessage += AddLogMessage;
+    }
 
-        private VisualElement root;
-        private VisualElement fadePanel;
-        private VisualElement heroesContainer;
-        private VisualElement monstersContainer;
-        private VisualElement combatLogContainer;
-        private Button continueButton;
-        private Dictionary<ICombatUnit, VisualElement> unitPanels;
-        private List<(ICombatUnit unit, GameObject go, SpriteAnimation animator)> units;
-        private GameObject backgroundObject;
-        private float fadeDuration = 0.5f;
-        private bool isInitialized;
+    void OnDestroy()
+    {
+        eventBus.OnCombatInitialized -= InitializeCombat;
+        eventBus.OnUnitUpdated -= UpdateUnit;
+        eventBus.OnDamagePopup -= ShowDamagePopup;
+        eventBus.OnLogMessage -= AddLogMessage;
+    }
 
-        void Awake()
+    private void SetupUI()
+    {
+        root = GetComponent<UIDocument>().rootVisualElement;
+        if (root == null)
         {
-            if (!ValidateReferences())
-            {
-                isInitialized = false;
-                return;
-            }
-
-            mainCamera.orthographic = true;
-            mainCamera.transform.rotation = Quaternion.identity;
-            mainCamera.transform.position = new Vector3(0f, 0f, -8f);
-
-            root = uiDocument.rootVisualElement;
-            if (root == null)
-            {
-                Debug.LogWarning("CombatViewController: rootVisualElement is null in Awake, will retry in Start.");
-                return;
-            }
-
-            units = new List<(ICombatUnit, GameObject, SpriteAnimation)>();
-            unitPanels = new Dictionary<ICombatUnit, VisualElement>();
-            isInitialized = true;
-
-            InitializeUIElements();
-            InitializeBackground();
+            Debug.LogError("CombatViewController: UIDocument rootVisualElement is null!");
+            return;
         }
 
-        void Start()
+        // Load background for combat-visuals
+        var combatVisuals = root.Q<VisualElement>("combat-visuals");
+        if (combatVisuals != null)
         {
-            if (!isInitialized && uiDocument != null)
+            Sprite background = visualConfig.GetCombatBackground();
+            if (background != null)
             {
-                root = uiDocument.rootVisualElement;
-                if (root == null)
-                {
-                    Debug.LogError("CombatViewController: Failed to initialize rootVisualElement in Start!");
-                    return;
-                }
-                InitializeUIElements();
-                InitializeBackground();
-            }
-
-            if (isInitialized)
-            {
-                SubscribeToEventBus();
-            }
-        }
-
-        void OnDestroy()
-        {
-            if (backgroundObject != null)
-            {
-                Destroy(backgroundObject);
-            }
-            if (eventBus != null)
-            {
-                UnsubscribeFromEventBus();
-            }
-            if (root != null)
-            {
-                root.Clear(); // Explicitly clear UI Toolkit elements
-            }
-            unitPanels.Clear();
-            units.Clear();
-            heroesContainer = null;
-            monstersContainer = null;
-            combatLogContainer = null;
-            continueButton = null;
-            fadePanel = null;
-        }
-
-        private void InitializeUIElements()
-        {
-            heroesContainer = root.Q<VisualElement>("HeroesContainer");
-            monstersContainer = root.Q<VisualElement>("MonstersContainer");
-            combatLogContainer = root.Q<VisualElement>("CombatLogContainer");
-            continueButton = root.Q<Button>("ContinueButton");
-            fadePanel = root.Q<VisualElement>("FadePanel") ?? new VisualElement { name = "FadePanel" };
-
-            if (heroesContainer == null || monstersContainer == null || combatLogContainer == null || continueButton == null)
-            {
-                Debug.LogError($"CombatViewController: Missing UI elements! HeroesContainer: {heroesContainer != null}, MonstersContainer: {monstersContainer != null}, CombatLogContainer: {combatLogContainer != null}, ContinueButton: {continueButton != null}");
-                isInitialized = false;
-                return;
-            }
-
-            fadePanel.style.backgroundColor = uiConfig.BogRotColor;
-            fadePanel.style.opacity = 0;
-            fadePanel.style.position = Position.Absolute;
-            fadePanel.style.width = new StyleLength(new Length(100, LengthUnit.Percent));
-            fadePanel.style.height = new StyleLength(new Length(100, LengthUnit.Percent));
-            root.Add(fadePanel);
-
-            combatLogContainer.Clear();
-            continueButton.style.color = uiConfig.TextColor;
-            continueButton.style.unityFont = uiConfig.PixelFont;
-            continueButton.clicked += () => eventBus.RaiseCombatEnded();
-            continueButton.SetEnabled(false);
-        }
-
-        private void InitializeBackground()
-        {
-            if (backgroundSprite != null)
-            {
-                backgroundObject = new GameObject("CombatBackground");
-                var renderer = backgroundObject.AddComponent<SpriteRenderer>();
-                renderer.sprite = backgroundSprite;
-                renderer.sortingLayerName = "Background";
-                renderer.sortingOrder = -10;
-                backgroundObject.transform.localScale = new Vector3(2.25f, 0.625f, 1f);
-                backgroundObject.transform.position = new Vector3(0f, 0f, 0f);
+                combatVisuals.style.backgroundImage = new StyleBackground(background);
+                // Scale mode set in USS (#combat-visuals)
+                // TODO: For final version, implement programmatic background generation
             }
             else
             {
-                Debug.LogWarning("CombatViewController: No backgroundSprite assigned!");
+                Debug.LogWarning("CombatViewController: Failed to load combat background sprite!");
             }
         }
-
-        public void InitializeUnits(EventBusSO.CombatInitData data)
+        else
         {
-            var combatUnits = data.units;
-            if (!isInitialized) return;
+            Debug.LogWarning("CombatViewController: combat-visuals element not found in UXML!");
+        }
 
-            heroesContainer.Clear();
-            monstersContainer.Clear();
-            unitPanels.Clear();
-            units.Clear();
+        // Hero Panels (Left, 30%)
+        var heroContainer = root.Q<VisualElement>("hero-container");
+        heroContainer.style.width = Length.Percent(30);
+        heroContainer.style.position = Position.Absolute;
+        heroContainer.style.left = 0;
+        heroContainer.style.bottom = 0;
+        heroContainer.style.height = Length.Percent(50);
 
-            var heroPositions = characterPositions.heroPositions;
-            var monsterPositions = characterPositions.monsterPositions;
-            int heroIndex = 0;
-            int monsterIndex = 0;
+        // Monster Panels (Right, 30%)
+        var monsterContainer = root.Q<VisualElement>("monster-container");
+        monsterContainer.style.width = Length.Percent(30);
+        monsterContainer.style.position = Position.Absolute;
+        monsterContainer.style.right = 0;
+        monsterContainer.style.bottom = 0;
+        monsterContainer.style.height = Length.Percent(50);
 
-            foreach (var (unit, _, stats) in combatUnits)
+        // Combat Log (Center, 40%)
+        combatLog = root.Q<ListView>("combat-log");
+        combatLog.itemsSource = logMessages;
+        combatLog.makeItem = () => new Label();
+        combatLog.bindItem = (element, i) => {
+            var label = (Label)element;
+            label.text = logMessages[i];
+            if (logMessages[i].Contains("damage"))
             {
-                if (unit.Health <= 0) continue;
-
-                if (string.IsNullOrEmpty(stats.name))
-                {
-                    Debug.LogWarning($"CombatViewController: Invalid DisplayStats for unit {unit.Id}");
-                    continue;
-                }
-
-                VisualElement panel = CreateUnitPanel(stats);
-                unitPanels[unit] = panel;
-                if (stats.isHero)
-                    heroesContainer.Add(panel);
-                else
-                    monstersContainer.Add(panel);
-
-                GameObject unitObj = new GameObject(unit.Id);
-                var renderer = unitObj.AddComponent<SpriteRenderer>();
-                renderer.sortingLayerName = stats.isHero ? "Heroes" : "Monsters";
-                renderer.sortingOrder = stats.isHero ? heroIndex++ : monsterIndex++;
-                var animator = unitObj.AddComponent<SpriteAnimation>();
-                Vector3 position = stats.isHero ? heroPositions[unit.PartyPosition - 1] : monsterPositions[unit.PartyPosition];
-                unitObj.transform.position = position;
-                units.Add((unit, unitObj, animator));
+                label.AddToClassList("damage");
             }
-        }
-
-        private VisualElement CreateUnitPanel(CharacterStats.DisplayStats stats)
-        {
-            if (string.IsNullOrEmpty(stats.name))
+            else
             {
-                Debug.LogWarning($"CombatViewController: Invalid DisplayStats for unit, name is empty");
-                return new VisualElement();
+                label.RemoveFromClassList("damage");
             }
+        };
+        combatLog.style.width = Length.Percent(40);
+        combatLog.style.position = Position.Absolute;
+        combatLog.style.left = Length.Percent(30);
+        combatLog.style.bottom = 0;
+        combatLog.style.height = Length.Percent(50);
+        combatLog.style.fontSize = 14;
+        combatLog.AddToClassList("combat-log");
+    }
 
-            VisualElement panel = new VisualElement();
-            panel.AddToClassList(stats.isHero ? "hero-panel" : "monster-panel");
+    private void InitializeCombat(EventBusSO.CombatInitData data)
+    {
+        heroPanels.Clear();
+        monsterPanels.Clear();
+        unitGameObjects.Clear();
+        logMessages.Clear();
+        combatLog.Rebuild();
 
-            VisualElement healthBar = new VisualElement();
-            healthBar.AddToClassList("health-bar");
-            VisualElement healthFill = new VisualElement();
-            healthFill.AddToClassList(stats.isHero ? "health-fill-hero" : "health-fill-monster");
-            healthFill.style.width = new StyleLength(new Length((float)stats.health / stats.maxHealth * 100, LengthUnit.Percent));
-            healthBar.Add(healthFill);
-            panel.Add(healthBar);
+        var heroes = data.units.Where(u => u.stats.isHero).ToList();
+        var monsters = data.units.Where(u => !u.stats.isHero).ToList();
 
-            Label nameLabel = new Label(stats.name);
-            nameLabel.AddToClassList("name-label");
-            panel.Add(nameLabel);
-
-            if (stats.isHero)
-            {
-                Label moraleLabel = new Label($"Morale: {stats.morale}/{stats.maxMorale}");
-                moraleLabel.AddToClassList("stat-label");
-                moraleLabel.name = "morale-label";
-                panel.Add(moraleLabel);
-            }
-
-            Label attackLabel = new Label($"Attack: {stats.attack}");
-            attackLabel.AddToClassList("stat-label");
-            attackLabel.name = "attack-label";
-            panel.Add(attackLabel);
-
-            Label defenseLabel = new Label($"Defense: {stats.defense}");
-            defenseLabel.AddToClassList("stat-label");
-            defenseLabel.name = "defense-label";
-            panel.Add(defenseLabel);
-
-            Label speedLabel = new Label($"Speed: {stats.speed}");
-            speedLabel.AddToClassList("stat-label");
-            speedLabel.name = "speed-label";
-            panel.Add(speedLabel);
-
-            Label evasionLabel = new Label($"Evasion: {stats.evasion}");
-            evasionLabel.AddToClassList("stat-label");
-            evasionLabel.name = "evasion-label";
-            panel.Add(evasionLabel);
-
-            return panel;
-        }
-
-        private void UpdateUnitPanel(EventBusSO.UnitUpdateData data)
+        // Setup Hero Panels
+        var heroContainer = root.Q<VisualElement>("hero-container");
+        for (int i = 0; i < heroes.Count && i < characterPositions.heroPositions.Length; i++)
         {
-            if (!isInitialized || !unitPanels.TryGetValue(data.unit, out var panel)) return;
+            var unit = heroes[i].unit;
+            var stats = heroes[i].stats;
+            var panel = CreateUnitPanel(stats, true);
+            heroContainer.Add(panel);
+            heroPanels.Add((panel, panel.Q<Label>("health"), panel.Q<Label>("morale"), unit));
 
-            var stats = data.displayStats;
-            if (string.IsNullOrEmpty(stats.name))
-            {
-                Debug.LogWarning($"CombatViewController: Invalid DisplayStats for unit {data.unit.Id} in UpdateUnitPanel");
-                return;
-            }
-
-            var healthFill = panel.Q<VisualElement>(className: stats.isHero ? "health-fill-hero" : "health-fill-monster");
-            healthFill.style.width = new StyleLength(new Length((float)stats.health / stats.maxHealth * 100, LengthUnit.Percent));
-
-            var nameLabel = panel.Q<Label>("name-label");
-            nameLabel.text = stats.name;
-
-            if (stats.isHero)
-            {
-                var moraleLabel = panel.Q<Label>("morale-label");
-                moraleLabel.text = $"Morale: {stats.morale}/{stats.maxMorale}";
-            }
-
-            var attackLabel = panel.Q<Label>("attack-label");
-            attackLabel.text = $"Attack: {stats.attack}";
-
-            var defenseLabel = panel.Q<Label>("defense-label");
-            defenseLabel.text = $"Defense: {stats.defense}";
-
-            var speedLabel = panel.Q<Label>("speed-label");
-            speedLabel.text = $"Speed: {stats.speed}";
-
-            var evasionLabel = panel.Q<Label>("evasion-label");
-            evasionLabel.text = $"Evasion: {stats.evasion}";
+            var go = CreateUnitGameObject(unit, stats, true, characterPositions.heroPositions[i]);
+            unitGameObjects[unit] = go;
         }
 
-        private void ShowDamagePopup(EventBusSO.DamagePopupData data)
+        // Setup Monster Panels
+        var monsterContainer = root.Q<VisualElement>("monster-container");
+        for (int i = 0; i < monsters.Count && i < characterPositions.monsterPositions.Length; i++)
         {
-            if (!isInitialized || root == null || data.unit == null) return;
+            var unit = monsters[i].unit;
+            var stats = monsters[i].stats;
+            var panel = CreateUnitPanel(stats, false);
+            monsterContainer.Add(panel);
+            monsterPanels.Add((panel, panel.Q<Label>("health"), unit));
 
-            var unitEntry = units.Find(u => u.unit == data.unit);
-            if (unitEntry.go == null) return;
-
-            Vector3 worldPosition = unitEntry.go.transform.position;
-            Vector2 screenPosition = mainCamera.WorldToScreenPoint(worldPosition);
-            float screenHeight = mainCamera.pixelHeight;
-
-            VisualElement popup = new Label(data.message);
-            popup.AddToClassList("damage-popup");
-            popup.style.position = Position.Absolute;
-            popup.style.left = screenPosition.x;
-            popup.style.top = screenHeight - screenPosition.y - 50;
-            root.Add(popup);
-            StartCoroutine(AnimatePopup(popup, screenHeight));
+            var go = CreateUnitGameObject(unit, stats, false, characterPositions.monsterPositions[i]);
+            unitGameObjects[unit] = go;
         }
+    }
 
-        private void TriggerUnitAnimation(EventBusSO.DamagePopupData data)
+    private VisualElement CreateUnitPanel(CharacterStats.DisplayStats stats, bool isHero)
+    {
+        var panel = new VisualElement();
+        panel.AddToClassList(isHero ? "hero-panel" : "monster-panel");
+
+        var portrait = new VisualElement { style = { backgroundImage = new StyleBackground(isHero ? visualConfig.GetPortrait(stats.name) : visualConfig.GetEnemySprite(stats.name)) } };
+        panel.Add(portrait);
+
+        var statsContainer = new VisualElement();
+        statsContainer.AddToClassList("stats-container");
+
+        var nameLabel = new Label(stats.name);
+        nameLabel.AddToClassList("name-label");
+        statsContainer.Add(nameLabel);
+
+        var healthLabel = new Label($"Health: {stats.health}/{stats.maxHealth}");
+        healthLabel.name = "health";
+        healthLabel.AddToClassList("health-label");
+        statsContainer.Add(healthLabel);
+
+        if (isHero)
         {
-            if (!isInitialized) return;
-            var unitEntry = units.Find(u => u.unit == data.unit);
-            if (unitEntry.animator != null)
-            {
-                unitEntry.animator.Jiggle(data.unit is CharacterStats cs ? cs.IsHero : false);
-            }
+            var moraleLabel = new Label($"Morale: {stats.morale}/{stats.maxMorale}");
+            moraleLabel.name = "morale";
+            moraleLabel.AddToClassList("morale-label");
+            statsContainer.Add(moraleLabel);
         }
 
-        private IEnumerator AnimatePopup(VisualElement popup, float screenHeight)
+        panel.Add(statsContainer);
+        return panel;
+    }
+
+    private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)
+    {
+        var go = new GameObject(stats.name);
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = isHero ? visualConfig.GetCombatSprite(stats.name) : visualConfig.GetEnemySprite(stats.name);
+        go.transform.position = position;
+        go.AddComponent<SpriteAnimation>();
+        return go;
+    }
+
+    private void UpdateUnit(EventBusSO.UnitUpdateData data)
+    {
+        var heroPanel = heroPanels.FirstOrDefault(p => p.unit == data.unit);
+        if (heroPanel.unit != null)
         {
-            float riseDistance = 100f;
-            float riseDuration = 1f;
-            float fadeDuration = 0.5f;
-            float startY = popup.style.top.value.value;
-            float elapsed = 0f;
-
-            while (elapsed < riseDuration)
-            {
-                elapsed += Time.deltaTime;
-                float t = elapsed / riseDuration;
-                popup.style.top = startY - (riseDistance * t);
-                if (elapsed > riseDuration - fadeDuration)
-                {
-                    float fadeT = (elapsed - (riseDuration - fadeDuration)) / fadeDuration;
-                    popup.style.opacity = 1f - fadeT;
-                }
-                yield return null;
-            }
-            root.Remove(popup);
+            heroPanel.health.text = $"Health: {data.displayStats.health}/{data.displayStats.maxHealth}";
+            heroPanel.morale.text = $"Morale: {data.displayStats.morale}/{data.displayStats.maxMorale}";
+            if (data.displayStats.health <= 0 && unitGameObjects.TryGetValue(data.unit, out var go))
+                go.SetActive(false);
+            return;
         }
 
-        private void LogMessage(EventBusSO.LogData data)
+        var monsterPanel = monsterPanels.FirstOrDefault(p => p.unit == data.unit);
+        if (monsterPanel.unit != null)
         {
-            if (!isInitialized) return;
-
-            Label logEntry = new Label(data.message);
-            logEntry.AddToClassList("combat-log");
-            logEntry.style.color = data.color;
-            combatLogContainer.Add(logEntry);
-
-            var children = combatLogContainer.Children().ToList();
-            if (children.Count > 10)
-            {
-                combatLogContainer.Remove(children.First());
-            }
+            monsterPanel.health.text = $"Health: {data.displayStats.health}/{data.displayStats.maxHealth}";
+            if (data.displayStats.health <= 0 && unitGameObjects.TryGetValue(data.unit, out var go))
+                go.SetActive(false);
         }
+    }
 
-        public void FadeToScene()
+    private void ShowDamagePopup(EventBusSO.DamagePopupData data)
+    {
+        if (unitGameObjects.TryGetValue(data.unit, out var go))
         {
-            StartCoroutine(FadeToExpedition());
+            go.GetComponent<SpriteAnimation>().Jiggle(false);
+            logMessages.Add(data.message);
+            combatLog.Rebuild();
         }
+    }
 
-        private IEnumerator FadeToExpedition()
-        {
-            fadePanel.style.display = DisplayStyle.Flex;
-            float elapsed = 0f;
-            while (elapsed < fadeDuration)
-            {
-                elapsed += Time.deltaTime;
-                fadePanel.style.opacity = Mathf.Lerp(0, 1, elapsed / fadeDuration);
-                yield return null;
-            }
-            fadePanel.style.opacity = 1;
-            fadePanel.style.opacity = 0;
-            fadePanel.style.display = DisplayStyle.None;
-        }
+    private void AddLogMessage(EventBusSO.LogData data)
+    {
+        logMessages.Add(data.message);
+        combatLog.Rebuild();
+    }
 
-        private void EnableContinueButton()
+    private bool ValidateReferences()
+    {
+        if (visualConfig == null || uiConfig == null || eventBus == null || characterPositions == null)
         {
-            continueButton.SetEnabled(true);
+            Debug.LogError($"CombatViewController: Missing references! VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, EventBus: {eventBus != null}, CharacterPositions: {characterPositions != null}");
+            return false;
         }
-
-        private void SubscribeToEventBus()
-        {
-            eventBus.OnLogMessage += LogMessage;
-            eventBus.OnUnitUpdated += UpdateUnitPanel;
-            eventBus.OnDamagePopup += ShowDamagePopup;
-            eventBus.OnDamagePopup += TriggerUnitAnimation;
-            eventBus.OnCombatEnded += EnableContinueButton;
-            eventBus.OnCombatEnded += FadeToScene;
-            eventBus.OnCombatInitialized += InitializeUnits;
-        }
-
-        private void UnsubscribeFromEventBus()
-        {
-            eventBus.OnLogMessage -= LogMessage;
-            eventBus.OnUnitUpdated -= UpdateUnitPanel;
-            eventBus.OnDamagePopup -= ShowDamagePopup;
-            eventBus.OnDamagePopup -= TriggerUnitAnimation;
-            eventBus.OnCombatEnded -= EnableContinueButton;
-            eventBus.OnCombatEnded -= FadeToScene;
-            eventBus.OnCombatInitialized -= InitializeUnits;
-            Debug.Log("CombatViewController: Unsubscribed from EventBusSO");
-        }
-
-        private bool ValidateReferences()
-        {
-            if (uiDocument == null || uiConfig == null || visualConfig == null || mainCamera == null || characterPositions == null || eventBus == null)
-            {
-                Debug.LogError($"CombatViewController: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, VisualConfig: {visualConfig != null}, MainCamera: {mainCamera != null}, CharacterPositions: {characterPositions != null}, EventBus: {eventBus != null}");
-                return false;
-            }
-            return true;
-        }
+        return true;
     }
 }

@@ -36,6 +36,7 @@ namespace VirulentVentures
             new NodeVisuals { nodeType = "NonCombat", highlightColor = new Color(0.2f, 0.4f, 0.8f) }, // Bluish for NonCombat
             new NodeVisuals { nodeType = "Temple", highlightColor = Color.white } // White for Temple
         };
+        [SerializeField] private Sprite combatBackground; // 512x512 background for Combat scene
 
         public Sprite GetPortrait(string characterID)
         {
@@ -72,6 +73,21 @@ namespace VirulentVentures
                 return Color.white;
             }
             return visual.highlightColor;
+        }
+
+        public Sprite GetCombatBackground()
+        {
+            if (combatBackground == null)
+            {
+                Debug.LogWarning("VisualConfig.GetCombatBackground: No combat background sprite assigned!");
+                // Fallback: Try loading from Resources for prototype
+                combatBackground = Resources.Load<Sprite>("CombatBackground");
+                if (combatBackground == null)
+                {
+                    Debug.LogWarning("VisualConfig.GetCombatBackground: Failed to load CombatBackground sprite from Resources/CombatBackground!");
+                }
+            }
+            return combatBackground;
         }
     }
 }

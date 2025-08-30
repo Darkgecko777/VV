@@ -1,17 +1,16 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="CombatScene.uss" />
-    <ui:VisualElement name="CombatUI_Root" style="position: absolute; top: 540px; width: 1920px; height: 540px;">
-        <ui:VisualElement name="HeroesContainer" style="position: absolute; left: 10px; top: 0px; width: 576px; height: 460px; flex-direction: column;">
-            <!-- Dynamic hero panels populated by CombatVisualController -->
-        </ui:VisualElement>
-        <ui:VisualElement name="CombatLogContainer" style="position: absolute; left: 586px; top: 0px; width: 748px; height: 460px;">
-            <ui:Label name="CombatLog" class="combat-log" text="" />
-        </ui:VisualElement>
-        <ui:VisualElement name="MonstersContainer" style="position: absolute; left: 1354px; top: 0px; width: 576px; height: 460px; flex-direction: column;">
-            <!-- Dynamic monster panels populated by CombatVisualController -->
-        </ui:VisualElement>
-        <ui:VisualElement name="ButtonContainer" style="position: absolute; bottom: 10px; left: 760px; width: 400px; height: 50px; flex-direction: row;">
-            <ui:Button name="ContinueButton" text="Continue" class="button" />
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="combat-root" style="flex-grow: 1;">
+        <!-- Top Half: Combat Visuals (reserved for sprites, managed by CombatViewController) -->
+        <ui:VisualElement name="combat-visuals" style="height: 50%; width: 100%;" />
+        <!-- Bottom Half: UI Container -->
+        <ui:VisualElement name="ui-container" style="height: 50%; width: 100%; flex-direction: row;">
+            <!-- Hero Panels (Left, 30%) -->
+            <ui:VisualElement name="hero-container" class="hero-container" style="position: absolute; width: 30%; height: 100%;" />
+            <!-- Combat Log (Center, 40%) -->
+            <ui:ListView name="combat-log" class="combat-log" style="position: absolute; width: 40%; height: 100%;" />
+            <!-- Monster Panels (Right, 30%) -->
+            <ui:VisualElement name="monster-container" class="monster-container" style="position: absolute; width: 30%; height: 100%;" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

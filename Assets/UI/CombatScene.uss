@@ -1,176 +1,94 @@
-#CombatUI_Root {
-    background-color: rgb(51, 51, 51);
-    position: absolute;
-    top: 540px;
-    width: 1920px;
-    height: 540px;
+/* Root container */
+#combat-root {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); /* Dark fantasy background */
+}
+
+/* Combat visuals (top half, placeholder for sprites) */
+#combat-visuals {
+    background-color: rgba(20, 20, 20, 0.9); /* Darker for contrast */
+    background-image-scale-mode: scale-to-fit; /* Ensure 512x512 image fills area */
+}
+
+/* UI container (bottom half) */
+#ui-container {
     flex-direction: row;
-    opacity: 1;
-    overflow: hidden;
 }
 
-#HeroesContainer {
-    background-color: rgb(51, 51, 51);
-    border-color: rgb(26, 26, 26);
-    border-width: 4px;
-    border-radius: 8px;
-    flex-direction: column;
-    width: 576px;
-    height: 460px;
-    position: absolute;
-    left: 10px;
-    top: 0;
-    opacity: 1;
-    overflow: scroll;
+/* Hero and Monster panel containers */
+.hero-container, .monster-container {
+    background-color: rgba(30, 30, 30, 0.85); /* Subtle dark panel */
+    border-width: 2px;
+    border-color: rgb(100, 100, 100); /* Chiaroscuro border */
     padding: 5px;
+    overflow: hidden; /* Fixed: No scrolling for panels */
 }
 
-#CombatLogContainer {
-    background-color: rgba(51, 51, 51, 0.7);
-    border-color: rgb(26, 26, 26);
-    border-width: 4px;
-    border-radius: 8px;
-    flex-direction: column;
-    width: 748px;
-    height: 460px;
-    position: absolute;
-    left: 586px;
-    top: 0;
-    opacity: 1;
-    overflow: scroll;
-    padding: 10px;
-}
-
-#MonstersContainer {
-    background-color: rgb(51, 51, 51);
-    border-color: rgb(26, 26, 26);
-    border-width: 4px;
-    border-radius: 8px;
-    flex-direction: column;
-    width: 576px;
-    height: 460px;
-    position: absolute;
-    left: 1354px;
-    top: 0;
-    opacity: 1;
-    overflow: scroll;
-    padding: 5px;
-}
-
-#ButtonContainer {
-    background-color: rgb(51, 51, 51);
-    border-color: rgb(26, 26, 26);
-    border-width: 4px;
-    border-radius: 8px;
+/* Individual unit panels */
+.hero-panel, .monster-panel {
     flex-direction: row;
-    width: 400px;
-    height: 50px;
-    position: absolute;
-    left: 760px;
-    bottom: 10px;
-    opacity: 1;
-}
-
-.button {
-    background-color: rgb(51, 51, 51);
-    border-color: rgb(26, 26, 26);
-    border-width: 2px;
-    border-radius: 5px;
-    color: rgb(165, 255, 102);
-    font-size: 14px;
-    width: 100%;
-    height: 100%;
-    opacity: 1;
-}
-
-.unit-panel {
-    background-color: rgb(51, 51, 51);
-    border-color: rgb(26, 26, 26);
-    border-width: 4px;
-    border-radius: 8px;
-    margin: 5px;
+    background-color: rgba(50, 50, 50, 0.9);
+    border-width: 1px;
+    border-color: rgb(150, 150, 150);
+    margin-bottom: 5px;
     padding: 5px;
-    height: 125px;
-    width: 220px;
-    opacity: 1;
-    overflow: visible;
 }
 
-.health-bar {
-    background-color: rgb(38, 38, 38);
-    border-color: rgb(26, 26, 26);
+/* Portrait styling */
+.portrait {
+    width: 64px;
+    height: 64px;
     border-width: 2px;
-    height: 30px;
-    width: 180px;
-    margin-bottom: 5px;
-    opacity: 1;
-    overflow: hidden;
-    position: relative;
-    display: flex;
+    border-color: rgb(200, 200, 200); /* Light outline for pixel-art */
 }
 
-.health-bar-multislot {
-    background-color: rgb(38, 38, 38);
-    border-color: rgb(26, 26, 26);
-    border-width: 2px;
-    height: 30px;
-    width: 360px;
-    margin-bottom: 5px;
-    opacity: 1;
-    overflow: hidden;
-    position: relative;
-    display: flex;
+/* Stats container */
+.stats-container {
+    flex-grow: 1;
+    padding-left: 5px;
 }
 
-.health-fill-hero {
-    background-color: rgb(0, 255, 0);
-    background-image: none;
-    height: 100%;
-    width: 100%;
-    opacity: 1;
-    display: flex;
-    position: absolute;
-    top: 0;
-    left: 0;
+/* Labels (name, health, morale) */
+.hero-panel Label, .monster-panel Label {
+    -unity-font: resource("Press Start 2P"); /* Pixel-art font from UIConfig */
+    color: rgb(255, 255, 255); /* UIConfig.TextColor */
+    text-shadow: 1px 1px 0 rgb(0, 0, 0); /* UIConfig.TextOutlineColor */
 }
 
-.health-fill-monster {
-    background-color: rgb(255, 0, 0);
-    background-image: none;
-    height: 100%;
-    width: 100%;
-    opacity: 1;
-    display: flex;
-    position: absolute;
-    top: 0;
-    left: 0;
+/* Specific label sizes */
+.name-label {
+    font-size: 16px; /* Name */
+}
+.health-label {
+    font-size: 12px; /* Health */
+}
+.morale-label {
+    font-size: 12px; /* Morale (heroes only) */
 }
 
-.stat-label {
-    color: rgb(165, 255, 102);
-    font-size: 14px;
-    margin-bottom: 5px;
-    opacity: 1;
-}
-
+/* Combat log */
 .combat-log {
-    color: rgb(165, 255, 102);
-    font-size: 12px;
-    background-color: rgba(0, 0, 0, 0.7);
-    padding: 10px;
-    width: 728px;
-    height: 440px;
-    opacity: 1;
-    overflow: visible;
+    background-color: rgba(20, 20, 20, 0.9);
+    border-width: 2px;
+    border-color: rgb(100, 100, 100);
+    padding: 5px;
+    font-size: 14px;
+    -unity-font: resource("Press Start 2P");
+    color: rgb(255, 255, 255);
+    overflow: scroll; /* Fixed: Scrollable combat log */
+    --scroll-bar-color: rgb(200, 200, 200); /* Scrollbar for clarity */
 }
 
-.damage-popup {
-    position: absolute;
-    opacity: 1;
+/* Damage popup animation (subtle pulse) */
+@keyframes damage-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
-.damage-text {
-    color: rgb(165, 255, 102);
-    font-size: 16px;
-    -unity-text-align: middle-center;
+.combat-log Label.damage {
+    animation-name: damage-pulse;
+    animation-duration: 0.3s;
+    color: rgb(50, 200, 50); /* UIConfig.BogRotColor for damage */
 }
