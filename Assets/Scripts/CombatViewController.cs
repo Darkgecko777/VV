@@ -39,46 +39,26 @@ public class CombatViewController : MonoBehaviour
         root = GetComponent<UIDocument>().rootVisualElement;
         if (root == null)
         {
-            Debug.LogError("CombatViewController: UIDocument rootVisualElement is null!");
+            Debug.LogError("CombatViewController: UIDocument rootVisualElement is null! Ensure CombatScene.uxml is assigned to UIDocument in the Inspector.");
             return;
         }
 
-        // Setup background as SpriteRenderer
-        Sprite background = visualConfig.GetCombatBackground();
-        if (background != null)
-        {
-            backgroundGameObject = new GameObject("CombatBackground");
-            var sr = backgroundGameObject.AddComponent<SpriteRenderer>();
-            sr.sprite = background;
-            sr.sortingLayerName = "Background";
-            sr.sortingOrder = -1;
-            // Position to center of top half, scale to fill orthographic view (size 5)
-            backgroundGameObject.transform.position = new Vector3(0, 2.5f, 0); // Top half center (orthographic size 5, Y=0 to Y=5)
-            float pixelsPerUnit = background.pixelsPerUnit;
-            float spriteWidth = background.rect.width / pixelsPerUnit;
-            float spriteHeight = background.rect.height / pixelsPerUnit;
-            float scaleX = 10f / spriteWidth; // Orthographic width = 10 (size 5 * 2)
-            float scaleY = 5f / spriteHeight; // Top half height = 5
-            backgroundGameObject.transform.localScale = new Vector3(scaleX, scaleY, 1);
-        }
-        else
-        {
-            Debug.LogWarning("CombatViewController: Failed to load combat background sprite!");
-        }
-
-        // Setup minimalist UI (combat-root and bottom-panel)
         var combatRoot = root.Q<VisualElement>("combat-root");
         if (combatRoot == null)
         {
             Debug.LogError("CombatViewController: combat-root not found in UXML!");
             return;
         }
+
         var bottomPanel = combatRoot.Q<VisualElement>("bottom-panel");
         if (bottomPanel == null)
         {
             Debug.LogError("CombatViewController: bottom-panel not found in UXML!");
             return;
         }
+
+        // Debug to confirm panel is found and styled
+        Debug.Log($"CombatViewController: bottom-panel found. Resolved size: {bottomPanel.resolvedStyle.width}x{bottomPanel.resolvedStyle.height}, Position: {bottomPanel.resolvedStyle.position}, Display: {bottomPanel.resolvedStyle.display}");
     }
 
     private void InitializeCombat(EventBusSO.CombatInitData data)

@@ -2,11 +2,15 @@
 #combat-root {
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8); /* Dark fantasy background */
 }
 
 /* Bottom panel */
 .bottom-panel {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 50%; /* Bottom half of the screen */
+    min-height: 540px; /* Fallback for 1080p resolution (50% of 1080) */
     background-color: rgb(128, 128, 128); /* Grey */
     border-width: 2px;
     border-color: rgb(0, 0, 0); /* Black border */
