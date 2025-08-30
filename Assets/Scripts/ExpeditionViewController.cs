@@ -12,7 +12,6 @@ namespace VirulentVentures
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private EventBusSO eventBus;
-
         private VisualElement root;
         private VisualElement popoutContainer;
         private Label flavourText;
@@ -30,21 +29,18 @@ namespace VirulentVentures
                 isInitialized = false;
                 return;
             }
-
             root = uiDocument.rootVisualElement;
             popoutContainer = root.Q<VisualElement>("PopoutContainer");
             flavourText = popoutContainer?.Q<Label>("FlavourText");
             continueButton = root.Q<Button>("ContinueButton");
             fadeOverlay = root.Q<VisualElement>("FadeOverlay");
             nodeContainer = root.Q<VisualElement>("NodeContainer");
-
             if (popoutContainer == null || flavourText == null || continueButton == null || fadeOverlay == null || nodeContainer == null)
             {
                 Debug.LogError($"ExpeditionViewController: Missing UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, FadeOverlay: {fadeOverlay != null}, NodeContainer: {nodeContainer != null}");
                 isInitialized = false;
                 return;
             }
-
             isInitialized = true;
             InitializeUI();
         }
@@ -61,13 +57,11 @@ namespace VirulentVentures
 
         private IEnumerator InitializeNodes()
         {
-            // Wait for end of frame to ensure ExpeditionManager is fully initialized
             yield return new WaitForEndOfFrame();
             var expedition = ExpeditionManager.Instance.GetExpedition();
             var nodeData = new EventBusSO.NodeUpdateData { nodes = expedition.NodeData, currentIndex = expedition.CurrentNodeIndex };
             UpdateUI(nodeData);
             UpdateNodeVisuals(nodeData);
-            Debug.Log($"ExpeditionViewController: Start - Node count: {expedition.NodeData?.Count ?? 0}, Current index: {expedition.CurrentNodeIndex}");
         }
 
         void OnDestroy()
@@ -79,7 +73,6 @@ namespace VirulentVentures
             if (root != null)
             {
                 root.Clear();
-                Debug.Log("ExpeditionViewController: Cleared root VisualElement on destroy");
             }
             popoutContainer = null;
             flavourText = null;
@@ -95,17 +88,14 @@ namespace VirulentVentures
             flavourText.style.unityFont = uiConfig.PixelFont;
             continueButton.style.color = uiConfig.TextColor;
             continueButton.style.unityFont = uiConfig.PixelFont;
-
             continueButton.pickingMode = PickingMode.Position;
             fadeOverlay.pickingMode = PickingMode.Ignore;
             popoutContainer.style.display = DisplayStyle.None;
             fadeOverlay.style.display = DisplayStyle.None;
-
             continueButton.clicked += () =>
             {
                 popoutContainer.style.display = DisplayStyle.None;
                 eventBus.RaiseContinueClicked();
-                Debug.Log("ExpeditionViewController: Continue button clicked");
             };
         }
 
@@ -126,7 +116,6 @@ namespace VirulentVentures
                 }
                 portraitContainer.Add(portrait);
             }
-            Debug.Log($"ExpeditionViewController: Updated portraits, count: {heroes.Count}");
         }
 
         private void UpdateNodeVisuals(EventBusSO.NodeUpdateData data)
@@ -136,18 +125,14 @@ namespace VirulentVentures
                 Debug.LogWarning("ExpeditionViewController: UpdateNodeVisuals skipped - not initialized or NodeContainer missing");
                 return;
             }
-
             var nodes = data.nodes;
             int currentNodeIndex = data.currentIndex;
-
             nodeContainer.Clear();
             if (nodes == null)
             {
                 Debug.LogWarning("ExpeditionViewController: Nodes list is null in UpdateNodeVisuals!");
                 return;
             }
-
-            Debug.Log($"ExpeditionViewController: Rendering {nodes.Count} nodes, current index: {currentNodeIndex}");
             for (int i = 0; i < nodes.Count; i++)
             {
                 VisualElement nodeBox = new VisualElement();
@@ -163,25 +148,21 @@ namespace VirulentVentures
                 }
                 Color nodeColor = visualConfig.GetNodeColor(nodes[i].NodeType);
                 nodeBox.style.backgroundColor = new StyleColor(nodeColor);
-
                 Label nodeLabel = new Label($"Node {i + 1} ({nodes[i].NodeType})");
                 nodeLabel.AddToClassList("node-label");
                 nodeBox.Add(nodeLabel);
-
                 if (nodes[i].SeededViruses.Count > 0)
                 {
                     nodeBox.tooltip = $"Seeded: {string.Join(", ", nodes[i].SeededViruses.ConvertAll(v => v.VirusID))}";
                 }
-
                 nodeContainer.Add(nodeBox);
-                Debug.Log($"ExpeditionViewController: Added node {i} - Type: {nodes[i].NodeType}, Biome: {nodes[i].Biome}, IsCombat: {nodes[i].IsCombat}");
             }
         }
 
-        public void FadeToCombat()
+        public void FadeToCombat(System.Action onComplete = null)
         {
             if (fadeOverlay == null) return;
-            StartCoroutine(FadeRoutine(() => { }));
+            StartCoroutine(FadeRoutine(onComplete));
         }
 
         private IEnumerator FadeRoutine(System.Action onComplete)
@@ -218,7 +199,6 @@ namespace VirulentVentures
             eventBus.OnSceneTransitionCompleted -= UpdateUI;
             eventBus.OnSceneTransitionCompleted -= UpdateNodeVisuals;
             eventBus.OnPartyUpdated -= UpdatePortraits;
-            Debug.Log("ExpeditionViewController: Unsubscribed from EventBusSO");
         }
 
         private void UpdateUI(EventBusSO.NodeUpdateData data)
@@ -248,7 +228,6 @@ namespace VirulentVentures
                 }
                 portraitContainer.Add(portrait);
             }
-            Debug.Log($"ExpeditionViewController: Updated portraits, count: {partyData.HeroStats.Count}");
         }
 
         private bool ValidateReferences()

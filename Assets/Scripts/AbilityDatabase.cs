@@ -40,7 +40,7 @@ namespace VirulentVentures
                 animationTrigger: "BasicAttack",
                 effect: (target, partyData) =>
                 {
-                    // Basic attack uses character's Attack stat; damage applied in auto-battler
+                    // Basic attack uses character's Attack stat; damage applied in auto-Combatr
                     string targetId = target is CharacterStats stats ? stats.Id : string.Empty;
                     Debug.Log($"{targetId} uses Basic Attack!");
                 },
@@ -124,7 +124,7 @@ namespace VirulentVentures
                 animationTrigger: "GhoulClaw",
                 effect: (target, partyData) =>
                 {
-                    // Damage based on Attack stat (applied in auto-battler)
+                    // Damage based on Attack stat (applied in auto-Combatr)
                     if (target is CharacterStats stats && !stats.IsHero)
                     {
                         Debug.Log($"{stats.Id} uses Claw Attack!");

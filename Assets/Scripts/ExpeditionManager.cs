@@ -25,6 +25,8 @@ namespace VirulentVentures
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
+        [SerializeField] private EventBusSO eventBus; // New: For raising events consistently
+
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
         private const string CURRENT_VERSION = "1.0";
@@ -83,7 +85,8 @@ namespace VirulentVentures
             if (expedition.CurrentNodeIndex < expedition.NodeData.Count - 1)
             {
                 expedition.CurrentNodeIndex++;
-                OnNodeUpdated?.Invoke(expedition.NodeData, expedition.CurrentNodeIndex);
+                var newNode = expedition.NodeData[expedition.CurrentNodeIndex];
+                eventBus.RaiseNodeUpdated(expedition.NodeData, expedition.CurrentNodeIndex); // Changed to eventBus
             }
             else
             {
@@ -106,7 +109,7 @@ namespace VirulentVentures
         {
             if (isTransitioning) return;
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("Combat", LoadSceneMode.Single).completed += _ =>
+            SceneManager.LoadSceneAsync("CombatScene", LoadSceneMode.Single).completed += _ =>
             {
                 isTransitioning = false;
                 OnCombatStarted?.Invoke();
@@ -164,9 +167,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (expeditionData == null || partyData == null)
+            if (expeditionData == null || partyData == null || eventBus == null) // Added eventBus check
             {
-                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}");
+                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, EventBus: {eventBus != null}");
                 return false;
             }
             return true;

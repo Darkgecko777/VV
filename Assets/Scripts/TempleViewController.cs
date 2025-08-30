@@ -70,7 +70,6 @@ namespace VirulentVentures
             if (root != null)
             {
                 root.Clear(); // Explicitly clear UI Toolkit elements
-                Debug.Log("TempleViewController: Cleared root VisualElement on destroy");
             }
             virusDropdown = null;
             nodeDropdown = null;
@@ -242,7 +241,6 @@ namespace VirulentVentures
             eventBus.OnExpeditionUpdated -= UpdateNodeVisuals;
             eventBus.OnVirusSeeded -= UpdateVirusNode;
             eventBus.OnPartyUpdated -= UpdatePartyVisuals;
-            Debug.Log("TempleViewController: Unsubscribed from EventBusSO");
         }
 
         private bool ValidateReferences()

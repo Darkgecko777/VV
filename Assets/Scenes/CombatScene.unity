@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
   m_Layer: 0
-  m_Name: BattleCamera
+  m_Name: CombatCamera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -268,7 +268,7 @@ GameObject:
   - component: {fileID: 520237047}
   - component: {fileID: 520237046}
   m_Layer: 0
-  m_Name: BattleViewController
+  m_Name: CombatViewController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -422,7 +422,7 @@ GameObject:
   - component: {fileID: 621176281}
   - component: {fileID: 621176280}
   m_Layer: 0
-  m_Name: BattleController
+  m_Name: CombatController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -444,7 +444,7 @@ MonoBehaviour:
   visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
-  battleCamera: {fileID: 519420031}
+  combatCamera: {fileID: 519420031}
 --- !u!4 &621176281
 Transform:
   m_ObjectHideFlags: 0

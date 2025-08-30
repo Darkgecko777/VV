@@ -11,6 +11,7 @@ namespace VirulentVentures
         [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EncounterData combatEncounterData;
+        [SerializeField] private ExpeditionViewController viewController;
 
         void Awake()
         {
@@ -69,7 +70,29 @@ namespace VirulentVentures
 
         private void HandleNodeUpdate(EventBusSO.NodeUpdateData data)
         {
-            // Existing code
+            if (data.nodes == null || data.currentIndex < 0 || data.currentIndex >= data.nodes.Count)
+            {
+                Debug.LogError("HandleNodeUpdate: Invalid node data or index!");
+                return;
+            }
+
+            var currentNode = data.nodes[data.currentIndex];
+            if (currentNode.IsCombat)
+            {
+                if (viewController != null)
+                {
+                    viewController.FadeToCombat(() => ExpeditionManager.Instance.TransitionToCombatScene());
+                }
+                else
+                {
+                    ExpeditionManager.Instance.TransitionToCombatScene();
+                }
+            }
+            else
+            {
+                eventBus.RaiseLogMessage(currentNode.FlavourText, Color.white);
+                eventBus.RaisePartyUpdated(partyData);
+            }
         }
 
         private void HandleContinueClicked()
@@ -79,8 +102,7 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            // Add partyData, fallbackHeroIds, defaultPositions, combatEncounterData to check
-            if (eventBus == null || expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null)
+            if (eventBus == null || expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null || viewController == null)
             {
                 return false;
             }

@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace VirulentVentures
 {
-    public class BattleViewController : MonoBehaviour
+    public class CombatViewController : MonoBehaviour
     {
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private VisualConfig visualConfig;
@@ -44,7 +44,7 @@ namespace VirulentVentures
             root = uiDocument.rootVisualElement;
             if (root == null)
             {
-                Debug.LogWarning("BattleViewController: rootVisualElement is null in Awake, will retry in Start.");
+                Debug.LogWarning("CombatViewController: rootVisualElement is null in Awake, will retry in Start.");
                 return;
             }
 
@@ -63,7 +63,7 @@ namespace VirulentVentures
                 root = uiDocument.rootVisualElement;
                 if (root == null)
                 {
-                    Debug.LogError("BattleViewController: Failed to initialize rootVisualElement in Start!");
+                    Debug.LogError("CombatViewController: Failed to initialize rootVisualElement in Start!");
                     return;
                 }
                 InitializeUIElements();
@@ -81,7 +81,6 @@ namespace VirulentVentures
             if (backgroundObject != null)
             {
                 Destroy(backgroundObject);
-                Debug.Log("BattleViewController: Destroyed backgroundObject");
             }
             if (eventBus != null)
             {
@@ -90,7 +89,6 @@ namespace VirulentVentures
             if (root != null)
             {
                 root.Clear(); // Explicitly clear UI Toolkit elements
-                Debug.Log("BattleViewController: Cleared root VisualElement on destroy");
             }
             unitPanels.Clear();
             units.Clear();
@@ -111,7 +109,7 @@ namespace VirulentVentures
 
             if (heroesContainer == null || monstersContainer == null || combatLogContainer == null || continueButton == null)
             {
-                Debug.LogError($"BattleViewController: Missing UI elements! HeroesContainer: {heroesContainer != null}, MonstersContainer: {monstersContainer != null}, CombatLogContainer: {combatLogContainer != null}, ContinueButton: {continueButton != null}");
+                Debug.LogError($"CombatViewController: Missing UI elements! HeroesContainer: {heroesContainer != null}, MonstersContainer: {monstersContainer != null}, CombatLogContainer: {combatLogContainer != null}, ContinueButton: {continueButton != null}");
                 isInitialized = false;
                 return;
             }
@@ -126,7 +124,7 @@ namespace VirulentVentures
             combatLogContainer.Clear();
             continueButton.style.color = uiConfig.TextColor;
             continueButton.style.unityFont = uiConfig.PixelFont;
-            continueButton.clicked += () => eventBus.RaiseBattleEnded();
+            continueButton.clicked += () => eventBus.RaiseCombatEnded();
             continueButton.SetEnabled(false);
         }
 
@@ -134,7 +132,7 @@ namespace VirulentVentures
         {
             if (backgroundSprite != null)
             {
-                backgroundObject = new GameObject("BattleBackground");
+                backgroundObject = new GameObject("CombatBackground");
                 var renderer = backgroundObject.AddComponent<SpriteRenderer>();
                 renderer.sprite = backgroundSprite;
                 renderer.sortingLayerName = "Background";
@@ -144,11 +142,11 @@ namespace VirulentVentures
             }
             else
             {
-                Debug.LogWarning("BattleViewController: No backgroundSprite assigned!");
+                Debug.LogWarning("CombatViewController: No backgroundSprite assigned!");
             }
         }
 
-        public void InitializeUnits(EventBusSO.BattleInitData data)
+        public void InitializeUnits(EventBusSO.CombatInitData data)
         {
             var combatUnits = data.units;
             if (!isInitialized) return;
@@ -169,7 +167,7 @@ namespace VirulentVentures
 
                 if (string.IsNullOrEmpty(stats.name))
                 {
-                    Debug.LogWarning($"BattleViewController: Invalid DisplayStats for unit {unit.Id}");
+                    Debug.LogWarning($"CombatViewController: Invalid DisplayStats for unit {unit.Id}");
                     continue;
                 }
 
@@ -195,7 +193,7 @@ namespace VirulentVentures
         {
             if (string.IsNullOrEmpty(stats.name))
             {
-                Debug.LogWarning($"BattleViewController: Invalid DisplayStats for unit, name is empty");
+                Debug.LogWarning($"CombatViewController: Invalid DisplayStats for unit, name is empty");
                 return new VisualElement();
             }
 
@@ -252,7 +250,7 @@ namespace VirulentVentures
             var stats = data.displayStats;
             if (string.IsNullOrEmpty(stats.name))
             {
-                Debug.LogWarning($"BattleViewController: Invalid DisplayStats for unit {data.unit.Id} in UpdateUnitPanel");
+                Debug.LogWarning($"CombatViewController: Invalid DisplayStats for unit {data.unit.Id} in UpdateUnitPanel");
                 return;
             }
 
@@ -381,9 +379,9 @@ namespace VirulentVentures
             eventBus.OnUnitUpdated += UpdateUnitPanel;
             eventBus.OnDamagePopup += ShowDamagePopup;
             eventBus.OnDamagePopup += TriggerUnitAnimation;
-            eventBus.OnBattleEnded += EnableContinueButton;
-            eventBus.OnBattleEnded += FadeToScene;
-            eventBus.OnBattleInitialized += InitializeUnits;
+            eventBus.OnCombatEnded += EnableContinueButton;
+            eventBus.OnCombatEnded += FadeToScene;
+            eventBus.OnCombatInitialized += InitializeUnits;
         }
 
         private void UnsubscribeFromEventBus()
@@ -392,17 +390,17 @@ namespace VirulentVentures
             eventBus.OnUnitUpdated -= UpdateUnitPanel;
             eventBus.OnDamagePopup -= ShowDamagePopup;
             eventBus.OnDamagePopup -= TriggerUnitAnimation;
-            eventBus.OnBattleEnded -= EnableContinueButton;
-            eventBus.OnBattleEnded -= FadeToScene;
-            eventBus.OnBattleInitialized -= InitializeUnits;
-            Debug.Log("BattleViewController: Unsubscribed from EventBusSO");
+            eventBus.OnCombatEnded -= EnableContinueButton;
+            eventBus.OnCombatEnded -= FadeToScene;
+            eventBus.OnCombatInitialized -= InitializeUnits;
+            Debug.Log("CombatViewController: Unsubscribed from EventBusSO");
         }
 
         private bool ValidateReferences()
         {
             if (uiDocument == null || uiConfig == null || visualConfig == null || mainCamera == null || characterPositions == null || eventBus == null)
             {
-                Debug.LogError($"BattleViewController: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, VisualConfig: {visualConfig != null}, MainCamera: {mainCamera != null}, CharacterPositions: {characterPositions != null}, EventBus: {eventBus != null}");
+                Debug.LogError($"CombatViewController: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, VisualConfig: {visualConfig != null}, MainCamera: {mainCamera != null}, CharacterPositions: {characterPositions != null}, EventBus: {eventBus != null}");
                 return false;
             }
             return true;

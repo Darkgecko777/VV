@@ -75,7 +75,7 @@ namespace VirulentVentures
                         stackTrace = "" // Editor.log doesn't provide stack traces for compiler errors
                     });
 
-                // Scan for USS validation warnings (e.g., "Assets/UI/BattleScene.uss (line \d+): warning: Expected...")
+                // Scan for USS validation warnings (e.g., "Assets/UI/CombatScene.uss (line \d+): warning: Expected...")
                 var ussWarningLines = logLines.Select((line, index) => new { Line = line, Index = index })
                     .Where(item => Regex.IsMatch(item.Line, @"Assets/UI/.*\.uss \(line \d+\): warning: Expected"))
                     .Select(item => new LogEntry

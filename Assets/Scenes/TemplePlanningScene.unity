@@ -150,13 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   expeditionData: {fileID: 11400000, guid: dbd010dc53fbedf4ead5b8a30d6b6ccd, type: 2}
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
-  fallbackHeroIds:
-  - Fighter
-  - Healer
-  - Scout
-  - TreasureHunter
-  defaultPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
-  combatEncounterData: {fileID: 11400000, guid: cb2f1c90e6f1dd54ea59e6686e020c98, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
 --- !u!4 &279643037
 Transform:
   m_ObjectHideFlags: 0
@@ -436,6 +430,50 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!1 &1865351400
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1865351402}
+  - component: {fileID: 1865351401}
+  m_Layer: 0
+  m_Name: LogExporter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1865351401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1865351400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 825870d60b86641418648430845c1e08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1865351402
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1865351400}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.525106, y: 1.4585422, z: 0.06824295}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2139730223
 GameObject:
   m_ObjectHideFlags: 0
@@ -504,3 +542,4 @@ SceneRoots:
   - {fileID: 363512856}
   - {fileID: 279643037}
   - {fileID: 335239195}
+  - {fileID: 1865351402}

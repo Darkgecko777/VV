@@ -9,7 +9,7 @@ namespace VirulentVentures
         [SerializeField] private float minCombatSpeed = 0.5f;
         [SerializeField] private float maxCombatSpeed = 2f;
         [SerializeField] private int retreatMoraleThreshold = 20; // Heroes retreat if Morale <= 20
-        [SerializeField] private int maxRounds = 5; // Max rounds per battle
+        [SerializeField] private int maxRounds = 5; // Max rounds per Combat
         [SerializeField] private int speedTwoAttacksThreshold = 7; // Speed 7-8: 2 attacks/round
         [SerializeField] private int speedThreePerTwoThreshold = 5; // Speed 5-6: 3 attacks/2 rounds
         [SerializeField] private int speedOneAttackThreshold = 3; // Speed 3-4: 1 attack/round

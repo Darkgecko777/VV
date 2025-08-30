@@ -29,7 +29,7 @@ namespace VirulentVentures
         }
 
         [System.Serializable]
-        public struct BattleInitData
+        public struct CombatInitData
         {
             public List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats stats)> units;
         }
@@ -58,9 +58,9 @@ namespace VirulentVentures
         public event Action<LogData> OnLogMessage;
         public event Action<UnitUpdateData> OnUnitUpdated;
         public event Action<DamagePopupData> OnDamagePopup;
-        public event Action OnBattleEnded;
+        public event Action OnCombatEnded;
         public event Action OnRetreatTriggered;
-        public event Action<BattleInitData> OnBattleInitialized;
+        public event Action<CombatInitData> OnCombatInitialized;
         public event Action<ExpeditionGeneratedData> OnExpeditionGenerated;
         public event Action<VirusSeededData> OnVirusSeeded;
         public event Action<PartyData> OnPartyUpdated;
@@ -85,14 +85,14 @@ namespace VirulentVentures
             OnDamagePopup?.Invoke(new DamagePopupData { unit = unit, message = message });
         }
 
-        public void RaiseBattleInitialized(List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats stats)> units)
+        public void RaiseCombatInitialized(List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats stats)> units)
         {
-            OnBattleInitialized?.Invoke(new BattleInitData { units = units });
+            OnCombatInitialized?.Invoke(new CombatInitData { units = units });
         }
 
-        public void RaiseBattleEnded()
+        public void RaiseCombatEnded()
         {
-            OnBattleEnded?.Invoke();
+            OnCombatEnded?.Invoke();
         }
 
         public void RaiseRetreatTriggered()

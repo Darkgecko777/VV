@@ -11,7 +11,7 @@ namespace VirulentVentures
         {
             public string characterID; // e.g., "Fighter", "Healer" from HeroSO.Stats.Type.Id
             public Sprite portrait; // Temple/Expedition
-            public Sprite combatSprite; // BattleScene
+            public Sprite combatSprite; // CombatScene
         }
 
         [System.Serializable]

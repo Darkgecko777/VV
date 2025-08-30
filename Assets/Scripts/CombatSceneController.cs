@@ -5,24 +5,24 @@ using UnityEngine;
 
 namespace VirulentVentures
 {
-    public class BattleSceneController : MonoBehaviour
+    public class CombatSceneController : MonoBehaviour
     {
         [SerializeField] private CombatConfig combatConfig;
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private EventBusSO eventBus;
-        [SerializeField] private Camera battleCamera;
+        [SerializeField] private Camera combatCamera;
 
         private ExpeditionManager expeditionManager;
-        private bool isEndingBattle;
+        private bool isEndingCombat;
         private List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
-        private bool isBattleActive;
+        private bool isCombatActive;
         private int roundNumber;
 
         void Awake()
         {
             units.Clear();
-            isBattleActive = false;
+            isCombatActive = false;
             roundNumber = 0;
         }
 
@@ -31,23 +31,23 @@ namespace VirulentVentures
             expeditionManager = ExpeditionManager.Instance;
             if (expeditionManager == null)
             {
-                Debug.LogError("BattleSceneController: Failed to find ExpeditionManager!");
+                Debug.LogError("CombatSceneController: Failed to find ExpeditionManager!");
                 return;
             }
             if (!ValidateReferences()) return;
 
-            eventBus.OnBattleEnded += EndBattle;
-            StartCoroutine(RunBattle());
+            eventBus.OnCombatEnded += EndCombat;
+            StartCoroutine(RunCombat());
         }
 
         void OnDestroy()
         {
-            eventBus.OnBattleEnded -= EndBattle;
+            eventBus.OnCombatEnded -= EndCombat;
         }
 
-        private IEnumerator RunBattle()
+        private IEnumerator RunCombat()
         {
-            if (isBattleActive)
+            if (isCombatActive)
             {
                 yield break;
             }
@@ -55,7 +55,7 @@ namespace VirulentVentures
             var expeditionData = expeditionManager.GetExpedition();
             if (expeditionData == null || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
             {
-                EndBattle();
+                EndCombat();
                 yield break;
             }
 
@@ -64,27 +64,27 @@ namespace VirulentVentures
 
             if (heroStats == null || monsterStats == null || heroStats.Count == 0 || monsterStats.Count == 0)
             {
-                EndBattle();
+                EndCombat();
                 yield break;
             }
 
-            isBattleActive = true;
+            isCombatActive = true;
             InitializeUnits(heroStats, monsterStats);
             IncrementRound();
-            while (isBattleActive)
+            while (isCombatActive)
             {
                 if (CheckRetreat(units.Select(u => u.unit).ToList()))
                 {
                     LogMessage("Party morale too low, retreating!", uiConfig.BogRotColor);
                     eventBus.RaiseRetreatTriggered();
-                    EndBattle();
+                    EndCombat();
                     yield break;
                 }
 
                 var unitList = units.Select(u => u.unit).Where(u => u.Health > 0).OrderByDescending(u => u.Speed).ToList();
                 if (unitList.Count == 0)
                 {
-                    EndBattle();
+                    EndCombat();
                     yield break;
                 }
 
@@ -156,7 +156,7 @@ namespace VirulentVentures
 
                 if (roundNumber >= combatConfig.MaxRounds)
                 {
-                    EndBattle();
+                    EndCombat();
                     yield break;
                 }
 
@@ -185,7 +185,7 @@ namespace VirulentVentures
                     units.Add((monster, null, stats));
                 }
             }
-            eventBus.RaiseBattleInitialized(units);
+            eventBus.RaiseCombatInitialized(units);
         }
 
         private void IncrementRound()
@@ -215,13 +215,13 @@ namespace VirulentVentures
             }
         }
 
-        private void EndBattle()
+        private void EndCombat()
         {
-            if (isEndingBattle) return;
-            isEndingBattle = true;
+            if (isEndingCombat) return;
+            isEndingCombat = true;
 
-            isBattleActive = false;
-            eventBus.RaiseBattleEnded();
+            isCombatActive = false;
+            eventBus.RaiseCombatEnded();
             expeditionManager.SaveProgress();
             bool partyDead = expeditionManager.GetExpedition().Party.CheckDeadStatus().Count == 0;
             if (partyDead)
@@ -233,7 +233,7 @@ namespace VirulentVentures
                 expeditionManager.TransitionToExpeditionScene();
             }
 
-            isEndingBattle = false;
+            isEndingCombat = false;
         }
 
         private ICombatUnit GetRandomAliveTarget(List<ICombatUnit> targets)
@@ -257,9 +257,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || battleCamera == null)
+            if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null)
             {
-                Debug.LogError($"BattleSceneController: Missing references! CombatConfig: {combatConfig != null}, EventBus: {eventBus != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, BattleCamera: {battleCamera != null}");
+                Debug.LogError($"CombatSceneController: Missing references! CombatConfig: {combatConfig != null}, EventBus: {eventBus != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, CombatCamera: {combatCamera != null}");
                 return false;
             }
             return true;
