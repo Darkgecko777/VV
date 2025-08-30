@@ -95,7 +95,7 @@ namespace VirulentVentures
         {
             if (isTransitioning) return;
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("Expedition", LoadSceneMode.Single).completed += _ =>
+            SceneManager.LoadSceneAsync("ExpeditionScene", LoadSceneMode.Single).completed += _ =>
             {
                 isTransitioning = false;
                 OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);

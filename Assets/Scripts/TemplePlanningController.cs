@@ -45,24 +45,24 @@ namespace VirulentVentures
 
         private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData data)
         {
-            // Only generate if triggered by UI (null data), not by updates
             if (data.expeditionData != null || data.partyData != null) return;
 
             List<NodeData> nodes = new List<NodeData>();
-            int nodeCount = testMode ? 3 : Random.Range(8, 13);
-            string[] biomes = { "Ruins", "Swamp", "Forest" };
-            int level = 1;
+            // Add fixed temple node as the starting point with Swamp biome
+            nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1, isTempleNode: true));
+            // Adjust node count for remaining nodes
+            int nodeCount = testMode ? 2 : Random.Range(7, 11);
+            int level = 2; // Start at level 2 for subsequent nodes
 
             for (int i = 0; i < nodeCount; i++)
             {
-                string biome = biomes[Random.Range(0, biomes.Length)];
                 if (Random.Range(0, 2) == 0)
                 {
-                    nodes.Add(combatNodeGenerator.GenerateCombatNode(biome, level, combatEncounterData));
+                    nodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", level, combatEncounterData));
                 }
                 else
                 {
-                    nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode(biome, level));
+                    nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", level));
                 }
                 level++;
             }
@@ -87,6 +87,7 @@ namespace VirulentVentures
             }
             expeditionData.SetNodes(nodes);
             expeditionData.SetParty(partyData);
+            expeditionData.CurrentNodeIndex = 0; // Start at temple node
             isExpeditionGenerated = expeditionData.IsValid();
 
             eventBus.RaisePartyUpdated(partyData);

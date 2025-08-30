@@ -40,6 +40,10 @@
     background-color: #00FF00;
 }
 
+.node-temple {
+    background-color: white;
+}
+
 .node-current {
     border-color: #FFFF00;
 }

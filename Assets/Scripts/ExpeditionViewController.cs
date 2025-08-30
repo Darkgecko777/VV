@@ -55,8 +55,19 @@ namespace VirulentVentures
             {
                 SubscribeToEventBus();
                 InitializePortraits();
-                UpdateUI(new EventBusSO.NodeUpdateData { nodes = ExpeditionManager.Instance.GetExpedition().NodeData, currentIndex = ExpeditionManager.Instance.GetExpedition().CurrentNodeIndex });
+                StartCoroutine(InitializeNodes());
             }
+        }
+
+        private IEnumerator InitializeNodes()
+        {
+            // Wait for end of frame to ensure ExpeditionManager is fully initialized
+            yield return new WaitForEndOfFrame();
+            var expedition = ExpeditionManager.Instance.GetExpedition();
+            var nodeData = new EventBusSO.NodeUpdateData { nodes = expedition.NodeData, currentIndex = expedition.CurrentNodeIndex };
+            UpdateUI(nodeData);
+            UpdateNodeVisuals(nodeData);
+            Debug.Log($"ExpeditionViewController: Start - Node count: {expedition.NodeData?.Count ?? 0}, Current index: {expedition.CurrentNodeIndex}");
         }
 
         void OnDestroy()
@@ -103,61 +114,12 @@ namespace VirulentVentures
             portraitContainer = new VisualElement { name = "PortraitContainer" };
             root.Add(portraitContainer);
             portraitContainer.style.flexDirection = FlexDirection.Row;
-            portraitContainer.style.position = Position.Absolute;
-            portraitContainer.style.top = 200;
-            portraitContainer.style.left = 50;
-
-            UpdatePortraits(ExpeditionManager.Instance.GetExpedition().Party);
-        }
-
-        private void UpdateUI(EventBusSO.NodeUpdateData data)
-        {
-            if (!isInitialized) return;
-
-            var nodes = data.nodes;
-            var currentIndex = data.currentIndex;
-            if (nodes == null || currentIndex < 0 || currentIndex >= nodes.Count)
+            var heroes = ExpeditionManager.Instance.GetExpedition().Party.HeroStats;
+            foreach (var hero in heroes)
             {
-                Debug.LogWarning($"ExpeditionViewController: Invalid node data! Nodes: {nodes != null}, Index: {currentIndex}, Count: {nodes?.Count ?? 0}");
-                return;
-            }
-
-            var node = nodes[currentIndex];
-            if (node == null)
-            {
-                Debug.LogWarning("ExpeditionViewController: Current node is null!");
-                return;
-            }
-
-            if (!node.IsCombat)
-            {
-                flavourText.text = node.FlavourText;
-                flavourText.style.color = uiConfig.TextColor;
-                flavourText.style.unityFont = uiConfig.PixelFont;
-                popoutContainer.style.display = DisplayStyle.Flex;
-                continueButton.style.display = DisplayStyle.Flex;
-                continueButton.text = "Continue";
-            }
-            else if (node.IsCombat)
-            {
-                popoutContainer.style.display = DisplayStyle.None;
-                continueButton.style.display = DisplayStyle.Flex;
-                continueButton.text = "Continue";
-                FadeToCombat();
-            }
-        }
-
-        private void UpdatePortraits(PartyData partyData)
-        {
-            if (!isInitialized || portraitContainer == null) return;
-            portraitContainer.Clear();
-
-            var heroes = partyData.GetHeroes();
-            for (int i = 0; i < heroes.Count; i++)
-            {
-                VisualElement portrait = new VisualElement();
+                VisualElement portrait = new VisualElement { name = $"Portrait_{hero.Id}" };
                 portrait.AddToClassList("portrait");
-                Sprite sprite = visualConfig.GetPortrait(heroes[i].Id);
+                Sprite sprite = visualConfig.GetPortrait(hero.Id);
                 if (sprite != null)
                 {
                     portrait.style.backgroundImage = new StyleBackground(sprite);
@@ -169,7 +131,11 @@ namespace VirulentVentures
 
         private void UpdateNodeVisuals(EventBusSO.NodeUpdateData data)
         {
-            if (!isInitialized || nodeContainer == null) return;
+            if (!isInitialized || nodeContainer == null)
+            {
+                Debug.LogWarning("ExpeditionViewController: UpdateNodeVisuals skipped - not initialized or NodeContainer missing");
+                return;
+            }
 
             var nodes = data.nodes;
             int currentNodeIndex = data.currentIndex;
@@ -181,11 +147,16 @@ namespace VirulentVentures
                 return;
             }
 
+            Debug.Log($"ExpeditionViewController: Rendering {nodes.Count} nodes, current index: {currentNodeIndex}");
             for (int i = 0; i < nodes.Count; i++)
             {
                 VisualElement nodeBox = new VisualElement();
                 nodeBox.AddToClassList("node-box");
                 nodeBox.AddToClassList(nodes[i].IsCombat ? "node-combat" : "node-noncombat");
+                if (i == 0)
+                {
+                    nodeBox.AddToClassList("node-temple");
+                }
                 if (i == currentNodeIndex)
                 {
                     nodeBox.AddToClassList("node-current");
@@ -193,7 +164,7 @@ namespace VirulentVentures
                 Color nodeColor = visualConfig.GetNodeColor(nodes[i].NodeType);
                 nodeBox.style.backgroundColor = new StyleColor(nodeColor);
 
-                Label nodeLabel = new Label($"Node {i + 1}");
+                Label nodeLabel = new Label($"Node {i + 1} ({nodes[i].NodeType})");
                 nodeLabel.AddToClassList("node-label");
                 nodeBox.Add(nodeLabel);
 
@@ -203,8 +174,8 @@ namespace VirulentVentures
                 }
 
                 nodeContainer.Add(nodeBox);
+                Debug.Log($"ExpeditionViewController: Added node {i} - Type: {nodes[i].NodeType}, Biome: {nodes[i].Biome}, IsCombat: {nodes[i].IsCombat}");
             }
-            Debug.Log($"ExpeditionViewController: Updated node visuals, count: {nodes.Count}, current index: {currentNodeIndex}");
         }
 
         public void FadeToCombat()
@@ -248,6 +219,36 @@ namespace VirulentVentures
             eventBus.OnSceneTransitionCompleted -= UpdateNodeVisuals;
             eventBus.OnPartyUpdated -= UpdatePortraits;
             Debug.Log("ExpeditionViewController: Unsubscribed from EventBusSO");
+        }
+
+        private void UpdateUI(EventBusSO.NodeUpdateData data)
+        {
+            if (!isInitialized || flavourText == null) return;
+            var nodes = data.nodes;
+            int currentIndex = data.currentIndex;
+            if (nodes != null && currentIndex >= 0 && currentIndex < nodes.Count)
+            {
+                flavourText.text = nodes[currentIndex].FlavourText;
+                popoutContainer.style.display = (nodes[currentIndex].IsCombat || currentIndex == 0) ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+        }
+
+        private void UpdatePortraits(PartyData partyData)
+        {
+            if (!isInitialized || portraitContainer == null) return;
+            portraitContainer.Clear();
+            foreach (var hero in partyData.HeroStats)
+            {
+                VisualElement portrait = new VisualElement { name = $"Portrait_{hero.Id}" };
+                portrait.AddToClassList("portrait");
+                Sprite sprite = visualConfig.GetPortrait(hero.Id);
+                if (sprite != null)
+                {
+                    portrait.style.backgroundImage = new StyleBackground(sprite);
+                }
+                portraitContainer.Add(portrait);
+            }
+            Debug.Log($"ExpeditionViewController: Updated portraits, count: {partyData.HeroStats.Count}");
         }
 
         private bool ValidateReferences()

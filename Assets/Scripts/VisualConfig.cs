@@ -24,7 +24,7 @@ namespace VirulentVentures
         [System.Serializable]
         public struct NodeVisuals
         {
-            public string nodeType; // e.g., "Combat", "NonCombat"
+            public string nodeType; // e.g., "Combat", "NonCombat", "Temple"
             public Color highlightColor;
         }
 
