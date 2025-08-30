@@ -1,16 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
-    <ui:VisualElement name="combat-root" style="flex-grow: 1;">
-        <!-- Top Half: Combat Visuals (reserved for sprites, managed by CombatViewController) -->
-        <ui:VisualElement name="combat-visuals" style="height: 50%; width: 100%;" />
-        <!-- Bottom Half: UI Container -->
-        <ui:VisualElement name="ui-container" style="height: 50%; width: 100%; flex-direction: row;">
-            <!-- Hero Panels (Left, 30%) -->
-            <ui:VisualElement name="hero-container" class="hero-container" style="position: absolute; width: 30%; height: 100%;" />
-            <!-- Combat Log (Center, 40%) -->
-            <ui:ListView name="combat-log" class="combat-log" style="position: absolute; width: 40%; height: 100%;" />
-            <!-- Monster Panels (Right, 30%) -->
-            <ui:VisualElement name="monster-container" class="monster-container" style="position: absolute; width: 30%; height: 100%;" />
-        </ui:VisualElement>
+    <ui:VisualElement name="combat-root" class="combat-root">
+        <ui:VisualElement name="bottom-panel" class="bottom-panel" />
     </ui:VisualElement>
 </ui:UXML>

@@ -41,3 +41,4 @@ MonoBehaviour:
     highlightColor: {r: 0.2, g: 0.4, b: 0.8, a: 1}
   - nodeType: Temple
     highlightColor: {r: 1, g: 1, b: 1, a: 1}
+  combatBackground: {fileID: 4771802001370111548, guid: b4ead30647ae19c4692634354b4c7d7b, type: 3}

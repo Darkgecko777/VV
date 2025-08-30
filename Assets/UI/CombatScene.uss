@@ -5,90 +5,9 @@
     background-color: rgba(0, 0, 0, 0.8); /* Dark fantasy background */
 }
 
-/* Combat visuals (top half, placeholder for sprites) */
-#combat-visuals {
-    background-color: rgba(20, 20, 20, 0.9); /* Darker for contrast */
-    background-image-scale-mode: scale-to-fit; /* Ensure 512x512 image fills area */
-}
-
-/* UI container (bottom half) */
-#ui-container {
-    flex-direction: row;
-}
-
-/* Hero and Monster panel containers */
-.hero-container, .monster-container {
-    background-color: rgba(30, 30, 30, 0.85); /* Subtle dark panel */
+/* Bottom panel */
+.bottom-panel {
+    background-color: rgb(128, 128, 128); /* Grey */
     border-width: 2px;
-    border-color: rgb(100, 100, 100); /* Chiaroscuro border */
-    padding: 5px;
-    overflow: hidden; /* Fixed: No scrolling for panels */
-}
-
-/* Individual unit panels */
-.hero-panel, .monster-panel {
-    flex-direction: row;
-    background-color: rgba(50, 50, 50, 0.9);
-    border-width: 1px;
-    border-color: rgb(150, 150, 150);
-    margin-bottom: 5px;
-    padding: 5px;
-}
-
-/* Portrait styling */
-.portrait {
-    width: 64px;
-    height: 64px;
-    border-width: 2px;
-    border-color: rgb(200, 200, 200); /* Light outline for pixel-art */
-}
-
-/* Stats container */
-.stats-container {
-    flex-grow: 1;
-    padding-left: 5px;
-}
-
-/* Labels (name, health, morale) */
-.hero-panel Label, .monster-panel Label {
-    -unity-font: resource("Press Start 2P"); /* Pixel-art font from UIConfig */
-    color: rgb(255, 255, 255); /* UIConfig.TextColor */
-    text-shadow: 1px 1px 0 rgb(0, 0, 0); /* UIConfig.TextOutlineColor */
-}
-
-/* Specific label sizes */
-.name-label {
-    font-size: 16px; /* Name */
-}
-.health-label {
-    font-size: 12px; /* Health */
-}
-.morale-label {
-    font-size: 12px; /* Morale (heroes only) */
-}
-
-/* Combat log */
-.combat-log {
-    background-color: rgba(20, 20, 20, 0.9);
-    border-width: 2px;
-    border-color: rgb(100, 100, 100);
-    padding: 5px;
-    font-size: 14px;
-    -unity-font: resource("Press Start 2P");
-    color: rgb(255, 255, 255);
-    overflow: scroll; /* Fixed: Scrollable combat log */
-    --scroll-bar-color: rgb(200, 200, 200); /* Scrollbar for clarity */
-}
-
-/* Damage popup animation (subtle pulse) */
-@keyframes damage-pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-.combat-log Label.damage {
-    animation-name: damage-pulse;
-    animation-duration: 0.3s;
-    color: rgb(50, 200, 50); /* UIConfig.BogRotColor for damage */
+    border-color: rgb(0, 0, 0); /* Black border */
 }
