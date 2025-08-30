@@ -101,6 +101,10 @@ namespace VirulentVentures
                     var target = GetRandomAliveTarget(targets);
                     if (target == null) continue;
 
+                    // Trigger attack animation before resolving
+                    eventBus.RaiseUnitAttacking(unit, target);
+                    yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f)); // Wait for tilt animation
+
                     int damage = Mathf.Max(unit.Attack - target.Defense, 0);
                     bool killed = false;
                     if (ability.Value.Effect != null)
@@ -117,6 +121,7 @@ namespace VirulentVentures
                     target.Health = Mathf.Max(target.Health - damage, 0);
                     killed = target.Health <= 0;
                     UpdateUnit(target, damage.ToString());
+                    eventBus.RaiseUnitDamaged(target, damage.ToString()); // Trigger damage animation
                     if (killed)
                     {
                         LogMessage($"{unit.GetDisplayStats().name} kills {target.GetDisplayStats().name}!", uiConfig.BogRotColor);
@@ -131,6 +136,8 @@ namespace VirulentVentures
                         var extraTarget = GetRandomAliveTarget(targets);
                         if (extraTarget != null)
                         {
+                            eventBus.RaiseUnitAttacking(unit, extraTarget);
+                            yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f)); // Wait for tilt animation
                             if (ability.Value.CanDodge && Random.Range(0, 100) < extraTarget.Evasion)
                             {
                                 LogMessage($"{extraTarget.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
@@ -140,6 +147,7 @@ namespace VirulentVentures
                             extraTarget.Health = Mathf.Max(extraTarget.Health - damage, 0);
                             killed = extraTarget.Health <= 0;
                             UpdateUnit(extraTarget, damage.ToString());
+                            eventBus.RaiseUnitDamaged(extraTarget, damage.ToString()); // Trigger damage animation
                             if (killed)
                             {
                                 LogMessage($"{unit.GetDisplayStats().name} kills {extraTarget.GetDisplayStats().name} with extra attack!", uiConfig.BogRotColor);

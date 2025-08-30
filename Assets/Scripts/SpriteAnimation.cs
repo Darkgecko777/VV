@@ -12,12 +12,52 @@ namespace VirulentVentures
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
-        public void Jiggle(bool isAttacker)
+        public void TiltForward(bool isHero)
         {
-            StartCoroutine(JiggleCoroutine(isAttacker));
+            StartCoroutine(TiltForwardCoroutine(isHero));
         }
 
-        private IEnumerator JiggleCoroutine(bool isAttacker)
+        public void Jiggle()
+        {
+            StartCoroutine(JiggleCoroutine());
+        }
+
+        private IEnumerator TiltForwardCoroutine(bool isHero)
+        {
+            // Capture starting rotation
+            Quaternion startRotation = transform.rotation;
+            Quaternion targetRotation = Quaternion.Euler(0, 0, isHero ? -30f : 30f); // Heroes tilt left (-30), monsters tilt right (+30)
+            float duration = 0.2f; // Fast tilt
+            float holdTime = 0.1f; // Brief hold before reverting
+            float elapsed = 0f;
+
+            // Tilt forward
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                transform.rotation = Quaternion.Lerp(startRotation, targetRotation, t);
+                yield return null;
+            }
+
+            // Hold briefly
+            yield return new WaitForSeconds(holdTime);
+
+            // Revert to original rotation
+            elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                transform.rotation = Quaternion.Lerp(targetRotation, startRotation, t);
+                yield return null;
+            }
+
+            // Ensure exact restoration
+            transform.rotation = startRotation;
+        }
+
+        private IEnumerator JiggleCoroutine()
         {
             // Capture current values at the start of animation
             Vector3 startScale = transform.localScale;
@@ -25,8 +65,8 @@ namespace VirulentVentures
 
             float duration = 0.3f;
             float elapsed = 0f;
-            float scaleAmount = isAttacker ? 0.3f : 0.15f;
-            float hopAmount = isAttacker ? 0.7f : 0.3f;
+            float scaleAmount = 0.15f; // Smaller scale for hit reaction
+            float hopAmount = 0.3f; // Smaller hop for hit reaction
 
             while (elapsed < duration)
             {

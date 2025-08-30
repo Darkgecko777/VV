@@ -19,11 +19,15 @@ public class CombatViewController : MonoBehaviour
         if (!ValidateReferences()) return;
         SetupUI();
         eventBus.OnCombatInitialized += InitializeCombat;
+        eventBus.OnUnitAttacking += HandleUnitAttacking;
+        eventBus.OnUnitDamaged += HandleUnitDamaged;
     }
 
     void OnDestroy()
     {
         eventBus.OnCombatInitialized -= InitializeCombat;
+        eventBus.OnUnitAttacking -= HandleUnitAttacking;
+        eventBus.OnUnitDamaged -= HandleUnitDamaged;
         if (backgroundGameObject != null)
         {
             Destroy(backgroundGameObject);
@@ -100,6 +104,31 @@ public class CombatViewController : MonoBehaviour
             var stats = monsters[i].stats;
             var go = CreateUnitGameObject(unit, stats, false, characterPositions.monsterPositions[i]);
             unitGameObjects[unit] = go;
+        }
+    }
+
+    private void HandleUnitAttacking(EventBusSO.AttackData data)
+    {
+        if (unitGameObjects.TryGetValue(data.attacker, out GameObject attackerGo))
+        {
+            var animator = attackerGo.GetComponent<SpriteAnimation>();
+            if (animator != null)
+            {
+                bool isHero = data.attacker is CharacterStats charStats && charStats.Type == CharacterType.Hero;
+                animator.TiltForward(isHero);
+            }
+        }
+    }
+
+    private void HandleUnitDamaged(EventBusSO.DamagePopupData data)
+    {
+        if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
+        {
+            var animator = targetGo.GetComponent<SpriteAnimation>();
+            if (animator != null)
+            {
+                animator.Jiggle();
+            }
         }
     }
 
