@@ -185,6 +185,12 @@ public class CombatViewController : MonoBehaviour
             panel.style.width = new StyleLength(Length.Percent(100));
         }
 
+        // Add character name label
+        var nameLabel = new Label(stats.name);
+        nameLabel.style.unityFont = uiConfig.PixelFont;
+        nameLabel.style.color = uiConfig.TextColor;
+        panel.Add(nameLabel);
+
         return panel;
     }
 

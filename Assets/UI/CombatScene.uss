@@ -40,6 +40,15 @@
     border-width: 2px;
     border-color: rgb(50, 50, 50); /* Dark grey border */
     margin: 1px; /* Small margin to prevent overlap */
+    flex-direction: column; /* Stack content vertically */
+    justify-content: center; /* Center content */
+}
+
+/* Unit panel labels */
+.unit-panel > Label {
+    font-size: 14px;
+    color: rgb(255, 255, 255); /* Matches UIConfig.TextColor */
+    margin: 5px;
 }
 
 /* Combat log ScrollView */
