@@ -14,7 +14,7 @@ public class CombatViewController : MonoBehaviour
     private VisualElement root;
     private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
     private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
-    private Dictionary<ICombatUnit, (Label atk, Label def, Label spd, Label eva)> unitStatLabels = new Dictionary<ICombatUnit, (Label, Label, Label, Label)>();
+    private Dictionary<ICombatUnit, (Label atk, Label def, Label spd, Label eva, Label morale)> unitStatLabels = new Dictionary<ICombatUnit, (Label, Label, Label, Label, Label)>();
     private GameObject backgroundGameObject;
     private VisualElement logContent;
     private List<Label> logMessages = new List<Label>();
@@ -29,7 +29,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnUnitDamaged += HandleUnitDamaged;
         eventBus.OnLogMessage += HandleLogMessage;
         eventBus.OnUnitUpdated += HandleUnitUpdated;
-        eventBus.OnUnitDied += HandleUnitDied; // Subscribe to new event
+        eventBus.OnUnitDied += HandleUnitDied;
         SetupBackground();
     }
 
@@ -40,7 +40,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnUnitDamaged -= HandleUnitDamaged;
         eventBus.OnLogMessage -= HandleLogMessage;
         eventBus.OnUnitUpdated -= HandleUnitUpdated;
-        eventBus.OnUnitDied -= HandleUnitDied; // Unsubscribe
+        eventBus.OnUnitDied -= HandleUnitDied;
         if (backgroundGameObject != null)
         {
             Destroy(backgroundGameObject);
@@ -133,7 +133,7 @@ public class CombatViewController : MonoBehaviour
         for (int i = 0; i < monsters.Count && i < 4; i++)
         {
             var unit = monsters[i].unit;
-            var stats = monsters[i].stats;
+            var stats = heroes[i].stats;
             var panel = CreateUnitPanel(unit, stats, false, monsterPanelHeight);
             rightPanel.Add(panel);
             unitPanels[unit] = panel;
@@ -159,14 +159,7 @@ public class CombatViewController : MonoBehaviour
         var panel = new VisualElement();
         panel.AddToClassList("unit-panel");
         panel.style.height = new StyleLength(Length.Percent(panelHeight));
-        if (!isHero)
-        {
-            panel.style.width = new StyleLength(Length.Percent(100));
-        }
-        else
-        {
-            panel.style.width = new StyleLength(Length.Percent(100));
-        }
+        panel.style.width = new StyleLength(Length.Percent(100));
         var nameLabel = new Label(stats.name);
         nameLabel.style.unityFont = uiConfig.PixelFont;
         nameLabel.style.color = uiConfig.TextColor;
@@ -181,6 +174,16 @@ public class CombatViewController : MonoBehaviour
         healthLabel.AddToClassList("health-label");
         healthBar.Add(healthLabel);
         UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
+        var moraleBar = new VisualElement();
+        moraleBar.AddToClassList("morale-bar");
+        var moraleFill = new VisualElement();
+        moraleFill.AddToClassList("morale-fill");
+        moraleBar.Add(moraleFill);
+        var moraleLabel = new Label($"Morale: {stats.morale}/{stats.maxMorale}");
+        moraleLabel.AddToClassList("morale-label");
+        moraleBar.Add(moraleLabel);
+        UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale, isHero);
+        panel.Add(moraleBar);
         var statGrid = new VisualElement();
         statGrid.AddToClassList("stat-grid");
         panel.Add(statGrid);
@@ -204,13 +207,7 @@ public class CombatViewController : MonoBehaviour
         var evaLabel = new Label($"E: {stats.evasion}");
         evaContainer.Add(evaLabel);
         statGrid.Add(evaContainer);
-        unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel);
-        if (isHero)
-        {
-            var moraleBar = new VisualElement();
-            moraleBar.AddToClassList("morale-bar");
-            panel.Add(moraleBar);
-        }
+        unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel);
         return panel;
     }
 
@@ -219,6 +216,14 @@ public class CombatViewController : MonoBehaviour
         float percent = max > 0 ? (float)current / max * 100f : 0f;
         fill.style.width = new StyleLength(Length.Percent(percent));
         label.text = $"HP: {current}/{max}";
+    }
+
+    private void UpdateMoraleBar(VisualElement fill, Label label, int current, int max, bool isHero)
+    {
+        float percent = max > 0 ? (float)current / max * 100f : 0f;
+        fill.style.width = new StyleLength(Length.Percent(percent));
+        label.text = $"Morale: {current}/{max}";
+        fill.style.backgroundColor = isHero ? new StyleColor(Color.red) : new StyleColor(uiConfig.BogRotColor);
     }
 
     private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
@@ -235,12 +240,23 @@ public class CombatViewController : MonoBehaviour
                     UpdateHealthBar(fill, label, data.displayStats.health, data.displayStats.maxHealth);
                 }
             }
+            var moraleBar = panel.Q<VisualElement>(className: "morale-bar");
+            if (moraleBar != null)
+            {
+                var fill = moraleBar.Q<VisualElement>(className: "morale-fill");
+                var label = moraleBar.Q<Label>(className: "morale-label");
+                if (fill != null && label != null)
+                {
+                    UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale, data.displayStats.isHero);
+                }
+            }
             if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
             {
                 statLabels.atk.text = $"A: {data.displayStats.attack}";
                 statLabels.def.text = $"D: {data.displayStats.defense}";
                 statLabels.spd.text = $"S: {data.displayStats.speed}";
                 statLabels.eva.text = $"E: {data.displayStats.evasion}";
+                statLabels.morale.text = $"Morale: {data.displayStats.morale}/{data.displayStats.maxMorale}";
             }
         }
     }
@@ -274,17 +290,22 @@ public class CombatViewController : MonoBehaviour
     {
         if (unitPanels.TryGetValue(unit, out VisualElement panel))
         {
-            panel.style.opacity = 0.5f; // Gray out panel
+            panel.style.opacity = 0.5f;
+            var moraleBar = panel.Q<VisualElement>(className: "morale-bar");
+            if (moraleBar != null && unit is CharacterStats stats && stats.Morale <= stats.MaxMorale * 0.2f)
+            {
+                panel.AddToClassList("low-morale");
+            }
         }
         if (unitGameObjects.TryGetValue(unit, out GameObject go))
         {
-            StartCoroutine(DeactivateAfterJiggle(go)); // Deactivate after jiggle
+            StartCoroutine(DeactivateAfterJiggle(go));
         }
     }
 
     private IEnumerator DeactivateAfterJiggle(GameObject go)
     {
-        yield return new WaitForSeconds(0.3f); // Match JiggleCoroutine duration
+        yield return new WaitForSeconds(0.3f);
         if (go != null)
         {
             go.SetActive(false);
