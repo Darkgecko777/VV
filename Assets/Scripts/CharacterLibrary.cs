@@ -30,8 +30,8 @@ namespace VirulentVentures
                     defense: Defense,
                     speed: Mathf.Clamp(Speed, 1, 8),
                     evasion: Mathf.Clamp(Evasion, 0, 100),
-                    morale: isHero ? Mathf.Clamp(Morale, 0, MaxMorale) : (int?)null,
-                    maxMorale: isHero ? MaxMorale : (int?)null,
+                    morale: Mathf.Clamp(Morale, 0, MaxMorale),
+                    maxMorale: MaxMorale,
                     isHero: isHero
                 );
             }
@@ -121,8 +121,8 @@ namespace VirulentVentures
                     Defense = 10,
                     Speed = 4,
                     Evasion = 25,
-                    Morale = 0,
-                    MaxMorale = 0,
+                    Morale = 80,
+                    MaxMorale = 80,
                     AbilityIds = new List<string> { "BasicAttack", "GhoulClaw" },
                     CanBeCultist = false,
                     PartyPosition = 0
@@ -138,8 +138,8 @@ namespace VirulentVentures
                     Defense = 5,
                     Speed = 6,
                     Evasion = 40,
-                    Morale = 0,
-                    MaxMorale = 0,
+                    Morale = 90,
+                    MaxMorale = 90,
                     AbilityIds = new List<string> { "BasicAttack", "WraithStrike" },
                     CanBeCultist = false,
                     PartyPosition = 0
@@ -155,8 +155,8 @@ namespace VirulentVentures
                     Defense = 15,
                     Speed = 3,
                     Evasion = 10,
-                    Morale = 0,
-                    MaxMorale = 0,
+                    Morale = 70,
+                    MaxMorale = 70,
                     AbilityIds = new List<string> { "BasicAttack", "SkeletonSlash" },
                     CanBeCultist = false,
                     PartyPosition = 0
@@ -172,8 +172,8 @@ namespace VirulentVentures
                     Defense = 8,
                     Speed = 5,
                     Evasion = 30,
-                    Morale = 0,
-                    MaxMorale = 0,
+                    Morale = 85,
+                    MaxMorale = 85,
                     AbilityIds = new List<string> { "BasicAttack", "VampireBite" },
                     CanBeCultist = false,
                     PartyPosition = 0
@@ -221,8 +221,8 @@ namespace VirulentVentures
                 Defense = 5,
                 Speed = 3,
                 Evasion = 10,
-                Morale = 0,
-                MaxMorale = 0,
+                Morale = 80,
+                MaxMorale = 80,
                 AbilityIds = new List<string> { "BasicAttack" },
                 CanBeCultist = false,
                 PartyPosition = 0
