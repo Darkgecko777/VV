@@ -74,14 +74,18 @@
     color: rgb(255, 255, 255); /* Default to UIConfig.TextColor (white) */
     margin-bottom: 5px;
 }
+
 /* Health bar styles */
 .health-bar {
+    width: 80%; /* Condensed width */
+    max-width: 150px; /* Cap for larger panels */
     height: 20px;
     background-color: rgb(0, 255, 0); /* Green background */
     position: relative;
-    margin: 5px;
-    border-width: 1px;
-    border-color: rgb(0, 0, 0); /* Black border for visibility */
+    margin: 5px auto; /* Center horizontally */
+    border-width: 2px;
+    border-color: rgb(255, 255, 255); /* White border for contrast */
+    border-radius: 4px; /* Subtle rounded corners */
 }
 
 .health-fill {
@@ -90,13 +94,49 @@
     position: absolute;
     left: 0;
     top: 0;
+    border-radius: 4px; /* Match parent border radius */
 }
 
 .health-label {
     position: absolute;
     width: 100%;
     height: 100%;
-    unity-text-align: middle-center; /* Center text */
     color: rgb(255, 255, 255); /* White text */
     font-size: 12px;
+}
+
+/* Stat grid for attack, defense, speed, evasion */
+.stat-grid {
+    width: 80%; /* Match health bar */
+    max-width: 150px;
+    margin: 3px auto; /* Center below health bar */
+    flex-direction: row;
+    flex-wrap: wrap; /* Two columns */
+    justify-content: space-between;
+}
+
+/* Individual stat containers */
+.stat-container {
+    width: 48%; /* Two columns with small gap */
+    height: 16px; /* Compact for text */
+    margin: 1px;
+    flex-direction: row;
+    align-items: center;
+    background-color: rgb(60, 60, 60); /* Dark grey for contrast */
+}
+
+/* Stat labels */
+.stat-container > Label {
+    font-size: 10px;
+    color: rgb(255, 255, 255); /* Matches UIConfig.TextColor */
+    margin-left: 2px;
+}
+
+/* Morale bar placeholder (heroes only) */
+.morale-bar {
+    width: 80%; /* Match health bar */
+    max-width: 150px;
+    height: 20px;
+    margin: 3px auto;
+    display: none; /* Hidden to reserve space */
 }

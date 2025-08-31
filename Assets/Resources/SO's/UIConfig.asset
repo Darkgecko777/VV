@@ -15,4 +15,4 @@ MonoBehaviour:
   textColor: {r: 1, g: 1, b: 1, a: 1}
   textOutlineColor: {r: 0, g: 0, b: 0, a: 1}
   bogRotColor: {r: 0.2, g: 0.8, b: 0.2, a: 1}
-  pixelFont: {fileID: 2230732570650464555, guid: e2159b9d1445cd34bbbfa4538746e35a, type: 3}
+  pixelFont: {fileID: 12800000, guid: cf0b3cdc1fe2fdd43b0ea712e32339a7, type: 3}

@@ -13,6 +13,7 @@ public class CombatViewController : MonoBehaviour
     private VisualElement root;
     private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
     private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
+    private Dictionary<ICombatUnit, (Label atk, Label def, Label spd, Label eva)> unitStatLabels = new Dictionary<ICombatUnit, (Label, Label, Label, Label)>();
     private GameObject backgroundGameObject;
     private VisualElement logContent;
     private List<Label> logMessages = new List<Label>();
@@ -26,7 +27,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnUnitAttacking += HandleUnitAttacking;
         eventBus.OnUnitDamaged += HandleUnitDamaged;
         eventBus.OnLogMessage += HandleLogMessage;
-        eventBus.OnUnitUpdated += HandleUnitUpdated; // Subscribe to unit updates
+        eventBus.OnUnitUpdated += HandleUnitUpdated;
         SetupBackground();
     }
 
@@ -36,7 +37,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnUnitAttacking -= HandleUnitAttacking;
         eventBus.OnUnitDamaged -= HandleUnitDamaged;
         eventBus.OnLogMessage -= HandleLogMessage;
-        eventBus.OnUnitUpdated -= HandleUnitUpdated; // Unsubscribe
+        eventBus.OnUnitUpdated -= HandleUnitUpdated;
         if (backgroundGameObject != null)
         {
             Destroy(backgroundGameObject);
@@ -118,6 +119,7 @@ public class CombatViewController : MonoBehaviour
     {
         unitGameObjects.Clear();
         unitPanels.Clear();
+        unitStatLabels.Clear();
 
         var heroes = data.units.Where(u => u.stats.isHero).ToList();
         var monsters = data.units.Where(u => !u.stats.isHero).ToList();
@@ -199,7 +201,51 @@ public class CombatViewController : MonoBehaviour
         healthLabel.AddToClassList("health-label");
         healthBar.Add(healthLabel);
 
-        UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth); // Initial update
+        UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
+
+        // Add stat grid
+        var statGrid = new VisualElement();
+        statGrid.AddToClassList("stat-grid");
+        panel.Add(statGrid);
+
+        // Attack
+        var atkContainer = new VisualElement();
+        atkContainer.AddToClassList("stat-container");
+        var atkLabel = new Label($"A: {stats.attack}");
+        atkContainer.Add(atkLabel);
+        statGrid.Add(atkContainer);
+
+        // Defense
+        var defContainer = new VisualElement();
+        defContainer.AddToClassList("stat-container");
+        var defLabel = new Label($"D: {stats.defense}");
+        defContainer.Add(defLabel);
+        statGrid.Add(defContainer);
+
+        // Speed
+        var spdContainer = new VisualElement();
+        spdContainer.AddToClassList("stat-container");
+        var spdLabel = new Label($"S: {stats.speed}");
+        spdContainer.Add(spdLabel);
+        statGrid.Add(spdContainer);
+
+        // Evasion
+        var evaContainer = new VisualElement();
+        evaContainer.AddToClassList("stat-container");
+        var evaLabel = new Label($"E: {stats.evasion}");
+        evaContainer.Add(evaLabel);
+        statGrid.Add(evaContainer);
+
+        // Store stat labels for updates
+        unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel);
+
+        // Add morale bar placeholder for heroes
+        if (isHero)
+        {
+            var moraleBar = new VisualElement();
+            moraleBar.AddToClassList("morale-bar");
+            panel.Add(moraleBar);
+        }
 
         return panel;
     }
@@ -215,6 +261,7 @@ public class CombatViewController : MonoBehaviour
     {
         if (unitPanels.TryGetValue(data.unit, out VisualElement panel))
         {
+            // Update health bar
             var healthBar = panel.Q<VisualElement>(className: "health-bar");
             if (healthBar != null)
             {
@@ -224,6 +271,15 @@ public class CombatViewController : MonoBehaviour
                 {
                     UpdateHealthBar(fill, label, data.displayStats.health, data.displayStats.maxHealth);
                 }
+            }
+
+            // Update stat labels
+            if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
+            {
+                statLabels.atk.text = $"A: {data.displayStats.attack}";
+                statLabels.def.text = $"D: {data.displayStats.defense}";
+                statLabels.spd.text = $"S: {data.displayStats.speed}";
+                statLabels.eva.text = $"E: {data.displayStats.evasion}";
             }
         }
     }
