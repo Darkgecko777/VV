@@ -31,7 +31,6 @@ namespace VirulentVentures
             expeditionManager = ExpeditionManager.Instance;
             if (expeditionManager == null)
             {
-                Debug.LogError("CombatSceneController: Failed to find ExpeditionManager!");
                 return;
             }
             if (!ValidateReferences()) return;
@@ -180,7 +179,6 @@ namespace VirulentVentures
                 if (hero.Health > 0)
                 {
                     var stats = hero.GetDisplayStats();
-                    Debug.Log($"Initializing Hero {stats.name}: Health={stats.health}/{stats.maxHealth}, Morale={stats.morale}/{stats.maxMorale}");
                     units.Add((hero, null, stats));
                 }
             }
@@ -189,7 +187,6 @@ namespace VirulentVentures
                 if (monster.Health > 0)
                 {
                     var stats = monster.GetDisplayStats();
-                    Debug.Log($"Initializing Monster {stats.name}: Health={stats.health}/{stats.maxHealth}");
                     units.Add((monster, null, stats));
                 }
             }
@@ -267,7 +264,6 @@ namespace VirulentVentures
         {
             if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null)
             {
-                Debug.LogError($"CombatSceneController: Missing references! CombatConfig: {combatConfig != null}, EventBus: {eventBus != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, CombatCamera: {combatCamera != null}");
                 return false;
             }
             return true;

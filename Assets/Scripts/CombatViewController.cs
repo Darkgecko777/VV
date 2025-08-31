@@ -57,9 +57,6 @@ public class CombatViewController : MonoBehaviour
             Debug.LogError("CombatViewController: bottom-panel not found in UXML!");
             return;
         }
-
-        // Debug to confirm panel is found and styled
-        Debug.Log($"CombatViewController: bottom-panel found. Resolved size: {bottomPanel.resolvedStyle.width}x{bottomPanel.resolvedStyle.height}, Position: {bottomPanel.resolvedStyle.position}, Display: {bottomPanel.resolvedStyle.display}");
     }
 
     private void SetupBackground()

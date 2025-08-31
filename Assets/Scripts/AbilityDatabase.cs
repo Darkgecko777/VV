@@ -41,8 +41,6 @@ namespace VirulentVentures
                 effect: (target, partyData) =>
                 {
                     // Basic attack uses character's Attack stat; damage applied in auto-Combatr
-                    string targetId = target is CharacterStats stats ? stats.Id : string.Empty;
-                    Debug.Log($"{targetId} uses Basic Attack!");
                 },
                 isCommon: true
             ));
@@ -55,7 +53,6 @@ namespace VirulentVentures
                     if (target is CharacterStats stats && stats.IsHero && stats.Health < stats.MaxHealth * 0.3f)
                     {
                         stats.Attack += 3;
-                        Debug.Log($"{stats.Id} boosts attack by 3!");
                     }
                 }
             ));
@@ -71,7 +68,6 @@ namespace VirulentVentures
                         if (lowestHealthAlly != null)
                         {
                             lowestHealthAlly.Health = Mathf.Min(lowestHealthAlly.Health + 10, lowestHealthAlly.MaxHealth);
-                            Debug.Log($"{stats.Id} heals {lowestHealthAlly.Id} for 10!");
                         }
                     }
                 }
@@ -85,7 +81,6 @@ namespace VirulentVentures
                     if (target is CharacterStats stats && stats.IsHero)
                     {
                         stats.Defense += 2;
-                        Debug.Log($"{stats.Id} boosts defense by 2!");
                     }
                 }
             ));
@@ -98,10 +93,7 @@ namespace VirulentVentures
                 animationTrigger: "BasicAttack",
                 effect: (target, partyData) =>
                 {
-                    if (target is CharacterStats stats && !stats.IsHero)
-                    {
-                        Debug.Log($"{stats.Id} uses Basic Attack!");
-                    }
+                    // Damage based on Attack stat (applied in auto-Combatr)
                 },
                 isCommon: true
             ));
@@ -112,10 +104,6 @@ namespace VirulentVentures
                 effect: (target, partyData) =>
                 {
                     // No-op for monsters with no special ability
-                    if (target is CharacterStats stats && !stats.IsHero)
-                    {
-                        Debug.Log($"{stats.Id} uses default ability (no effect).");
-                    }
                 }
             ));
 
@@ -125,10 +113,6 @@ namespace VirulentVentures
                 effect: (target, partyData) =>
                 {
                     // Damage based on Attack stat (applied in auto-Combatr)
-                    if (target is CharacterStats stats && !stats.IsHero)
-                    {
-                        Debug.Log($"{stats.Id} uses Claw Attack!");
-                    }
                 }
             ));
 
@@ -137,23 +121,16 @@ namespace VirulentVentures
                 animationTrigger: "GhoulRend",
                 effect: (target, partyData) =>
                 {
-                    if (target is CharacterStats stats && !stats.IsHero)
-                    {
-                        Debug.Log($"{stats.Id} uses Rend!"); // Removed morale reduction as monsters lack Morale
-                    }
+                    // Removed morale reduction as monsters lack Morale
                 }
             ));
 
-            // Example ethereal monster ability with dodge
             monsterAbilities.Add("WraithStrike", new AbilityData(
                 id: "WraithStrike",
                 animationTrigger: "WraithStrike",
                 effect: (target, partyData) =>
                 {
-                    if (target is CharacterStats stats && !stats.IsHero)
-                    {
-                        Debug.Log($"{stats.Id} uses Wraith Strike!");
-                    }
+                    // Damage based on Attack stat (applied in auto-Combatr)
                 },
                 canDodge: true // Ethereal dodge
             ));
