@@ -74,3 +74,29 @@
     color: rgb(255, 255, 255); /* Default to UIConfig.TextColor (white) */
     margin-bottom: 5px;
 }
+/* Health bar styles */
+.health-bar {
+    height: 20px;
+    background-color: rgb(0, 255, 0); /* Green background */
+    position: relative;
+    margin: 5px;
+    border-width: 1px;
+    border-color: rgb(0, 0, 0); /* Black border for visibility */
+}
+
+.health-fill {
+    height: 100%;
+    background-color: rgb(255, 0, 0); /* Red fill */
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.health-label {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    unity-text-align: middle-center; /* Center text */
+    color: rgb(255, 255, 255); /* White text */
+    font-size: 12px;
+}

@@ -26,6 +26,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnUnitAttacking += HandleUnitAttacking;
         eventBus.OnUnitDamaged += HandleUnitDamaged;
         eventBus.OnLogMessage += HandleLogMessage;
+        eventBus.OnUnitUpdated += HandleUnitUpdated; // Subscribe to unit updates
         SetupBackground();
     }
 
@@ -35,6 +36,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnUnitAttacking -= HandleUnitAttacking;
         eventBus.OnUnitDamaged -= HandleUnitDamaged;
         eventBus.OnLogMessage -= HandleLogMessage;
+        eventBus.OnUnitUpdated -= HandleUnitUpdated; // Unsubscribe
         if (backgroundGameObject != null)
         {
             Destroy(backgroundGameObject);
@@ -168,30 +170,62 @@ public class CombatViewController : MonoBehaviour
         var panel = new VisualElement();
         panel.AddToClassList("unit-panel");
 
-        // Set dynamic height based on unit count
         panel.style.height = new StyleLength(Length.Percent(panelHeight));
 
-        // Placeholder for future size check (Normal, Double, Quad for monsters)
         if (!isHero)
         {
-            // Assuming Normal size for now (no size property in CharacterStats yet)
             panel.style.width = new StyleLength(Length.Percent(100));
-            // Future: Check stats.size (e.g., Enum: Normal, Double, Quad)
-            // if (stats.size == "Double") { panel.style.height = Length.Percent(panelHeight * 2); }
-            // else if (stats.size == "Quad") { panel.style.height = Length.Percent(100); }
         }
         else
         {
             panel.style.width = new StyleLength(Length.Percent(100));
         }
 
-        // Add character name label
         var nameLabel = new Label(stats.name);
         nameLabel.style.unityFont = uiConfig.PixelFont;
         nameLabel.style.color = uiConfig.TextColor;
         panel.Add(nameLabel);
 
+        // Add health bar
+        var healthBar = new VisualElement();
+        healthBar.AddToClassList("health-bar");
+        panel.Add(healthBar);
+
+        var healthFill = new VisualElement();
+        healthFill.AddToClassList("health-fill");
+        healthBar.Add(healthFill);
+
+        var healthLabel = new Label($"HP: {stats.health}/{stats.maxHealth}");
+        healthLabel.AddToClassList("health-label");
+        healthBar.Add(healthLabel);
+
+        UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth); // Initial update
+
         return panel;
+    }
+
+    private void UpdateHealthBar(VisualElement fill, Label label, int current, int max)
+    {
+        float percent = max > 0 ? (float)current / max * 100f : 0f;
+        fill.style.width = new StyleLength(Length.Percent(percent));
+        label.text = $"HP: {current}/{max}";
+    }
+
+    private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
+    {
+        if (unitPanels.TryGetValue(data.unit, out VisualElement panel))
+        {
+            var healthBar = panel.Q<VisualElement>(className: "health-bar");
+            if (healthBar != null)
+            {
+                var fill = healthBar.Q<VisualElement>(className: "health-fill");
+                var label = healthBar.Q<Label>(className: "health-label");
+                if (fill != null && label != null)
+                {
+                    UpdateHealthBar(fill, label, data.displayStats.health, data.displayStats.maxHealth);
+                }
+            }
+        }
     }
 
     private void HandleUnitAttacking(EventBusSO.AttackData data)
