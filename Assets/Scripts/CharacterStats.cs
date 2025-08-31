@@ -56,7 +56,7 @@ namespace VirulentVentures
         {
             var data = type == CharacterType.Hero ? CharacterLibrary.GetHeroData(id) : CharacterLibrary.GetMonsterData(id);
             _id = data.Id;
-            _health = data.Health;
+            _health = type == CharacterType.Monster ? data.MaxHealth : data.Health; // Monsters start at MaxHealth
             _maxHealth = data.MaxHealth;
             _attack = data.Attack;
             _defense = data.Defense;
