@@ -122,22 +122,24 @@ public class CombatViewController : MonoBehaviour
 
         // Setup Hero Panels
         var leftPanel = root.Q<VisualElement>("left-panel");
+        float heroPanelHeight = heroes.Count > 0 ? 100f / Mathf.Min(heroes.Count, 4) : 25f;
         for (int i = 0; i < heroes.Count && i < 4; i++)
         {
             var unit = heroes[i].unit;
             var stats = heroes[i].stats;
-            var panel = CreateUnitPanel(unit, stats, true);
+            var panel = CreateUnitPanel(unit, stats, true, heroPanelHeight);
             leftPanel.Add(panel);
             unitPanels[unit] = panel;
         }
 
         // Setup Monster Panels
         var rightPanel = root.Q<VisualElement>("right-panel");
+        float monsterPanelHeight = monsters.Count > 0 ? 100f / Mathf.Min(monsters.Count, 4) : 25f;
         for (int i = 0; i < monsters.Count && i < 4; i++)
         {
             var unit = monsters[i].unit;
-            var stats = heroes[i].stats;
-            var panel = CreateUnitPanel(unit, stats, false);
+            var stats = monsters[i].stats;
+            var panel = CreateUnitPanel(unit, stats, false, monsterPanelHeight);
             rightPanel.Add(panel);
             unitPanels[unit] = panel;
         }
@@ -161,25 +163,26 @@ public class CombatViewController : MonoBehaviour
         }
     }
 
-    private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero)
+    private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float panelHeight)
     {
         var panel = new VisualElement();
         panel.AddToClassList("unit-panel");
+
+        // Set dynamic height based on unit count
+        panel.style.height = new StyleLength(Length.Percent(panelHeight));
 
         // Placeholder for future size check (Normal, Double, Quad for monsters)
         if (!isHero)
         {
             // Assuming Normal size for now (no size property in CharacterStats yet)
-            panel.style.width = new StyleLength(Length.Percent(49));
-            panel.style.height = new StyleLength(Length.Percent(49));
+            panel.style.width = new StyleLength(Length.Percent(100));
             // Future: Check stats.size (e.g., Enum: Normal, Double, Quad)
-            // if (stats.size == "Double") { panel.style.width = Length.Percent(100); }
-            // else if (stats.size == "Quad") { panel.style.width = Length.Percent(100); panel.style.height = Length.Percent(100); }
+            // if (stats.size == "Double") { panel.style.height = Length.Percent(panelHeight * 2); }
+            // else if (stats.size == "Quad") { panel.style.height = Length.Percent(100); }
         }
         else
         {
-            panel.style.width = new StyleLength(Length.Percent(49));
-            panel.style.height = new StyleLength(Length.Percent(49));
+            panel.style.width = new StyleLength(Length.Percent(100));
         }
 
         return panel;

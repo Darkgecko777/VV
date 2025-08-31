@@ -25,30 +25,21 @@
     border-color: rgb(50, 50, 50); /* Dark grey border */
 }
 
-/* Left and right panels as flex containers for dynamic grid */
+/* Left and right panels as flex containers for vertical stack */
 .left-panel, .right-panel {
     display: flex;
-    flex-wrap: wrap; /* Enable grid layout */
-    justify-content: space-between; /* Space panels evenly */
+    flex-direction: column; /* Stack panels vertically */
+    justify-content: flex-start; /* Start from top */
 }
 
 /* Dynamic unit panels */
 .unit-panel {
-    width: 49%; /* ~320px at 1920px, accounts for borders */
-    height: 49%; /* ~270px at 1080p, accounts for borders */
+    width: 100%; /* Full width of parent panel */
+    height: 25%; /* Default for 4 units (~135px at 540px height) */
     background-color: rgb(80, 80, 80); /* Slightly darker grey for contrast */
     border-width: 2px;
     border-color: rgb(50, 50, 50); /* Dark grey border */
     margin: 1px; /* Small margin to prevent overlap */
-    flex-direction: column; /* Stack content vertically */
-    justify-content: center; /* Center content */
-}
-
-/* Unit panel labels */
-.unit-panel > Label {
-    font-size: 14px;
-    color: rgb(255, 255, 255); /* Matches UIConfig.TextColor */
-    margin: 5px;
 }
 
 /* Combat log ScrollView */
