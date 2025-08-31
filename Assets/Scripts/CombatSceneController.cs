@@ -31,7 +31,6 @@ namespace VirulentVentures
             expeditionManager = ExpeditionManager.Instance;
             if (expeditionManager == null)
             {
-                Debug.LogError("CombatSceneController: ExpeditionManager is null!");
                 return;
             }
             if (!ValidateReferences()) return;
@@ -55,18 +54,15 @@ namespace VirulentVentures
             var expeditionData = expeditionManager.GetExpedition();
             if (expeditionData == null || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
             {
-                Debug.LogError("CombatSceneController: Invalid expedition data or node index!");
                 EndCombat();
                 yield break;
             }
 
             var heroStats = expeditionData.Party.GetHeroes();
             var monsterStats = expeditionData.NodeData[expeditionData.CurrentNodeIndex].Monsters;
-            Debug.Log($"CombatSceneController: monsterStats type: {monsterStats.GetType()}, count: {monsterStats.Count}");
 
             if (heroStats == null || heroStats.Count == 0 || monsterStats == null || monsterStats.Count == 0)
             {
-                Debug.LogError($"CombatSceneController: Invalid stats - Heroes: {(heroStats != null ? heroStats.Count : 0)}, Monsters: {(monsterStats != null ? monsterStats.Count : 0)}");
                 EndCombat();
                 yield break;
             }
@@ -83,8 +79,7 @@ namespace VirulentVentures
                     yield break;
                 }
 
-                // Check for retreats before actions
-                foreach (var unit in unitList.ToList()) // ToList to avoid modification issues
+                foreach (var unit in unitList.ToList())
                 {
                     if (CheckRetreat(unit))
                     {
@@ -93,7 +88,6 @@ namespace VirulentVentures
                     }
                 }
 
-                // Process actions for remaining units
                 foreach (var unit in unitList)
                 {
                     if (unit.Health <= 0 || unit.HasRetreated) continue;
@@ -120,7 +114,6 @@ namespace VirulentVentures
                     eventBus.RaiseUnitAttacking(unit, target);
                     yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
 
-                    // Simplified damage calculation for prototype
                     int damage = Mathf.Max(1, unit.Attack - target.Defense);
                     target.Health -= damage;
                     UpdateUnit(target, $"{target.Id} takes {damage} damage!");
@@ -189,6 +182,7 @@ namespace VirulentVentures
                 eventBus.RaiseUnitUpdated(unit, newStats);
                 if (damageMessage != null)
                 {
+                    eventBus.RaiseLogMessage(damageMessage, Color.white);
                     eventBus.RaiseUnitDamaged(unit, damageMessage);
                 }
             }
@@ -203,23 +197,19 @@ namespace VirulentVentures
         {
             if (unit == null || unit.HasRetreated) return;
 
-            // Mark as retreated
             if (unit is CharacterStats stats)
             {
                 stats.HasRetreated = true;
 
-                // Apply +20 morale recovery for heroes
                 if (stats.IsHero)
                 {
                     stats.Morale = Mathf.Min(stats.Morale + 20, stats.MaxMorale);
                 }
 
-                // Log retreat
                 LogMessage($"{stats.Id} fled!", uiConfig.TextColor);
                 eventBus.RaiseUnitRetreated(unit);
 
-                // Apply cascading morale penalty to teammates
-                int penalty = 10; // To be moved to CombatConfig later
+                int penalty = 10;
                 var teammates = units
                     .Select(u => u.unit)
                     .Where(u => u is CharacterStats cs && cs.Type == stats.Type && u.Health > 0 && !u.HasRetreated && u != unit)
@@ -275,7 +265,6 @@ namespace VirulentVentures
         {
             if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null)
             {
-                Debug.LogError($"CombatSceneController: Missing references! CombatConfig: {combatConfig != null}, EventBus: {eventBus != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, Camera: {combatCamera != null}");
                 return false;
             }
             return true;

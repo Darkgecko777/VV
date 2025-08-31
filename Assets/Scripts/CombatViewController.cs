@@ -52,25 +52,21 @@ public class CombatViewController : MonoBehaviour
         root = GetComponent<UIDocument>().rootVisualElement;
         if (root == null)
         {
-            Debug.LogError("CombatViewController: UIDocument rootVisualElement is null! Ensure CombatScene.uxml is assigned to UIDocument in the Inspector.");
             return;
         }
         var combatRoot = root.Q<VisualElement>("combat-root");
         if (combatRoot == null)
         {
-            Debug.LogError("CombatViewController: combat-root not found in UXML!");
             return;
         }
         var bottomPanel = combatRoot.Q<VisualElement>("bottom-panel");
         if (bottomPanel == null)
         {
-            Debug.LogError("CombatViewController: bottom-panel not found in UXML!");
             return;
         }
         logContent = bottomPanel.Q<VisualElement>("log-content");
         if (logContent == null)
         {
-            Debug.LogError("CombatViewController: log-content not found in UXML!");
             return;
         }
     }
@@ -81,7 +77,6 @@ public class CombatViewController : MonoBehaviour
         var backgroundSprite = visualConfig.GetCombatBackground();
         if (backgroundSprite == null)
         {
-            Debug.LogError("CombatViewController: Failed to load combat background sprite!");
             return;
         }
         backgroundGameObject = new GameObject("CombatBackground");
@@ -223,7 +218,7 @@ public class CombatViewController : MonoBehaviour
         float percent = max > 0 ? (float)current / max * 100f : 0f;
         fill.style.width = new StyleLength(Length.Percent(percent));
         label.text = $"Morale: {current}/{max}";
-        fill.style.backgroundColor = new StyleColor(new Color(0.6f, 0.8f, 1f)); // Light blue
+        fill.style.backgroundColor = new StyleColor(new Color(0.6f, 0.8f, 1f));
     }
 
     private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
@@ -329,7 +324,6 @@ public class CombatViewController : MonoBehaviour
     {
         if (visualConfig == null || uiConfig == null || eventBus == null || characterPositions == null)
         {
-            Debug.LogError($"CombatViewController: Missing references! VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, EventBus: {eventBus != null}, CharacterPositions: {characterPositions != null}");
             return false;
         }
         return true;
