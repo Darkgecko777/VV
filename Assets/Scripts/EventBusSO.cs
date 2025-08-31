@@ -58,7 +58,7 @@ namespace VirulentVentures
         [System.Serializable]
         public struct NodeUpdateData
         {
-            public List<VirulentVentures.NodeData> nodes; // Fully qualified NodeData
+            public List<VirulentVentures.NodeData> nodes;
             public int currentIndex;
         }
 
@@ -78,6 +78,7 @@ namespace VirulentVentures
         public event Action OnContinueClicked;
         public event Action<AttackData> OnUnitAttacking;
         public event Action<DamagePopupData> OnUnitDamaged;
+        public event Action<ICombatUnit> OnUnitDied; // New event for death state
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -157,6 +158,11 @@ namespace VirulentVentures
         public void RaiseUnitDamaged(ICombatUnit unit, string message)
         {
             OnUnitDamaged?.Invoke(new DamagePopupData { unit = unit, message = message });
+        }
+
+        public void RaiseUnitDied(ICombatUnit unit)
+        {
+            OnUnitDied?.Invoke(unit);
         }
     }
 }

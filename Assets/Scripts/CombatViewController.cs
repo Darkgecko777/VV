@@ -2,6 +2,7 @@
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections;
 using VirulentVentures;
 
 public class CombatViewController : MonoBehaviour
@@ -28,6 +29,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnUnitDamaged += HandleUnitDamaged;
         eventBus.OnLogMessage += HandleLogMessage;
         eventBus.OnUnitUpdated += HandleUnitUpdated;
+        eventBus.OnUnitDied += HandleUnitDied; // Subscribe to new event
         SetupBackground();
     }
 
@@ -38,6 +40,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnUnitDamaged -= HandleUnitDamaged;
         eventBus.OnLogMessage -= HandleLogMessage;
         eventBus.OnUnitUpdated -= HandleUnitUpdated;
+        eventBus.OnUnitDied -= HandleUnitDied; // Unsubscribe
         if (backgroundGameObject != null)
         {
             Destroy(backgroundGameObject);
@@ -52,21 +55,18 @@ public class CombatViewController : MonoBehaviour
             Debug.LogError("CombatViewController: UIDocument rootVisualElement is null! Ensure CombatScene.uxml is assigned to UIDocument in the Inspector.");
             return;
         }
-
         var combatRoot = root.Q<VisualElement>("combat-root");
         if (combatRoot == null)
         {
             Debug.LogError("CombatViewController: combat-root not found in UXML!");
             return;
         }
-
         var bottomPanel = combatRoot.Q<VisualElement>("bottom-panel");
         if (bottomPanel == null)
         {
             Debug.LogError("CombatViewController: bottom-panel not found in UXML!");
             return;
         }
-
         logContent = bottomPanel.Q<VisualElement>("log-content");
         if (logContent == null)
         {
@@ -88,26 +88,22 @@ public class CombatViewController : MonoBehaviour
         var sr = backgroundGameObject.AddComponent<SpriteRenderer>();
         sr.sprite = backgroundSprite;
         sr.sortingLayerName = "Background";
-        sr.sortingOrder = 0; // Below Characters (order 1)
+        sr.sortingOrder = 0;
         backgroundGameObject.transform.localScale = new Vector3(2.24f, 0.65f, 1f);
     }
 
     private void HandleLogMessage(EventBusSO.LogData logData)
     {
         var label = new Label(logData.message);
-        label.style.color = logData.color; // Apply color from event (e.g., TextColor, BogRotColor)
+        label.style.color = logData.color;
         logContent.Add(label);
         logMessages.Add(label);
-
-        // Remove oldest message if exceeding max
         if (logMessages.Count > MAX_LOG_MESSAGES)
         {
             var oldest = logMessages[0];
             logContent.Remove(oldest);
             logMessages.RemoveAt(0);
         }
-
-        // Scroll to bottom
         var scrollView = logContent.parent as ScrollView;
         if (scrollView != null)
         {
@@ -120,11 +116,8 @@ public class CombatViewController : MonoBehaviour
         unitGameObjects.Clear();
         unitPanels.Clear();
         unitStatLabels.Clear();
-
         var heroes = data.units.Where(u => u.stats.isHero).ToList();
         var monsters = data.units.Where(u => !u.stats.isHero).ToList();
-
-        // Setup Hero Panels
         var leftPanel = root.Q<VisualElement>("left-panel");
         float heroPanelHeight = heroes.Count > 0 ? 100f / Mathf.Min(heroes.Count, 4) : 25f;
         for (int i = 0; i < heroes.Count && i < 4; i++)
@@ -135,8 +128,6 @@ public class CombatViewController : MonoBehaviour
             leftPanel.Add(panel);
             unitPanels[unit] = panel;
         }
-
-        // Setup Monster Panels
         var rightPanel = root.Q<VisualElement>("right-panel");
         float monsterPanelHeight = monsters.Count > 0 ? 100f / Mathf.Min(monsters.Count, 4) : 25f;
         for (int i = 0; i < monsters.Count && i < 4; i++)
@@ -147,8 +138,6 @@ public class CombatViewController : MonoBehaviour
             rightPanel.Add(panel);
             unitPanels[unit] = panel;
         }
-
-        // Setup Hero Sprites
         for (int i = 0; i < heroes.Count && i < characterPositions.heroPositions.Length; i++)
         {
             var unit = heroes[i].unit;
@@ -156,8 +145,6 @@ public class CombatViewController : MonoBehaviour
             var go = CreateUnitGameObject(unit, stats, true, characterPositions.heroPositions[i]);
             unitGameObjects[unit] = go;
         }
-
-        // Setup Monster Sprites
         for (int i = 0; i < monsters.Count && i < characterPositions.monsterPositions.Length; i++)
         {
             var unit = monsters[i].unit;
@@ -171,9 +158,7 @@ public class CombatViewController : MonoBehaviour
     {
         var panel = new VisualElement();
         panel.AddToClassList("unit-panel");
-
         panel.style.height = new StyleLength(Length.Percent(panelHeight));
-
         if (!isHero)
         {
             panel.style.width = new StyleLength(Length.Percent(100));
@@ -182,71 +167,50 @@ public class CombatViewController : MonoBehaviour
         {
             panel.style.width = new StyleLength(Length.Percent(100));
         }
-
         var nameLabel = new Label(stats.name);
         nameLabel.style.unityFont = uiConfig.PixelFont;
         nameLabel.style.color = uiConfig.TextColor;
         panel.Add(nameLabel);
-
-        // Add health bar
         var healthBar = new VisualElement();
         healthBar.AddToClassList("health-bar");
         panel.Add(healthBar);
-
         var healthFill = new VisualElement();
         healthFill.AddToClassList("health-fill");
         healthBar.Add(healthFill);
-
         var healthLabel = new Label($"HP: {stats.health}/{stats.maxHealth}");
         healthLabel.AddToClassList("health-label");
         healthBar.Add(healthLabel);
-
         UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
-
-        // Add stat grid
         var statGrid = new VisualElement();
         statGrid.AddToClassList("stat-grid");
         panel.Add(statGrid);
-
-        // Attack
         var atkContainer = new VisualElement();
         atkContainer.AddToClassList("stat-container");
         var atkLabel = new Label($"A: {stats.attack}");
         atkContainer.Add(atkLabel);
         statGrid.Add(atkContainer);
-
-        // Defense
         var defContainer = new VisualElement();
         defContainer.AddToClassList("stat-container");
         var defLabel = new Label($"D: {stats.defense}");
         defContainer.Add(defLabel);
         statGrid.Add(defContainer);
-
-        // Speed
         var spdContainer = new VisualElement();
         spdContainer.AddToClassList("stat-container");
         var spdLabel = new Label($"S: {stats.speed}");
         spdContainer.Add(spdLabel);
         statGrid.Add(spdContainer);
-
-        // Evasion
         var evaContainer = new VisualElement();
         evaContainer.AddToClassList("stat-container");
         var evaLabel = new Label($"E: {stats.evasion}");
         evaContainer.Add(evaLabel);
         statGrid.Add(evaContainer);
-
-        // Store stat labels for updates
         unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel);
-
-        // Add morale bar placeholder for heroes
         if (isHero)
         {
             var moraleBar = new VisualElement();
             moraleBar.AddToClassList("morale-bar");
             panel.Add(moraleBar);
         }
-
         return panel;
     }
 
@@ -261,7 +225,6 @@ public class CombatViewController : MonoBehaviour
     {
         if (unitPanels.TryGetValue(data.unit, out VisualElement panel))
         {
-            // Update health bar
             var healthBar = panel.Q<VisualElement>(className: "health-bar");
             if (healthBar != null)
             {
@@ -272,8 +235,6 @@ public class CombatViewController : MonoBehaviour
                     UpdateHealthBar(fill, label, data.displayStats.health, data.displayStats.maxHealth);
                 }
             }
-
-            // Update stat labels
             if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
             {
                 statLabels.atk.text = $"A: {data.displayStats.attack}";
@@ -309,15 +270,36 @@ public class CombatViewController : MonoBehaviour
         }
     }
 
+    private void HandleUnitDied(ICombatUnit unit)
+    {
+        if (unitPanels.TryGetValue(unit, out VisualElement panel))
+        {
+            panel.style.opacity = 0.5f; // Gray out panel
+        }
+        if (unitGameObjects.TryGetValue(unit, out GameObject go))
+        {
+            StartCoroutine(DeactivateAfterJiggle(go)); // Deactivate after jiggle
+        }
+    }
+
+    private IEnumerator DeactivateAfterJiggle(GameObject go)
+    {
+        yield return new WaitForSeconds(0.3f); // Match JiggleCoroutine duration
+        if (go != null)
+        {
+            go.SetActive(false);
+        }
+    }
+
     private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)
     {
         var go = new GameObject(stats.name);
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = isHero ? visualConfig.GetCombatSprite(stats.name) : visualConfig.GetEnemySprite(stats.name);
-        sr.sortingLayerName = "Characters"; // Ensure above Background layer
+        sr.sortingLayerName = "Characters";
         sr.sortingOrder = 1;
         go.transform.position = position;
-        go.transform.localScale = new Vector3(2f, 2f, 1f); // Set uniform 2x scale for all characters
+        go.transform.localScale = new Vector3(2f, 2f, 1f);
         go.AddComponent<SpriteAnimation>();
         return go;
     }

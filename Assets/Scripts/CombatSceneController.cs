@@ -31,6 +31,7 @@ namespace VirulentVentures
             expeditionManager = ExpeditionManager.Instance;
             if (expeditionManager == null)
             {
+                Debug.LogError("CombatSceneController: ExpeditionManager is null!");
                 return;
             }
             if (!ValidateReferences()) return;
@@ -54,15 +55,18 @@ namespace VirulentVentures
             var expeditionData = expeditionManager.GetExpedition();
             if (expeditionData == null || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
             {
+                Debug.LogError("CombatSceneController: Invalid expedition data or node index!");
                 EndCombat();
                 yield break;
             }
 
-            var heroStats = expeditionData.Party.GetHeroes(); // Should return List<CharacterStats>
-            var monsterStats = expeditionData.NodeData[expeditionData.CurrentNodeIndex].Monsters; // Now List<CharacterStats>
+            var heroStats = expeditionData.Party.GetHeroes();
+            var monsterStats = expeditionData.NodeData[expeditionData.CurrentNodeIndex].Monsters;
+            Debug.Log($"CombatSceneController: monsterStats type: {monsterStats.GetType()}, count: {monsterStats.Count}");
 
-            if (heroStats == null || monsterStats == null || heroStats.Count == 0 || monsterStats.Count == 0)
+            if (heroStats == null || heroStats.Count == 0 || monsterStats == null || monsterStats.Count == 0)
             {
+                Debug.LogError($"CombatSceneController: Invalid stats - Heroes: {(heroStats != null ? heroStats.Count : 0)}, Monsters: {(monsterStats != null ? monsterStats.Count : 0)}");
                 EndCombat();
                 yield break;
             }
@@ -89,6 +93,8 @@ namespace VirulentVentures
 
                 foreach (var unit in unitList)
                 {
+                    if (unit.Health <= 0) continue;
+
                     var abilityId = unit.AbilityId;
                     AbilityData? ability = unit is CharacterStats charStats ? (charStats.Type == CharacterType.Hero ? AbilityDatabase.GetHeroAbility(abilityId) : AbilityDatabase.GetMonsterAbility(abilityId)) : null;
                     if (ability == null) continue;
@@ -100,9 +106,8 @@ namespace VirulentVentures
                     var target = GetRandomAliveTarget(targets);
                     if (target == null) continue;
 
-                    // Trigger attack animation before resolving
                     eventBus.RaiseUnitAttacking(unit, target);
-                    yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f)); // Wait for tilt animation
+                    yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
 
                     int damage = Mathf.Max(unit.Attack - target.Defense, 0);
                     bool killed = false;
@@ -120,14 +125,21 @@ namespace VirulentVentures
                     target.Health = Mathf.Max(target.Health - damage, 0);
                     killed = target.Health <= 0;
                     UpdateUnit(target, damage.ToString());
-                    eventBus.RaiseUnitDamaged(target, damage.ToString()); // Trigger damage animation
+                    eventBus.RaiseUnitDamaged(target, damage.ToString());
                     if (killed)
                     {
                         LogMessage($"{unit.GetDisplayStats().name} kills {target.GetDisplayStats().name}!", uiConfig.BogRotColor);
+                        eventBus.RaiseUnitDied(target);
                     }
                     else
                     {
                         LogMessage($"{unit.GetDisplayStats().name} hits {target.GetDisplayStats().name} for {damage} damage!", uiConfig.TextColor);
+                    }
+
+                    if (AllHeroesDead() || AllMonstersDead())
+                    {
+                        EndCombat();
+                        yield break;
                     }
 
                     if (unit.Speed >= combatConfig.SpeedTwoAttacksThreshold)
@@ -136,7 +148,7 @@ namespace VirulentVentures
                         if (extraTarget != null)
                         {
                             eventBus.RaiseUnitAttacking(unit, extraTarget);
-                            yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f)); // Wait for tilt animation
+                            yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                             if (ability.Value.CanDodge && Random.Range(0, 100) < extraTarget.Evasion)
                             {
                                 LogMessage($"{extraTarget.GetDisplayStats().name} dodges {unit.GetDisplayStats().name}'s extra attack!", uiConfig.TextColor);
@@ -146,15 +158,26 @@ namespace VirulentVentures
                             extraTarget.Health = Mathf.Max(extraTarget.Health - damage, 0);
                             killed = extraTarget.Health <= 0;
                             UpdateUnit(extraTarget, damage.ToString());
-                            eventBus.RaiseUnitDamaged(extraTarget, damage.ToString()); // Trigger damage animation
+                            string damageString = damage.ToString();
+                            eventBus.RaiseUnitDamaged(extraTarget, damageString); // Line ~189
+                            Debug.Log($"CombatSceneController: Raised UnitDamaged for {extraTarget.GetDisplayStats().name} with damage {damageString}");
                             if (killed)
                             {
-                                LogMessage($"{unit.GetDisplayStats().name} kills {extraTarget.GetDisplayStats().name} with extra attack!", uiConfig.BogRotColor);
+                                string attackerName = unit.GetDisplayStats().name;
+                                string targetName = extraTarget.GetDisplayStats().name;
+                                LogMessage(attackerName + " kills " + targetName + " with extra attack!", uiConfig.BogRotColor);
+                                eventBus.RaiseUnitDied(extraTarget);
                             }
                             else
                             {
                                 LogMessage($"{unit.GetDisplayStats().name} hits {extraTarget.GetDisplayStats().name} for {damage} damage with extra attack!", uiConfig.TextColor);
                             }
+                        }
+
+                        if (AllHeroesDead() || AllMonstersDead())
+                        {
+                            EndCombat();
+                            yield break;
                         }
                     }
 
@@ -174,21 +197,15 @@ namespace VirulentVentures
         private void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
         {
             units.Clear();
-            foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero))
+            foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0))
             {
-                if (hero.Health > 0)
-                {
-                    var stats = hero.GetDisplayStats();
-                    units.Add((hero, null, stats));
-                }
+                var stats = hero.GetDisplayStats();
+                units.Add((hero, null, stats));
             }
-            foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster))
+            foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0))
             {
-                if (monster.Health > 0)
-                {
-                    var stats = monster.GetDisplayStats();
-                    units.Add((monster, null, stats));
-                }
+                var stats = monster.GetDisplayStats();
+                units.Add((monster, null, stats));
             }
             eventBus.RaiseCombatInitialized(units);
         }
@@ -206,6 +223,7 @@ namespace VirulentVentures
 
         private void UpdateUnit(ICombatUnit unit, string damageMessage = null)
         {
+            if (unit == null) return;
             var unitEntry = units.Find(u => u.unit == unit);
             if (unitEntry.unit != null)
             {
@@ -215,7 +233,7 @@ namespace VirulentVentures
                 eventBus.RaiseUnitUpdated(unit, newStats);
                 if (damageMessage != null)
                 {
-                    eventBus.RaiseDamagePopup(unit, damageMessage);
+                    eventBus.RaiseUnitDamaged(unit, damageMessage);
                 }
             }
         }
@@ -260,10 +278,21 @@ namespace VirulentVentures
             }
         }
 
+        private bool AllHeroesDead()
+        {
+            return units.Count(u => u.displayStats.isHero && u.unit.Health > 0) == 0;
+        }
+
+        private bool AllMonstersDead()
+        {
+            return units.Count(u => !u.displayStats.isHero && u.unit.Health > 0) == 0;
+        }
+
         private bool ValidateReferences()
         {
             if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null)
             {
+                Debug.LogError($"CombatSceneController: Missing references! CombatConfig: {combatConfig != null}, EventBus: {eventBus != null}, VisualConfig: {visualConfig != null}, UIConfig: {uiConfig != null}, Camera: {combatCamera != null}");
                 return false;
             }
             return true;
