@@ -51,23 +51,25 @@ namespace VirulentVentures
         [SerializeField] private string _abilityId;
         [SerializeField] private bool _isCultist;
         [SerializeField] private CharacterType _type;
+        [SerializeField] private int _partyPosition;
 
         public CharacterStats(string id, Vector3 position, CharacterType type)
         {
             var data = type == CharacterType.Hero ? CharacterLibrary.GetHeroData(id) : CharacterLibrary.GetMonsterData(id);
             _id = data.Id;
-            _health = data.Health;
+            _health = type == CharacterType.Hero ? data.Health : data.MaxHealth;
             _maxHealth = data.MaxHealth;
             _attack = data.Attack;
             _defense = data.Defense;
             _speed = data.Speed;
             _evasion = data.Evasion;
-            _morale = data.Morale;
+            _morale = type == CharacterType.Hero ? data.Morale : data.MaxMorale;
             _maxMorale = data.MaxMorale;
             _position = position;
             _abilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
-            _isCultist = data.CanBeCultist;
+            _isCultist = type == CharacterType.Hero && data.CanBeCultist;
             _type = type;
+            _partyPosition = data.PartyPosition;
         }
 
         public string Id => _id;
@@ -81,8 +83,8 @@ namespace VirulentVentures
         public int MaxMorale { get => _maxMorale; set => _maxMorale = value; }
         public Vector3 Position => _position;
         public string AbilityId { get => _abilityId; set => _abilityId = value; }
-        public int PartyPosition => CharacterLibrary.GetHeroData(_id).PartyPosition;
-        public bool IsCultist { get => _isCultist; set => _isCultist = value; }
+        public int PartyPosition => _partyPosition;
+        public bool IsCultist { get => _type == CharacterType.Hero && _isCultist; set => _isCultist = _type == CharacterType.Hero && value; }
         public bool IsHero => _type == CharacterType.Hero;
         public CharacterType Type => _type;
 
@@ -107,25 +109,25 @@ namespace VirulentVentures
             return new CharacterLibrary.CharacterData
             {
                 Id = _id,
-                Health = _health,
+                Health = _type == CharacterType.Hero ? _health : _maxHealth,
                 MaxHealth = _maxHealth,
                 Attack = _attack,
                 Defense = _defense,
                 Speed = _speed,
                 Evasion = _evasion,
-                Morale = _morale,
+                Morale = _type == CharacterType.Hero ? _morale : _maxMorale,
                 MaxMorale = _maxMorale,
                 AbilityIds = new List<string> { _abilityId },
                 CanBeCultist = _isCultist,
-                PartyPosition = PartyPosition
+                PartyPosition = _partyPosition
             };
         }
 
         public static CharacterStats DeserializeFromData(CharacterLibrary.CharacterData data, Vector3 position, CharacterType type)
         {
             var stats = new CharacterStats(data.Id, position, type);
-            stats.Health = data.Health;
-            stats.Morale = data.Morale;
+            stats.Health = type == CharacterType.Hero ? data.Health : data.MaxHealth;
+            stats.Morale = type == CharacterType.Hero ? data.Morale : data.MaxMorale;
             stats.Attack = data.Attack;
             stats.Defense = data.Defense;
             stats.Speed = data.Speed;
@@ -133,7 +135,8 @@ namespace VirulentVentures
             stats.MaxHealth = data.MaxHealth;
             stats.MaxMorale = data.MaxMorale;
             stats._abilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
-            stats._isCultist = data.CanBeCultist;
+            stats._isCultist = type == CharacterType.Hero && data.CanBeCultist;
+            stats._partyPosition = data.PartyPosition;
             return stats;
         }
     }

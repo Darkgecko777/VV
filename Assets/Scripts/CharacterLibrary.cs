@@ -8,13 +8,13 @@ namespace VirulentVentures
         public struct CharacterData
         {
             public string Id;
-            public int Health;
+            public int Health; // Only used for heroes
             public int MaxHealth;
             public int Attack;
             public int Defense;
             public int Speed;
             public int Evasion;
-            public int Morale;
+            public int Morale; // Only used for heroes
             public int MaxMorale;
             public List<string> AbilityIds;
             public bool CanBeCultist;
@@ -24,13 +24,13 @@ namespace VirulentVentures
             {
                 return new CharacterStats.DisplayStats(
                     name: Id,
-                    health: Health,
+                    health: isHero ? Health : MaxHealth,
                     maxHealth: MaxHealth,
                     attack: Attack,
                     defense: Defense,
                     speed: Mathf.Clamp(Speed, 1, 8),
                     evasion: Mathf.Clamp(Evasion, 0, 100),
-                    morale: Mathf.Clamp(Morale, 0, MaxMorale),
+                    morale: isHero ? Morale : MaxMorale,
                     maxMorale: MaxMorale,
                     isHero: isHero
                 );
@@ -115,13 +115,11 @@ namespace VirulentVentures
                 "Ghoul", new CharacterData
                 {
                     Id = "Ghoul",
-                    Health = 50,
                     MaxHealth = 70,
                     Attack = 15,
                     Defense = 10,
                     Speed = 4,
                     Evasion = 25,
-                    Morale = 80,
                     MaxMorale = 80,
                     AbilityIds = new List<string> { "BasicAttack", "GhoulClaw" },
                     CanBeCultist = false,
@@ -132,13 +130,11 @@ namespace VirulentVentures
                 "Wraith", new CharacterData
                 {
                     Id = "Wraith",
-                    Health = 60,
                     MaxHealth = 80,
                     Attack = 18,
                     Defense = 5,
                     Speed = 6,
                     Evasion = 40,
-                    Morale = 90,
                     MaxMorale = 90,
                     AbilityIds = new List<string> { "BasicAttack", "WraithStrike" },
                     CanBeCultist = false,
@@ -149,13 +145,11 @@ namespace VirulentVentures
                 "Skeleton", new CharacterData
                 {
                     Id = "Skeleton",
-                    Health = 55,
                     MaxHealth = 75,
                     Attack = 12,
                     Defense = 15,
                     Speed = 3,
                     Evasion = 10,
-                    Morale = 70,
                     MaxMorale = 70,
                     AbilityIds = new List<string> { "BasicAttack", "SkeletonSlash" },
                     CanBeCultist = false,
@@ -166,13 +160,11 @@ namespace VirulentVentures
                 "Vampire", new CharacterData
                 {
                     Id = "Vampire",
-                    Health = 65,
                     MaxHealth = 85,
                     Attack = 22,
                     Defense = 8,
                     Speed = 5,
                     Evasion = 30,
-                    Morale = 85,
                     MaxMorale = 85,
                     AbilityIds = new List<string> { "BasicAttack", "VampireBite" },
                     CanBeCultist = false,
@@ -215,13 +207,11 @@ namespace VirulentVentures
             return new CharacterData
             {
                 Id = id,
-                Health = 50,
                 MaxHealth = 50,
                 Attack = 10,
                 Defense = 5,
                 Speed = 3,
                 Evasion = 10,
-                Morale = 80,
                 MaxMorale = 80,
                 AbilityIds = new List<string> { "BasicAttack" },
                 CanBeCultist = false,
