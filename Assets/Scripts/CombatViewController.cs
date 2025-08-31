@@ -133,7 +133,7 @@ public class CombatViewController : MonoBehaviour
         for (int i = 0; i < monsters.Count && i < 4; i++)
         {
             var unit = monsters[i].unit;
-            var stats = heroes[i].stats;
+            var stats = monsters[i].stats;
             var panel = CreateUnitPanel(unit, stats, false, monsterPanelHeight);
             rightPanel.Add(panel);
             unitPanels[unit] = panel;
@@ -182,7 +182,7 @@ public class CombatViewController : MonoBehaviour
         var moraleLabel = new Label($"Morale: {stats.morale}/{stats.maxMorale}");
         moraleLabel.AddToClassList("morale-label");
         moraleBar.Add(moraleLabel);
-        UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale, isHero);
+        UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale);
         panel.Add(moraleBar);
         var statGrid = new VisualElement();
         statGrid.AddToClassList("stat-grid");
@@ -218,12 +218,12 @@ public class CombatViewController : MonoBehaviour
         label.text = $"HP: {current}/{max}";
     }
 
-    private void UpdateMoraleBar(VisualElement fill, Label label, int current, int max, bool isHero)
+    private void UpdateMoraleBar(VisualElement fill, Label label, int current, int max)
     {
         float percent = max > 0 ? (float)current / max * 100f : 0f;
         fill.style.width = new StyleLength(Length.Percent(percent));
         label.text = $"Morale: {current}/{max}";
-        fill.style.backgroundColor = isHero ? new StyleColor(Color.red) : new StyleColor(uiConfig.BogRotColor);
+        fill.style.backgroundColor = new StyleColor(new Color(0.6f, 0.8f, 1f)); // Light blue
     }
 
     private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
@@ -247,7 +247,7 @@ public class CombatViewController : MonoBehaviour
                 var label = moraleBar.Q<Label>(className: "morale-label");
                 if (fill != null && label != null)
                 {
-                    UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale, data.displayStats.isHero);
+                    UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale);
                 }
             }
             if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
