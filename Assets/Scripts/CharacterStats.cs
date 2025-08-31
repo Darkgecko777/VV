@@ -52,6 +52,7 @@ namespace VirulentVentures
         [SerializeField] private bool _isCultist;
         [SerializeField] private CharacterType _type;
         [SerializeField] private int _partyPosition;
+        [SerializeField] private bool _hasRetreated;
 
         public CharacterStats(string id, Vector3 position, CharacterType type)
         {
@@ -70,6 +71,7 @@ namespace VirulentVentures
             _isCultist = type == CharacterType.Hero && data.CanBeCultist;
             _type = type;
             _partyPosition = data.PartyPosition;
+            _hasRetreated = false;
         }
 
         public string Id => _id;
@@ -87,6 +89,7 @@ namespace VirulentVentures
         public bool IsCultist { get => _type == CharacterType.Hero && _isCultist; set => _isCultist = _type == CharacterType.Hero && value; }
         public bool IsHero => _type == CharacterType.Hero;
         public CharacterType Type => _type;
+        public bool HasRetreated { get => _hasRetreated; set => _hasRetreated = value; }
 
         public DisplayStats GetDisplayStats()
         {
@@ -137,6 +140,7 @@ namespace VirulentVentures
             stats._abilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
             stats._isCultist = type == CharacterType.Hero && data.CanBeCultist;
             stats._partyPosition = data.PartyPosition;
+            stats._hasRetreated = false; // Reset on deserialize
             return stats;
         }
     }

@@ -16,6 +16,7 @@ namespace VirulentVentures
         Vector3 Position { get; }
         string AbilityId { get; set; }
         int PartyPosition { get; }
+        bool HasRetreated { get; set; }
         CharacterStats.DisplayStats GetDisplayStats();
     }
 }

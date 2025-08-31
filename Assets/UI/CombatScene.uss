@@ -146,6 +146,14 @@
     background-color: rgb(80, 80, 80); /* Revert to default */
 }
 
+/* Retreat slide effect */
+.retreat-slide {
+    transition-property: translate;
+    transition-duration: 0.5s;
+    transition-timing-function: ease-in-out;
+    translate: 100% 0; /* Slide right */
+}
+
 /* Stat grid for attack, defense, speed, evasion */
 .stat-grid {
     width: 80%; /* Match health bar */

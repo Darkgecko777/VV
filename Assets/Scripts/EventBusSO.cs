@@ -78,7 +78,8 @@ namespace VirulentVentures
         public event Action OnContinueClicked;
         public event Action<AttackData> OnUnitAttacking;
         public event Action<DamagePopupData> OnUnitDamaged;
-        public event Action<ICombatUnit> OnUnitDied; // New event for death state
+        public event Action<ICombatUnit> OnUnitDied;
+        public event Action<ICombatUnit> OnUnitRetreated; // New event for retreat
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -163,6 +164,11 @@ namespace VirulentVentures
         public void RaiseUnitDied(ICombatUnit unit)
         {
             OnUnitDied?.Invoke(unit);
+        }
+
+        public void RaiseUnitRetreated(ICombatUnit unit)
+        {
+            OnUnitRetreated?.Invoke(unit);
         }
     }
 }
