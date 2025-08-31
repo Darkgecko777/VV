@@ -12,6 +12,7 @@ public class CombatViewController : MonoBehaviour
     [SerializeField] private CharacterPositions characterPositions;
     private VisualElement root;
     private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
+    private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
     private GameObject backgroundGameObject;
     private VisualElement logContent;
     private List<Label> logMessages = new List<Label>();
@@ -114,9 +115,32 @@ public class CombatViewController : MonoBehaviour
     private void InitializeCombat(EventBusSO.CombatInitData data)
     {
         unitGameObjects.Clear();
+        unitPanels.Clear();
 
         var heroes = data.units.Where(u => u.stats.isHero).ToList();
         var monsters = data.units.Where(u => !u.stats.isHero).ToList();
+
+        // Setup Hero Panels
+        var leftPanel = root.Q<VisualElement>("left-panel");
+        for (int i = 0; i < heroes.Count && i < 4; i++)
+        {
+            var unit = heroes[i].unit;
+            var stats = heroes[i].stats;
+            var panel = CreateUnitPanel(unit, stats, true);
+            leftPanel.Add(panel);
+            unitPanels[unit] = panel;
+        }
+
+        // Setup Monster Panels
+        var rightPanel = root.Q<VisualElement>("right-panel");
+        for (int i = 0; i < monsters.Count && i < 4; i++)
+        {
+            var unit = monsters[i].unit;
+            var stats = heroes[i].stats;
+            var panel = CreateUnitPanel(unit, stats, false);
+            rightPanel.Add(panel);
+            unitPanels[unit] = panel;
+        }
 
         // Setup Hero Sprites
         for (int i = 0; i < heroes.Count && i < characterPositions.heroPositions.Length; i++)
@@ -135,6 +159,30 @@ public class CombatViewController : MonoBehaviour
             var go = CreateUnitGameObject(unit, stats, false, characterPositions.monsterPositions[i]);
             unitGameObjects[unit] = go;
         }
+    }
+
+    private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero)
+    {
+        var panel = new VisualElement();
+        panel.AddToClassList("unit-panel");
+
+        // Placeholder for future size check (Normal, Double, Quad for monsters)
+        if (!isHero)
+        {
+            // Assuming Normal size for now (no size property in CharacterStats yet)
+            panel.style.width = new StyleLength(Length.Percent(49));
+            panel.style.height = new StyleLength(Length.Percent(49));
+            // Future: Check stats.size (e.g., Enum: Normal, Double, Quad)
+            // if (stats.size == "Double") { panel.style.width = Length.Percent(100); }
+            // else if (stats.size == "Quad") { panel.style.width = Length.Percent(100); panel.style.height = Length.Percent(100); }
+        }
+        else
+        {
+            panel.style.width = new StyleLength(Length.Percent(49));
+            panel.style.height = new StyleLength(Length.Percent(49));
+        }
+
+        return panel;
     }
 
     private void HandleUnitAttacking(EventBusSO.AttackData data)
