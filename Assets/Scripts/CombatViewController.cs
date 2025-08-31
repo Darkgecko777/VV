@@ -13,6 +13,9 @@ public class CombatViewController : MonoBehaviour
     private VisualElement root;
     private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
     private GameObject backgroundGameObject;
+    private VisualElement logContent;
+    private List<Label> logMessages = new List<Label>();
+    private const int MAX_LOG_MESSAGES = 20;
 
     void Awake()
     {
@@ -21,6 +24,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnCombatInitialized += InitializeCombat;
         eventBus.OnUnitAttacking += HandleUnitAttacking;
         eventBus.OnUnitDamaged += HandleUnitDamaged;
+        eventBus.OnLogMessage += HandleLogMessage;
         SetupBackground();
     }
 
@@ -29,6 +33,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnCombatInitialized -= InitializeCombat;
         eventBus.OnUnitAttacking -= HandleUnitAttacking;
         eventBus.OnUnitDamaged -= HandleUnitDamaged;
+        eventBus.OnLogMessage -= HandleLogMessage;
         if (backgroundGameObject != null)
         {
             Destroy(backgroundGameObject);
@@ -57,6 +62,13 @@ public class CombatViewController : MonoBehaviour
             Debug.LogError("CombatViewController: bottom-panel not found in UXML!");
             return;
         }
+
+        logContent = bottomPanel.Q<VisualElement>("log-content");
+        if (logContent == null)
+        {
+            Debug.LogError("CombatViewController: log-content not found in UXML!");
+            return;
+        }
     }
 
     private void SetupBackground()
@@ -74,6 +86,29 @@ public class CombatViewController : MonoBehaviour
         sr.sortingLayerName = "Background";
         sr.sortingOrder = 0; // Below Characters (order 1)
         backgroundGameObject.transform.localScale = new Vector3(2.24f, 0.65f, 1f);
+    }
+
+    private void HandleLogMessage(EventBusSO.LogData logData)
+    {
+        var label = new Label(logData.message);
+        label.style.color = logData.color; // Apply color from event (e.g., TextColor, BogRotColor)
+        logContent.Add(label);
+        logMessages.Add(label);
+
+        // Remove oldest message if exceeding max
+        if (logMessages.Count > MAX_LOG_MESSAGES)
+        {
+            var oldest = logMessages[0];
+            logContent.Remove(oldest);
+            logMessages.RemoveAt(0);
+        }
+
+        // Scroll to bottom
+        var scrollView = logContent.parent as ScrollView;
+        if (scrollView != null)
+        {
+            scrollView.scrollOffset = new Vector2(0, float.MaxValue);
+        }
     }
 
     private void InitializeCombat(EventBusSO.CombatInitData data)

@@ -14,4 +14,35 @@
     background-color: rgb(128, 128, 128); /* Grey */
     border-width: 2px;
     border-color: rgb(0, 0, 0); /* Black border */
+    flex-direction: row; /* Horizontal layout for children */
+}
+
+/* Left, center, and right panels */
+.left-panel, .combat-log, .right-panel {
+    width: 33.33%; /* Divide into thirds (~640px at 1920px) */
+    height: 100%;
+}
+
+/* Combat log ScrollView */
+.log-scrollview {
+    width: 100%;
+    height: 100%;
+    background-color: rgb(50, 50, 50); /* Darker grey for contrast */
+    border-width: 2px;
+    border-color: rgb(0, 0, 0); /* Black border */
+    overflow: scroll; /* Enable scrolling for overflow content */
+}
+
+/* Log content container */
+.log-content {
+    width: 100%;
+    flex-direction: column; /* Stack labels vertically */
+    padding: 10px;
+}
+
+/* Log message labels */
+.log-content > Label {
+    font-size: 16px;
+    color: rgb(255, 255, 255); /* Default to UIConfig.TextColor (white) */
+    margin-bottom: 5px;
 }

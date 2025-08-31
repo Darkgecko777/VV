@@ -1,6 +1,14 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <Style src="CombatScene.uss" />
     <ui:VisualElement name="combat-root" class="combat-root">
-        <ui:VisualElement name="bottom-panel" class="bottom-panel" />
+        <ui:VisualElement name="bottom-panel" class="bottom-panel">
+            <ui:VisualElement name="left-panel" class="left-panel" />
+            <ui:VisualElement name="combat-log" class="combat-log">
+                <ui:ScrollView name="log-scrollview" class="log-scrollview">
+                    <ui:VisualElement name="log-content" class="log-content" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+            <ui:VisualElement name="right-panel" class="right-panel" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
