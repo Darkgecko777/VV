@@ -21,6 +21,7 @@ public class CombatViewController : MonoBehaviour
         eventBus.OnCombatInitialized += InitializeCombat;
         eventBus.OnUnitAttacking += HandleUnitAttacking;
         eventBus.OnUnitDamaged += HandleUnitDamaged;
+        SetupBackground();
     }
 
     void OnDestroy()
@@ -59,6 +60,23 @@ public class CombatViewController : MonoBehaviour
 
         // Debug to confirm panel is found and styled
         Debug.Log($"CombatViewController: bottom-panel found. Resolved size: {bottomPanel.resolvedStyle.width}x{bottomPanel.resolvedStyle.height}, Position: {bottomPanel.resolvedStyle.position}, Display: {bottomPanel.resolvedStyle.display}");
+    }
+
+    private void SetupBackground()
+    {
+        if (backgroundGameObject != null) Destroy(backgroundGameObject);
+        var backgroundSprite = visualConfig.GetCombatBackground();
+        if (backgroundSprite == null)
+        {
+            Debug.LogError("CombatViewController: Failed to load combat background sprite!");
+            return;
+        }
+        backgroundGameObject = new GameObject("CombatBackground");
+        var sr = backgroundGameObject.AddComponent<SpriteRenderer>();
+        sr.sprite = backgroundSprite;
+        sr.sortingLayerName = "Background";
+        sr.sortingOrder = 0; // Below Characters (order 1)
+        backgroundGameObject.transform.localScale = new Vector3(2.24f, 0.65f, 1f);
     }
 
     private void InitializeCombat(EventBusSO.CombatInitData data)
@@ -120,6 +138,7 @@ public class CombatViewController : MonoBehaviour
         sr.sortingLayerName = "Characters"; // Ensure above Background layer
         sr.sortingOrder = 1;
         go.transform.position = position;
+        go.transform.localScale = new Vector3(2f, 2f, 1f); // Set uniform 2x scale for all characters
         go.AddComponent<SpriteAnimation>();
         return go;
     }
