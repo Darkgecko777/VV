@@ -21,6 +21,8 @@
 .left-panel, .combat-log, .right-panel {
     width: 33.33%; /* Divide into thirds (~640px at 1920px) */
     height: 100%;
+    border-width: 2px;
+    border-color: rgb(50, 50, 50); /* Dark grey border */
 }
 
 /* Combat log ScrollView */
