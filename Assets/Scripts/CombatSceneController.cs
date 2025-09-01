@@ -233,6 +233,15 @@ namespace VirulentVentures
             eventBus.RaiseCombatEnded();
             expeditionManager.SaveProgress();
             bool partyDead = expeditionManager.GetExpedition().Party.CheckDeadStatus().Count == 0;
+            if (!partyDead)
+            {
+                // Mark current node as completed
+                var expedition = expeditionManager.GetExpedition();
+                if (expedition.CurrentNodeIndex < expedition.NodeData.Count)
+                {
+                    expedition.NodeData[expedition.CurrentNodeIndex].Completed = true;
+                }
+            }
             if (partyDead)
             {
                 expeditionManager.EndExpedition();

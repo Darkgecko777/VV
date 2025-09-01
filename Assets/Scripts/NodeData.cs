@@ -13,7 +13,8 @@ namespace VirulentVentures
         [SerializeField] private string biome; // e.g., "Swamp"
         [SerializeField] private bool isCombat;
         [SerializeField] private string flavourText;
-        [SerializeField] private List<VirusData> seededViruses = new List<VirusData>(); // Virus placeholder
+        [SerializeField] private List<VirusData> seededViruses = new List<VirusData>();
+        [SerializeField] private bool completed; // New field
 
         public List<CharacterStats> Monsters => monsters;
         public string NodeType => nodeType;
@@ -21,6 +22,7 @@ namespace VirulentVentures
         public bool IsCombat => isCombat;
         public string FlavourText => flavourText;
         public List<VirusData> SeededViruses => seededViruses;
+        public bool Completed { get => completed; set => completed = value; } // New property
 
         public NodeData(List<CharacterStats> monsters, string nodeType, string biome, bool isCombat, string flavourText, List<VirusData> seededViruses = null)
         {
@@ -30,6 +32,7 @@ namespace VirulentVentures
             this.isCombat = isCombat;
             this.flavourText = flavourText;
             this.seededViruses = seededViruses ?? new List<VirusData>();
+            this.completed = false; // Initialize as not completed
         }
     }
 }

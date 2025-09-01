@@ -208,8 +208,8 @@ namespace VirulentVentures
             int currentIndex = data.currentIndex;
             if (nodes != null && currentIndex >= 0 && currentIndex < nodes.Count)
             {
-                flavourText.text = nodes[currentIndex].FlavourText;
-                popoutContainer.style.display = (nodes[currentIndex].IsCombat || currentIndex == 0) ? DisplayStyle.None : DisplayStyle.Flex;
+                flavourText.text = nodes[currentIndex].IsCombat && nodes[currentIndex].Completed ? "Combat Won!" : nodes[currentIndex].FlavourText;
+                popoutContainer.style.display = (nodes[currentIndex].IsCombat && !nodes[currentIndex].Completed || currentIndex == 0) ? DisplayStyle.None : DisplayStyle.Flex; // Show popout for completed combat or non-combat
             }
         }
 

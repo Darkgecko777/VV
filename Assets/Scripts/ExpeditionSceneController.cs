@@ -77,7 +77,7 @@ namespace VirulentVentures
             }
 
             var currentNode = data.nodes[data.currentIndex];
-            if (currentNode.IsCombat)
+            if (currentNode.IsCombat && !currentNode.Completed) // Only auto-transition if combat and not completed
             {
                 if (viewController != null)
                 {
@@ -90,7 +90,7 @@ namespace VirulentVentures
             }
             else
             {
-                eventBus.RaiseLogMessage(currentNode.FlavourText, Color.white);
+                eventBus.RaiseLogMessage(currentNode.Completed ? "Combat Won!" : currentNode.FlavourText, Color.white);
                 eventBus.RaisePartyUpdated(partyData);
             }
         }
