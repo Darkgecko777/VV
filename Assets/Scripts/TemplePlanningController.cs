@@ -50,23 +50,39 @@ namespace VirulentVentures
             List<NodeData> nodes = new List<NodeData>();
             // Add fixed temple node as the starting point with Swamp biome
             nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1, isTempleNode: true));
-            // Adjust node count for remaining nodes
-            int nodeCount = testMode ? 2 : Random.Range(7, 11);
+
+            // Determine total node count (excluding temple node)
+            int totalNodeCount = testMode ? 8 : Random.Range(0, 3) * 2 + 8; // 8, 10, or 12
+            int combatNodeCount = totalNodeCount / 2; // Half for combat
+            int nonCombatNodeCount = totalNodeCount / 2; // Half for non-combat
             int level = 2; // Start at level 2 for subsequent nodes
 
-            for (int i = 0; i < nodeCount; i++)
+            // Generate combat and non-combat nodes
+            List<NodeData> expeditionNodes = new List<NodeData>();
+            for (int i = 0; i < combatNodeCount; i++)
             {
-                if (Random.Range(0, 2) == 0)
-                {
-                    nodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", level, combatEncounterData));
-                }
-                else
-                {
-                    nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", level));
-                }
+                expeditionNodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", level, combatEncounterData));
+                level++;
+            }
+            for (int i = 0; i < nonCombatNodeCount; i++)
+            {
+                expeditionNodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", level));
                 level++;
             }
 
+            // Shuffle expedition nodes (Fisher-Yates shuffle)
+            for (int i = expeditionNodes.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                NodeData temp = expeditionNodes[i];
+                expeditionNodes[i] = expeditionNodes[j];
+                expeditionNodes[j] = temp;
+            }
+
+            // Add shuffled nodes to the list
+            nodes.AddRange(expeditionNodes);
+
+            // Initialize party if needed
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
                 partyData.HeroIds = new List<string>(fallbackHeroIds);
