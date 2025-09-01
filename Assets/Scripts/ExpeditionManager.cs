@@ -180,7 +180,7 @@ namespace VirulentVentures
                 return;
             }
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("TemplePlanning", LoadSceneMode.Single).completed += _ =>
+            SceneManager.LoadSceneAsync("TemplePlanningScene", LoadSceneMode.Single).completed += _ =>
             {
                 isTransitioning = false;
                 OnSceneTransitionCompleted?.Invoke(null, 0);
