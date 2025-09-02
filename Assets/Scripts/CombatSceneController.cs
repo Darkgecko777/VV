@@ -44,6 +44,27 @@ namespace VirulentVentures
             eventBus.OnCombatEnded -= EndCombat;
         }
 
+        private string SelectAbility(CharacterStats unit, PartyData partyData, List<ICombatUnit> targets)
+        {
+            var data = unit.Type == CharacterType.Hero
+                ? CharacterLibrary.GetHeroData(unit.Id)
+                : CharacterLibrary.GetMonsterData(unit.Id);
+
+            foreach (var abilityId in data.AbilityIds)
+            {
+                var ability = unit.Type == CharacterType.Hero
+                    ? AbilityDatabase.GetHeroAbility(abilityId)
+                    : AbilityDatabase.GetMonsterAbility(abilityId);
+
+                if (ability.HasValue && ability.Value.UseCondition(unit, partyData, targets))
+                {
+                    return abilityId;
+                }
+            }
+
+            return "BasicAttack"; // Fallback
+        }
+
         private IEnumerator RunCombat()
         {
             if (isCombatActive)
@@ -92,11 +113,18 @@ namespace VirulentVentures
                 {
                     if (unit.Health <= 0 || unit.HasRetreated) continue;
 
-                    var abilityId = unit.AbilityId;
-                    AbilityData? ability = unit is CharacterStats charStats ? (charStats.Type == CharacterType.Hero ? AbilityDatabase.GetHeroAbility(abilityId) : AbilityDatabase.GetMonsterAbility(abilityId)) : null;
+                    // Cast unit to CharacterStats once
+                    if (unit is not CharacterStats stats) continue;
+
+                    var partyData = expeditionManager.GetExpedition().Party;
+                    var abilityId = SelectAbility(stats, partyData, unitList);
+                    AbilityData? ability = stats.Type == CharacterType.Hero
+                        ? AbilityDatabase.GetHeroAbility(abilityId)
+                        : AbilityDatabase.GetMonsterAbility(abilityId);
+
                     if (ability == null) continue;
 
-                    var targets = unit is CharacterStats charStats2 && charStats2.Type == CharacterType.Hero
+                    var targets = stats.Type == CharacterType.Hero
                         ? units.Select(u => u.unit).Where(u => u is CharacterStats cs && cs.Type == CharacterType.Monster && u.Health > 0 && !u.HasRetreated).ToList()
                         : units.Select(u => u.unit).Where(u => u is CharacterStats cs && cs.Type == CharacterType.Hero && u.Health > 0 && !u.HasRetreated).ToList();
 
@@ -114,9 +142,16 @@ namespace VirulentVentures
                     eventBus.RaiseUnitAttacking(unit, target);
                     yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
 
-                    int damage = Mathf.Max(1, unit.Attack - target.Defense);
-                    target.Health -= damage;
-                    UpdateUnit(target, $"{target.Id} takes {damage} damage!");
+                    if (ability.HasValue)
+                    {
+                        ability.Value.Effect?.Invoke(target, partyData);
+                        if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
+                        {
+                            int damage = Mathf.Max(1, unit.Attack - target.Defense);
+                            target.Health -= damage;
+                            UpdateUnit(target, $"{target.Id} takes {damage} damage!");
+                        }
+                    }
 
                     if (target.Health <= 0)
                     {
@@ -235,7 +270,6 @@ namespace VirulentVentures
             bool partyDead = expeditionManager.GetExpedition().Party.CheckDeadStatus().Count == 0;
             if (!partyDead)
             {
-                // Mark current node as completed
                 var expedition = expeditionManager.GetExpedition();
                 if (expedition.CurrentNodeIndex < expedition.NodeData.Count)
                 {

@@ -8,17 +8,25 @@ namespace VirulentVentures
     {
         public string Id { get; private set; }
         public string AnimationTrigger { get; private set; }
-        public System.Action<object, PartyData> Effect { get; private set; } // Supports CharacterStats for both heroes and monsters
-        public bool IsCommon { get; private set; } // Flags common attacks
-        public bool CanDodge { get; private set; } // For monster dodge (ethereal)
+        public System.Action<object, PartyData> Effect { get; private set; }
+        public bool IsCommon { get; private set; }
+        public bool CanDodge { get; private set; }
+        public System.Func<CharacterStats, PartyData, List<ICombatUnit>, bool> UseCondition { get; private set; }
 
-        public AbilityData(string id, string animationTrigger, System.Action<object, PartyData> effect, bool isCommon = false, bool canDodge = false)
+        public AbilityData(
+            string id,
+            string animationTrigger,
+            System.Action<object, PartyData> effect,
+            bool isCommon = false,
+            bool canDodge = false,
+            System.Func<CharacterStats, PartyData, List<ICombatUnit>, bool> useCondition = null)
         {
             Id = id;
             AnimationTrigger = animationTrigger;
             Effect = effect;
             IsCommon = isCommon;
             CanDodge = canDodge;
+            UseCondition = useCondition ?? ((user, party, targets) => false);
         }
     }
 
@@ -38,11 +46,9 @@ namespace VirulentVentures
             heroAbilities.Add("BasicAttack", new AbilityData(
                 id: "BasicAttack",
                 animationTrigger: "BasicAttack",
-                effect: (target, partyData) =>
-                {
-                    // Basic attack uses character's Attack stat; damage applied in auto-Combatr
-                },
-                isCommon: true
+                effect: (target, partyData) => { /* Damage applied in CombatSceneController */ },
+                isCommon: true,
+                useCondition: (user, party, targets) => true // Always available
             ));
 
             heroAbilities.Add("FighterAttack", new AbilityData(
@@ -54,7 +60,8 @@ namespace VirulentVentures
                     {
                         stats.Attack += 3;
                     }
-                }
+                },
+                useCondition: (user, party, targets) => false // Disabled for now
             ));
 
             heroAbilities.Add("HealerHeal", new AbilityData(
@@ -70,7 +77,8 @@ namespace VirulentVentures
                             lowestHealthAlly.Health = Mathf.Min(lowestHealthAlly.Health + 10, lowestHealthAlly.MaxHealth);
                         }
                     }
-                }
+                },
+                useCondition: (user, party, targets) => false // Disabled for now
             ));
 
             heroAbilities.Add("ScoutDefend", new AbilityData(
@@ -82,7 +90,15 @@ namespace VirulentVentures
                     {
                         stats.Defense += 2;
                     }
-                }
+                },
+                useCondition: (user, party, targets) => false // Disabled for now
+            ));
+
+            heroAbilities.Add("TreasureFind", new AbilityData(
+                id: "TreasureFind",
+                animationTrigger: "TreasureFind",
+                effect: (target, partyData) => { /* Placeholder effect */ },
+                useCondition: (user, party, targets) => false // Disabled for now
             ));
         }
 
@@ -91,48 +107,52 @@ namespace VirulentVentures
             monsterAbilities.Add("BasicAttack", new AbilityData(
                 id: "BasicAttack",
                 animationTrigger: "BasicAttack",
-                effect: (target, partyData) =>
-                {
-                    // Damage based on Attack stat (applied in auto-Combatr)
-                },
-                isCommon: true
+                effect: (target, partyData) => { /* Damage applied in CombatSceneController */ },
+                isCommon: true,
+                useCondition: (user, party, targets) => true // Always available
             ));
 
             monsterAbilities.Add("DefaultMonsterAbility", new AbilityData(
                 id: "DefaultMonsterAbility",
                 animationTrigger: "DefaultMonsterAttack",
-                effect: (target, partyData) =>
-                {
-                    // No-op for monsters with no special ability
-                }
+                effect: (target, partyData) => { /* No-op */ },
+                useCondition: (user, party, targets) => false // Disabled for now
             ));
 
             monsterAbilities.Add("GhoulClaw", new AbilityData(
                 id: "GhoulClaw",
                 animationTrigger: "GhoulClaw",
-                effect: (target, partyData) =>
-                {
-                    // Damage based on Attack stat (applied in auto-Combatr)
-                }
+                effect: (target, partyData) => { /* Damage applied in CombatSceneController */ },
+                useCondition: (user, party, targets) => false // Disabled for now
             ));
 
             monsterAbilities.Add("GhoulRend", new AbilityData(
                 id: "GhoulRend",
                 animationTrigger: "GhoulRend",
-                effect: (target, partyData) =>
-                {
-                    // Removed morale reduction as monsters lack Morale
-                }
+                effect: (target, partyData) => { /* No-op */ },
+                useCondition: (user, party, targets) => false // Disabled for now
             ));
 
             monsterAbilities.Add("WraithStrike", new AbilityData(
                 id: "WraithStrike",
                 animationTrigger: "WraithStrike",
-                effect: (target, partyData) =>
-                {
-                    // Damage based on Attack stat (applied in auto-Combatr)
-                },
-                canDodge: true // Ethereal dodge
+                effect: (target, partyData) => { /* Damage applied in CombatSceneController */ },
+                canDodge: true,
+                useCondition: (user, party, targets) => false // Disabled for now
+            ));
+
+            monsterAbilities.Add("SkeletonSlash", new AbilityData(
+                id: "SkeletonSlash",
+                animationTrigger: "SkeletonSlash",
+                effect: (target, partyData) => { /* Damage applied in CombatSceneController */ },
+                useCondition: (user, party, targets) => false // Disabled for now
+            ));
+
+            monsterAbilities.Add("VampireBite", new AbilityData(
+                id: "VampireBite",
+                animationTrigger: "VampireBite",
+                effect: (target, partyData) => { /* Damage applied in CombatSceneController */ },
+                useCondition: (user, party, targets) => false // Disabled for now
             ));
         }
 
