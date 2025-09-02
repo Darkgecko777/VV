@@ -113,7 +113,6 @@ namespace VirulentVentures
                 {
                     if (unit.Health <= 0 || unit.HasRetreated) continue;
 
-                    // Cast unit to CharacterStats once
                     if (unit is not CharacterStats stats) continue;
 
                     var partyData = expeditionManager.GetExpedition().Party;
@@ -144,7 +143,12 @@ namespace VirulentVentures
 
                     if (ability.HasValue)
                     {
-                        ability.Value.Effect?.Invoke(target, partyData);
+                        string abilityLog = ability.Value.Effect?.Invoke(target, partyData) ?? "";
+                        if (!string.IsNullOrEmpty(abilityLog))
+                        {
+                            eventBus.RaiseLogMessage(abilityLog, Color.white);
+                        }
+
                         if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
                         {
                             int damage = Mathf.Max(1, unit.Attack - target.Defense);
