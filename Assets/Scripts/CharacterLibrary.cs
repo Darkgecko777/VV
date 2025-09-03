@@ -38,76 +38,144 @@ namespace VirulentVentures
         }
 
         private static readonly Dictionary<string, CharacterData> HeroData = new Dictionary<string, CharacterData>
+{
+    {
+        "Fighter", new CharacterData
         {
-            {
-                "Fighter", new CharacterData
-                {
-                    Id = "Fighter",
-                    Health = 80,
-                    MaxHealth = 100,
-                    Attack = 25,
-                    Defense = 15,
-                    Speed = 5,
-                    Evasion = 20,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    AbilityIds = new List<string> { "BasicAttack", "FighterAttack" },
-                    CanBeCultist = true,
-                    PartyPosition = 1
-                }
-            },
-            {
-                "Healer", new CharacterData
-                {
-                    Id = "Healer",
-                    Health = 60,
-                    MaxHealth = 80,
-                    Attack = 10,
-                    Defense = 5,
-                    Speed = 3,
-                    Evasion = 30,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    AbilityIds = new List<string> { "BasicAttack", "HealerHeal" },
-                    CanBeCultist = false,
-                    PartyPosition = 2
-                }
-            },
-            {
-                "Scout", new CharacterData
-                {
-                    Id = "Scout",
-                    Health = 65,
-                    MaxHealth = 85,
-                    Attack = 15,
-                    Defense = 10,
-                    Speed = 6,
-                    Evasion = 40,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    AbilityIds = new List<string> { "BasicAttack", "ScoutDefend" },
-                    CanBeCultist = true,
-                    PartyPosition = 3
-                }
-            },
-            {
-                "TreasureHunter", new CharacterData
-                {
-                    Id = "TreasureHunter",
-                    Health = 70,
-                    MaxHealth = 90,
-                    Attack = 20,
-                    Defense = 12,
-                    Speed = 4,
-                    Evasion = 35,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    AbilityIds = new List<string> { "BasicAttack", "TreasureFind" },
-                    CanBeCultist = false,
-                    PartyPosition = 4
-                }
-            }
-        };
+            Id = "Fighter",
+            Health = 80,
+            MaxHealth = 100,
+            Attack = 25,
+            Defense = 15,
+            Speed = 5,
+            Evasion = 20,
+            Morale = 100,
+            MaxMorale = 100,
+            AbilityIds = new List<string> { "BasicAttack", "FighterAttack" },
+            CanBeCultist = true,
+            PartyPosition = 1
+        }
+    },
+    {
+        "Healer", new CharacterData
+        {
+            Id = "Healer",
+            Health = 60,
+            MaxHealth = 80,
+            Attack = 10,
+            Defense = 5,
+            Speed = 3,
+            Evasion = 30,
+            Morale = 100,
+            MaxMorale = 100,
+            AbilityIds = new List<string> { "BasicAttack", "HealerHeal" },
+            CanBeCultist = false,
+            PartyPosition = 4
+        }
+    },
+    {
+        "Ranger", new CharacterData
+        {
+            Id = "Ranger",
+            Health = 65,
+            MaxHealth = 85,
+            Attack = 15,
+            Defense = 10,
+            Speed = 6,
+            Evasion = 40,
+            Morale = 100,
+            MaxMorale = 100,
+            AbilityIds = new List<string> { "BasicAttack", "ScoutDefend" },
+            CanBeCultist = true,
+            PartyPosition = 3
+        }
+    },
+    {
+        "TreasureHunter", new CharacterData
+        {
+            Id = "TreasureHunter",
+            Health = 70,
+            MaxHealth = 90,
+            Attack = 20,
+            Defense = 12,
+            Speed = 4,
+            Evasion = 35,
+            Morale = 100,
+            MaxMorale = 100,
+            AbilityIds = new List<string> { "BasicAttack", "TreasureFind" },
+            CanBeCultist = false,
+            PartyPosition = 3
+        }
+    },
+    {
+        "Monk", new CharacterData
+        {
+            Id = "Monk",
+            Health = 75,
+            MaxHealth = 95,
+            Attack = 18,
+            Defense = 14,
+            Speed = 4,
+            Evasion = 25,
+            Morale = 100,
+            MaxMorale = 100,
+            AbilityIds = new List<string> { "BasicAttack" },
+            CanBeCultist = false,
+            PartyPosition = 2
+        }
+    },
+    {
+        "Assassin", new CharacterData
+        {
+            Id = "Assassin",
+            Health = 60,
+            MaxHealth = 80,
+            Attack = 22,
+            Defense = 8,
+            Speed = 7,
+            Evasion = 45,
+            Morale = 100,
+            MaxMorale = 100,
+            AbilityIds = new List<string> { "BasicAttack" },
+            CanBeCultist = true,
+            PartyPosition = 2
+        }
+    },
+    {
+        "Bard", new CharacterData
+        {
+            Id = "Bard",
+            Health = 55,
+            MaxHealth = 75,
+            Attack = 12,
+            Defense = 6,
+            Speed = 5,
+            Evasion = 30,
+            Morale = 100,
+            MaxMorale = 100,
+            AbilityIds = new List<string> { "BasicAttack" },
+            CanBeCultist = false,
+            PartyPosition = 4
+        }
+    },
+    {
+        "Barbarian", new CharacterData
+        {
+            Id = "Barbarian",
+            Health = 85,
+            MaxHealth = 105,
+            Attack = 28,
+            Defense = 10,
+            Speed = 4,
+            Evasion = 15,
+            Morale = 100,
+            MaxMorale = 100,
+            AbilityIds = new List<string> { "BasicAttack" },
+            CanBeCultist = true,
+            PartyPosition = 1
+        }
+    }
+};
 
         private static readonly Dictionary<string, CharacterData> MonsterData = new Dictionary<string, CharacterData>
         {
