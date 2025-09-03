@@ -12,12 +12,14 @@ namespace VirulentVentures
         public string version;
         public ExpeditionData expeditionData;
         public PartyData partyData;
+        public PlayerProgress playerProgress;
 
-        public SaveDataWrapper(string version, ExpeditionData expeditionData, PartyData partyData)
+        public SaveDataWrapper(string version, ExpeditionData expeditionData, PartyData partyData, PlayerProgress playerProgress)
         {
             this.version = version;
             this.expeditionData = expeditionData;
             this.partyData = partyData;
+            this.playerProgress = playerProgress;
         }
     }
 
@@ -25,7 +27,9 @@ namespace VirulentVentures
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
+        [SerializeField] private PlayerProgress playerProgress;
         [SerializeField] private EventBusSO eventBus;
+        [SerializeField] private bool clearDataOnStart = true; // Toggle for prototype (false for full release)
 
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
@@ -54,6 +58,20 @@ namespace VirulentVentures
         {
             if (!ValidateReferences()) return;
 
+            // Clear data for prototype if toggle is true
+            if (clearDataOnStart)
+            {
+                PlayerPrefs.DeleteKey("ExpeditionSave");
+                PlayerPrefs.DeleteKey("PartySave");
+                PlayerPrefs.DeleteKey("PlayerProgressSave");
+                PlayerPrefs.Save();
+                expeditionData.Reset();
+                partyData.Reset();
+                playerProgress.Reset();
+                Debug.Log("ExpeditionManager: Cleared all save data for new session");
+            }
+
+            // Load existing data if any
             string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
             if (!string.IsNullOrEmpty(expeditionSaveData))
             {
@@ -72,6 +90,15 @@ namespace VirulentVentures
                 if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.partyData != null)
                 {
                     partyData = wrapper.partyData;
+                }
+            }
+            string progressSaveData = PlayerPrefs.GetString("PlayerProgressSave", "");
+            if (!string.IsNullOrEmpty(progressSaveData))
+            {
+                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(progressSaveData);
+                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.playerProgress != null)
+                {
+                    playerProgress = wrapper.playerProgress;
                 }
             }
             PostLoad();
@@ -118,24 +145,33 @@ namespace VirulentVentures
         public void EndExpedition()
         {
             expeditionData.Reset();
+            partyData.Reset();
+            if (!clearDataOnStart) // Preserve progress unless wiping
+            {
+                playerProgress.Reset();
+            }
             PlayerPrefs.DeleteKey("ExpeditionSave");
             PlayerPrefs.DeleteKey("PartySave");
+            PlayerPrefs.DeleteKey("PlayerProgressSave");
+            PlayerPrefs.Save();
             TransitionToTemplePlanningScene();
         }
 
         public void SaveProgress()
         {
-            // Sort HeroStats by PartyPosition before saving
             if (partyData != null && partyData.HeroStats != null)
             {
                 partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
             }
-            var expeditionWrapper = new SaveDataWrapper(CURRENT_VERSION, expeditionData, null);
+            var expeditionWrapper = new SaveDataWrapper(CURRENT_VERSION, expeditionData, null, null);
             string expeditionJson = JsonUtility.ToJson(expeditionWrapper);
             PlayerPrefs.SetString("ExpeditionSave", expeditionJson);
-            var partyWrapper = new SaveDataWrapper(CURRENT_VERSION, null, partyData);
+            var partyWrapper = new SaveDataWrapper(CURRENT_VERSION, null, partyData, null);
             string partyJson = JsonUtility.ToJson(partyWrapper);
             PlayerPrefs.SetString("PartySave", partyJson);
+            var progressWrapper = new SaveDataWrapper(CURRENT_VERSION, null, null, playerProgress);
+            string progressJson = JsonUtility.ToJson(progressWrapper);
+            PlayerPrefs.SetString("PlayerProgressSave", progressJson);
             PlayerPrefs.Save();
         }
 
@@ -149,10 +185,14 @@ namespace VirulentVentures
             return expeditionData;
         }
 
+        public PlayerProgress GetPlayerProgress()
+        {
+            return playerProgress;
+        }
+
         public void PostLoad()
         {
             if (partyData == null) return;
-            // Re-sort HeroStats by PartyPosition after loading
             if (partyData.HeroStats != null)
             {
                 partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
@@ -175,9 +215,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (expeditionData == null || partyData == null || eventBus == null)
+            if (expeditionData == null || partyData == null || playerProgress == null || eventBus == null)
             {
-                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, EventBus: {eventBus != null}");
+                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, PlayerProgress: {playerProgress != null}, EventBus: {eventBus != null}");
                 return false;
             }
             return true;

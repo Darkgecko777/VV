@@ -150,7 +150,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   expeditionData: {fileID: 11400000, guid: dbd010dc53fbedf4ead5b8a30d6b6ccd, type: 2}
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
+  playerProgress: {fileID: 11400000, guid: 431658165779e034594c3a1172a741ce, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  clearDataOnStart: 1
 --- !u!4 &279643037
 Transform:
   m_ObjectHideFlags: 0
@@ -505,17 +507,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   expeditionData: {fileID: 11400000, guid: dbd010dc53fbedf4ead5b8a30d6b6ccd, type: 2}
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
+  playerProgress: {fileID: 11400000, guid: 431658165779e034594c3a1172a741ce, type: 2}
   availableViruses: []
   visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   combatNodeGenerator: {fileID: 363512855}
   nonCombatNodeGenerator: {fileID: 363512854}
   combatEncounterData: {fileID: 11400000, guid: cb2f1c90e6f1dd54ea59e6686e020c98, type: 2}
   testMode: 0
-  fallbackHeroIds:
-  - Fighter
-  - Healer
-  - Scout
-  - TreasureHunter
   defaultPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
 --- !u!4 &2139730225

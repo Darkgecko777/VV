@@ -8,13 +8,13 @@ namespace VirulentVentures
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
+        [SerializeField] private PlayerProgress playerProgress;
         [SerializeField] private List<VirusData> availableViruses;
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private CombatNodeGenerator combatNodeGenerator;
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
         [SerializeField] private EncounterData combatEncounterData;
         [SerializeField] private bool testMode = true;
-        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Ranger", "TreasureHunter" };
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EventBusSO eventBus;
 
@@ -80,11 +80,31 @@ namespace VirulentVentures
             // Initialize party if needed
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
-                partyData.HeroIds = new List<string>(fallbackHeroIds);
+                partyData.HeroIds = new List<string>();
+                // Demo: Fixed heroes, one per position, validated against unlocked heroes
+                var positionMap = new Dictionary<int, string>
+                {
+                    { 1, "Fighter" },
+                    { 2, "Monk" },
+                    { 3, "Scout" },
+                    { 4, "Healer" }
+                };
+
+                foreach (var pos in positionMap.Keys)
+                {
+                    string selectedHero = positionMap[pos];
+                    if (playerProgress.UnlockedHeroes.Contains(selectedHero))
+                    {
+                        partyData.HeroIds.Add(selectedHero);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"TemplePlanningController: Hero {selectedHero} not unlocked, skipping position {pos}");
+                    }
+                }
                 partyData.PartyID = System.Guid.NewGuid().ToString();
             }
 
-            // Generate HeroStats with PartyPosition-based placement
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
             foreach (var hero in partyData.HeroStats)
             {
@@ -138,12 +158,12 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (expeditionData == null || partyData == null || availableViruses == null || visualConfig == null ||
+            if (expeditionData == null || partyData == null || playerProgress == null || availableViruses == null || visualConfig == null ||
                 combatNodeGenerator == null || nonCombatNodeGenerator == null || combatEncounterData == null ||
                 defaultPositions == null || eventBus == null)
             {
                 Debug.LogError($"TemplePlanningController: Missing references! ExpeditionData: {expeditionData != null}, " +
-                    $"PartyData: {partyData != null}, AvailableViruses: {availableViruses != null}, " +
+                    $"PartyData: {partyData != null}, PlayerProgress: {playerProgress != null}, AvailableViruses: {availableViruses != null}, " +
                     $"VisualConfig: {visualConfig != null}, CombatNodeGenerator: {combatNodeGenerator != null}, " +
                     $"NonCombatNodeGenerator: {nonCombatNodeGenerator != null}, CombatEncounterData: {combatEncounterData != null}, " +
                     $"DefaultPositions: {defaultPositions != null}, EventBus: {eventBus != null}");
