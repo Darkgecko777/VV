@@ -74,9 +74,9 @@ namespace VirulentVentures
         }
     },
     {
-        "Ranger", new CharacterData
+        "Scout", new CharacterData
         {
-            Id = "Ranger",
+            Id = "Scout",
             Health = 65,
             MaxHealth = 85,
             Attack = 15,

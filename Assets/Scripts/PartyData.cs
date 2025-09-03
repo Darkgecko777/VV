@@ -49,11 +49,45 @@ namespace VirulentVentures
         public void GenerateHeroStats(Vector3[] positions)
         {
             HeroStats = new List<CharacterStats>();
-            for (int i = 0; i < HeroIds.Count && i < positions.Length; i++)
+            // Create a mapping of PartyPosition to heroPositions index (1-based to 0-based)
+            var positionMap = new Dictionary<int, Vector3>
             {
-                var stats = new CharacterStats(HeroIds[i], positions[i], CharacterType.Hero);
-                HeroStats.Add(stats);
+                { 1, positions[0] }, // e.g., [-1f, 0f, 0f] for position 1
+                { 2, positions[1] }, // e.g., [-2f, 0f, 0f] for position 2
+                { 3, positions[2] }, // e.g., [-3f, 0f, 0f] for position 3
+                { 4, positions[3] }  // e.g., [-4f, 0f, 0f] for position 4
+            };
+
+            // Assign heroes to their PartyPosition slots
+            foreach (var heroId in HeroIds)
+            {
+                var data = CharacterLibrary.GetHeroData(heroId);
+                int partyPosition = data.PartyPosition;
+                if (partyPosition < 1 || partyPosition > 4)
+                {
+                    Debug.LogWarning($"PartyData: Invalid PartyPosition {partyPosition} for {heroId}, skipping.");
+                    continue;
+                }
+                if (positionMap.ContainsKey(partyPosition))
+                {
+                    var stats = new CharacterStats(heroId, positionMap[partyPosition], CharacterType.Hero);
+                    HeroStats.Add(stats);
+                    positionMap.Remove(partyPosition); // Ensure position isn’t reused
+                }
+                else
+                {
+                    Debug.LogWarning($"PartyData: PartyPosition {partyPosition} for {heroId} already occupied or invalid.");
+                }
             }
+
+            // Sort HeroStats by PartyPosition for consistency
+            HeroStats = HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
+        }
+
+        // Helper to get hero by PartyPosition
+        public CharacterStats GetHeroByPosition(int position)
+        {
+            return HeroStats.Find(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition == position);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace VirulentVentures
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
         [SerializeField] private EncounterData combatEncounterData;
         [SerializeField] private bool testMode = true;
-        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
+        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Ranger", "TreasureHunter" };
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EventBusSO eventBus;
 
@@ -48,16 +48,13 @@ namespace VirulentVentures
             if (data.expeditionData != null || data.partyData != null) return;
 
             List<NodeData> nodes = new List<NodeData>();
-            // Add fixed temple node as the starting point with Swamp biome
             nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1, isTempleNode: true));
 
-            // Determine total node count (excluding temple node)
-            int totalNodeCount = testMode ? 8 : Random.Range(0, 3) * 2 + 8; // 8, 10, or 12
-            int combatNodeCount = totalNodeCount / 2; // Half for combat
-            int nonCombatNodeCount = totalNodeCount / 2; // Half for non-combat
-            int level = 2; // Start at level 2 for subsequent nodes
+            int totalNodeCount = testMode ? 8 : Random.Range(0, 3) * 2 + 8;
+            int combatNodeCount = totalNodeCount / 2;
+            int nonCombatNodeCount = totalNodeCount / 2;
+            int level = 2;
 
-            // Generate combat and non-combat nodes
             List<NodeData> expeditionNodes = new List<NodeData>();
             for (int i = 0; i < combatNodeCount; i++)
             {
@@ -70,7 +67,6 @@ namespace VirulentVentures
                 level++;
             }
 
-            // Shuffle expedition nodes (Fisher-Yates shuffle)
             for (int i = expeditionNodes.Count - 1; i > 0; i--)
             {
                 int j = Random.Range(0, i + 1);
@@ -79,17 +75,17 @@ namespace VirulentVentures
                 expeditionNodes[j] = temp;
             }
 
-            // Add shuffled nodes to the list
             nodes.AddRange(expeditionNodes);
 
             // Initialize party if needed
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
                 partyData.HeroIds = new List<string>(fallbackHeroIds);
-                partyData.GenerateHeroStats(defaultPositions.heroPositions);
                 partyData.PartyID = System.Guid.NewGuid().ToString();
             }
 
+            // Generate HeroStats with PartyPosition-based placement
+            partyData.GenerateHeroStats(defaultPositions.heroPositions);
             foreach (var hero in partyData.HeroStats)
             {
                 hero.Health = hero.MaxHealth;
@@ -103,7 +99,7 @@ namespace VirulentVentures
             }
             expeditionData.SetNodes(nodes);
             expeditionData.SetParty(partyData);
-            expeditionData.CurrentNodeIndex = 0; // Start at temple node
+            expeditionData.CurrentNodeIndex = 0;
             isExpeditionGenerated = expeditionData.IsValid();
 
             eventBus.RaisePartyUpdated(partyData);

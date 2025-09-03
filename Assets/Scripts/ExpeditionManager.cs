@@ -25,7 +25,7 @@ namespace VirulentVentures
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
-        [SerializeField] private EventBusSO eventBus; // New: For raising events consistently
+        [SerializeField] private EventBusSO eventBus;
 
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
@@ -84,7 +84,7 @@ namespace VirulentVentures
             {
                 expedition.CurrentNodeIndex++;
                 var newNode = expedition.NodeData[expedition.CurrentNodeIndex];
-                eventBus.RaiseNodeUpdated(expedition.NodeData, expedition.CurrentNodeIndex); // Changed to eventBus
+                eventBus.RaiseNodeUpdated(expedition.NodeData, expedition.CurrentNodeIndex);
             }
             else
             {
@@ -125,6 +125,11 @@ namespace VirulentVentures
 
         public void SaveProgress()
         {
+            // Sort HeroStats by PartyPosition before saving
+            if (partyData != null && partyData.HeroStats != null)
+            {
+                partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
+            }
             var expeditionWrapper = new SaveDataWrapper(CURRENT_VERSION, expeditionData, null);
             string expeditionJson = JsonUtility.ToJson(expeditionWrapper);
             PlayerPrefs.SetString("ExpeditionSave", expeditionJson);
@@ -147,6 +152,11 @@ namespace VirulentVentures
         public void PostLoad()
         {
             if (partyData == null) return;
+            // Re-sort HeroStats by PartyPosition after loading
+            if (partyData.HeroStats != null)
+            {
+                partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
+            }
             foreach (var hero in partyData.HeroStats)
             {
                 var data = CharacterLibrary.GetHeroData(hero.Id);
@@ -165,7 +175,7 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (expeditionData == null || partyData == null || eventBus == null) // Added eventBus check
+            if (expeditionData == null || partyData == null || eventBus == null)
             {
                 Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, EventBus: {eventBus != null}");
                 return false;
