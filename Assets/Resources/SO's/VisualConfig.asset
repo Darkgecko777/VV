@@ -25,6 +25,9 @@ MonoBehaviour:
   - characterID: TreasureHunter
     portrait: {fileID: 21300000, guid: 5d2c293a53efae14a9921281fcc79bb3, type: 3}
     combatSprite: {fileID: -5705666034287103667, guid: 683b38f0ea3ccce4b9af3fe9b17a9ef6, type: 3}
+  - characterID: Monk
+    portrait: {fileID: 21300000, guid: 54517672ea8bed145894fc10accf3059, type: 3}
+    combatSprite: {fileID: 21300000, guid: 66b8d007a944367478557a8766fbfa28, type: 3}
   enemyVisuals:
   - enemyID: Wraith
     combatSprite: {fileID: 21300000, guid: ce0992ec2e88ef34cb61f593f64a317c, type: 3}

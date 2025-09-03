@@ -28,7 +28,18 @@ namespace VirulentVentures
             public Color highlightColor;
         }
 
-        public List<CharacterVisuals> characterVisuals;
+        public List<CharacterVisuals> characterVisuals = new List<CharacterVisuals>
+        {
+            new CharacterVisuals { characterID = "Fighter", portrait = null, combatSprite = null },
+            new CharacterVisuals { characterID = "Healer", portrait = null, combatSprite = null },
+            new CharacterVisuals { characterID = "Ranger", portrait = null, combatSprite = null },
+            new CharacterVisuals { characterID = "TreasureHunter", portrait = null, combatSprite = null },
+            new CharacterVisuals { characterID = "Monk", portrait = null, combatSprite = null },
+            new CharacterVisuals { characterID = "Assassin", portrait = null, combatSprite = null },
+            new CharacterVisuals { characterID = "Bard", portrait = null, combatSprite = null },
+            new CharacterVisuals { characterID = "Barbarian", portrait = null, combatSprite = null }
+        };
+
         public List<EnemyVisuals> enemyVisuals;
         public List<NodeVisuals> nodeVisuals = new List<NodeVisuals>
         {
