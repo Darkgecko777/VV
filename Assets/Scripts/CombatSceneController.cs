@@ -62,7 +62,7 @@ namespace VirulentVentures
                 }
             }
 
-            return "BasicAttack"; // Fallback
+            return "BasicAttack";
         }
 
         private IEnumerator RunCombat()
@@ -127,6 +127,11 @@ namespace VirulentVentures
                         ? units.Select(u => u.unit).Where(u => u is CharacterStats cs && cs.Type == CharacterType.Monster && u.Health > 0 && !u.HasRetreated).ToList()
                         : units.Select(u => u.unit).Where(u => u is CharacterStats cs && cs.Type == CharacterType.Hero && u.Health > 0 && !u.HasRetreated).ToList();
 
+                    if (ability.Value.IsMelee)
+                    {
+                        targets = targets.Take(2).ToList(); // Restrict to first two occupied positions
+                    }
+
                     var target = GetRandomAliveTarget(targets);
                     if (target == null)
                     {
@@ -170,12 +175,6 @@ namespace VirulentVentures
                     }
 
                     yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-                }
-
-                if (roundNumber >= combatConfig.MaxRounds)
-                {
-                    EndCombat();
-                    yield break;
                 }
 
                 IncrementRound();

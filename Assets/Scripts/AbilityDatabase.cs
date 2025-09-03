@@ -8,9 +8,10 @@ namespace VirulentVentures
     {
         public string Id { get; private set; }
         public string AnimationTrigger { get; private set; }
-        public System.Func<object, PartyData, string> Effect { get; private set; } // Changed to Func for log return
+        public System.Func<object, PartyData, string> Effect { get; private set; }
         public bool IsCommon { get; private set; }
         public bool CanDodge { get; private set; }
+        public bool IsMelee { get; private set; } // Added melee flag
         public System.Func<CharacterStats, PartyData, List<ICombatUnit>, bool> UseCondition { get; private set; }
 
         public AbilityData(
@@ -19,6 +20,7 @@ namespace VirulentVentures
             System.Func<object, PartyData, string> effect,
             bool isCommon = false,
             bool canDodge = false,
+            bool isMelee = false, // Default to false
             System.Func<CharacterStats, PartyData, List<ICombatUnit>, bool> useCondition = null)
         {
             Id = id;
@@ -26,6 +28,7 @@ namespace VirulentVentures
             Effect = effect;
             IsCommon = isCommon;
             CanDodge = canDodge;
+            IsMelee = isMelee;
             UseCondition = useCondition ?? ((user, party, targets) => false);
         }
     }
@@ -46,8 +49,9 @@ namespace VirulentVentures
             heroAbilities.Add("BasicAttack", new AbilityData(
                 id: "BasicAttack",
                 animationTrigger: "BasicAttack",
-                effect: (target, partyData) => "", // No log, damage handled separately
+                effect: (target, partyData) => "",
                 isCommon: true,
+                isMelee: true, // Melee attack
                 useCondition: (user, party, targets) =>
                 {
                     if (user.Id == "Healer")
@@ -71,7 +75,8 @@ namespace VirulentVentures
                     }
                     return "";
                 },
-                useCondition: (user, party, targets) => false // Disabled for now
+                isMelee: true, // Melee attack
+                useCondition: (user, party, targets) => false
             ));
 
             heroAbilities.Add("HealerHeal", new AbilityData(
@@ -104,14 +109,15 @@ namespace VirulentVentures
                     }
                     return "";
                 },
-                useCondition: (user, party, targets) => false // Disabled for now
+                isMelee: true, // Melee-based defense
+                useCondition: (user, party, targets) => false
             ));
 
             heroAbilities.Add("TreasureFind", new AbilityData(
                 id: "TreasureFind",
                 animationTrigger: "TreasureFind",
-                effect: (target, partyData) => "Treasure found!", // Example log
-                useCondition: (user, party, targets) => false // Disabled for now
+                effect: (target, partyData) => "Treasure found!",
+                useCondition: (user, party, targets) => false
             ));
         }
 
@@ -120,9 +126,9 @@ namespace VirulentVentures
             monsterAbilities.Add("BasicAttack", new AbilityData(
                 id: "BasicAttack",
                 animationTrigger: "BasicAttack",
-                effect: (target, partyData) => "", // No log, damage handled separately
+                effect: (target, partyData) => "",
                 isCommon: true,
-                useCondition: (user, party, targets) => true
+                isMelee: true // Melee attack
             ));
 
             monsterAbilities.Add("DefaultMonsterAbility", new AbilityData(
@@ -135,37 +141,36 @@ namespace VirulentVentures
             monsterAbilities.Add("GhoulClaw", new AbilityData(
                 id: "GhoulClaw",
                 animationTrigger: "GhoulClaw",
-                effect: (target, partyData) => "", // No log, damage handled separately
-                useCondition: (user, party, targets) => false
+                effect: (target, partyData) => "",
+                isMelee: true // Melee attack
             ));
 
             monsterAbilities.Add("GhoulRend", new AbilityData(
                 id: "GhoulRend",
                 animationTrigger: "GhoulRend",
                 effect: (target, partyData) => "",
-                useCondition: (user, party, targets) => false
+                isMelee: true // Melee attack
             ));
 
             monsterAbilities.Add("WraithStrike", new AbilityData(
                 id: "WraithStrike",
                 animationTrigger: "WraithStrike",
-                effect: (target, partyData) => "", // No log, damage handled separately
-                canDodge: true,
-                useCondition: (user, party, targets) => false
+                effect: (target, partyData) => "",
+                canDodge: true
             ));
 
             monsterAbilities.Add("SkeletonSlash", new AbilityData(
                 id: "SkeletonSlash",
                 animationTrigger: "SkeletonSlash",
-                effect: (target, partyData) => "", // No log, damage handled separately
-                useCondition: (user, party, targets) => false
+                effect: (target, partyData) => "",
+                isMelee: true // Melee attack
             ));
 
             monsterAbilities.Add("VampireBite", new AbilityData(
                 id: "VampireBite",
                 animationTrigger: "VampireBite",
-                effect: (target, partyData) => "", // No log, damage handled separately
-                useCondition: (user, party, targets) => false
+                effect: (target, partyData) => "",
+                isMelee: true // Melee attack
             ));
         }
 

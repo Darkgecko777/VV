@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
@@ -72,7 +72,7 @@ namespace VirulentVentures
                 {
                     var stats = new CharacterStats(heroId, positionMap[partyPosition], CharacterType.Hero);
                     HeroStats.Add(stats);
-                    positionMap.Remove(partyPosition); // Ensure position isn�t reused
+                    positionMap.Remove(partyPosition); // Ensure position isn’t reused
                 }
                 else
                 {
