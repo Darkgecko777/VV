@@ -191,7 +191,7 @@ namespace VirulentVentures
                     MaxMorale = 80,
                     AbilityIds = new List<string> { "BasicAttack", "GhoulClaw" },
                     CanBeCultist = false,
-                    PartyPosition = 0
+                    PartyPosition = 1
                 }
             },
             {
@@ -206,7 +206,7 @@ namespace VirulentVentures
                     MaxMorale = 90,
                     AbilityIds = new List<string> { "BasicAttack", "WraithStrike" },
                     CanBeCultist = false,
-                    PartyPosition = 0
+                    PartyPosition = 4
                 }
             },
             {
@@ -221,7 +221,7 @@ namespace VirulentVentures
                     MaxMorale = 70,
                     AbilityIds = new List<string> { "BasicAttack", "SkeletonSlash" },
                     CanBeCultist = false,
-                    PartyPosition = 0
+                    PartyPosition = 2
                 }
             },
             {
@@ -236,7 +236,7 @@ namespace VirulentVentures
                     MaxMorale = 85,
                     AbilityIds = new List<string> { "BasicAttack", "VampireBite" },
                     CanBeCultist = false,
-                    PartyPosition = 0
+                    PartyPosition = 3
                 }
             }
         };

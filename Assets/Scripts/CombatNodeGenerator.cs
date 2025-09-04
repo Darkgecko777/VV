@@ -75,6 +75,13 @@ namespace VirulentVentures
                 monsters = encounterData.SpawnMonsters();
             }
 
+            // Sort monsters by PartyPosition (lowest to highest), randomizing ties for same monster ID
+            monsters = monsters
+                .GroupBy(m => m.PartyPosition)
+                .OrderBy(g => g.Key)
+                .SelectMany(g => g.GroupBy(m => m.Id).SelectMany(sg => sg.OrderBy(_ => Random.value)))
+                .ToList();
+
             string[] texts = flavourTextPool.ContainsKey(biome) ? flavourTextPool[biome] : new[] { $"A {biome.ToLower()}-infested encounter." };
             string flavourText = texts[Random.Range(0, texts.Length)];
 
