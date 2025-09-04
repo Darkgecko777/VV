@@ -1,20 +1,36 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/UI/TemplePlanningSceneUI.uss" />
     <ui:VisualElement name="TempleUI_Root" style="width: 1920px; height: 1080px;">
-        <ui:VisualElement name="PortraitContainer" style="position: absolute; top: 50px; left: 50px; width: 1820px; height: 100px; flex-direction: row;">
-            <!-- Dynamic portraits populated by script -->
+        <ui:VisualElement name="TabBar" class="tab-bar" style="position: absolute; top: 10px; left: 50px; width: 1820px; height: 50px; flex-direction: row;">
+            <ui:Button name="RecruitTab" text="Recruit" class="tab-button" />
+            <ui:Button name="ExpeditionTab" text="Expedition" class="tab-button" />
+            <ui:Button name="VirusTab" text="Virus" class="tab-button" />
+            <ui:Button name="HealTab" text="Heal" class="tab-button" />
         </ui:VisualElement>
-        <ui:VisualElement name="NodeContainer" style="position: absolute; top: 200px; left: 50px; width: 1820px; height: 100px; flex-direction: row;">
-            <!-- Dynamic nodes populated by script -->
-        </ui:VisualElement>
-        <ui:VisualElement name="ButtonContainer" style="position: absolute; bottom: 50px; left: 50px; width: 400px; height: 50px; flex-direction: row;">
-            <ui:Button name="GenerateButton" text="Generate Expedition" class="button" />
-            <ui:Button name="LaunchButton" text="Launch Expedition" class="button" />
-        </ui:VisualElement>
-        <ui:VisualElement name="VirusSeedingContainer" style="position: absolute; top: 350px; left: 50px; width: 400px; height: 150px; flex-direction: column;">
-            <ui:DropdownField name="VirusDropdown" label="Select Virus" class="dropdown" />
-            <ui:DropdownField name="NodeDropdown" label="Select Node" class="dropdown" />
-            <ui:Button name="SeedVirusButton" text="Seed Virus" class="button" />
+        <ui:VisualElement name="TabContentContainer" style="position: absolute; top: 70px; left: 50px; width: 1820px; height: 950px;">
+            <ui:VisualElement name="RecruitTabContent" class="tab-content">
+                <ui:VisualElement name="RecruitPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 100px; flex-direction: row;" />
+                <ui:VisualElement name="RecruitButtonContainer" style="position: absolute; top: 120px; width: 400px; height: 50px; flex-direction: row;">
+                    <ui:Button name="GenerateButton" text="Generate Expedition" class="button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="ExpeditionTabContent" class="tab-content" style="display: none;">
+                <ui:VisualElement name="ExpeditionPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 100px; flex-direction: row;" />
+                <ui:VisualElement name="NodeContainer" style="position: absolute; top: 120px; width: 1820px; height: 100px; flex-direction: row;" />
+                <ui:VisualElement name="ExpeditionButtonContainer" style="position: absolute; top: 230px; width: 400px; height: 50px; flex-direction: row;">
+                    <ui:Button name="LaunchButton" text="Launch Expedition" class="button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="VirusTabContent" class="tab-content" style="display: none;">
+                <ui:VisualElement name="VirusSeedingContainer" style="position: absolute; top: 10px; width: 400px; height: 150px; flex-direction: column;">
+                    <ui:DropdownField name="VirusDropdown" label="Select Virus" class="dropdown" />
+                    <ui:DropdownField name="NodeDropdown" label="Select Node" class="dropdown" />
+                    <ui:Button name="SeedVirusButton" text="Seed Virus" class="button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="HealTabContent" class="tab-content" style="display: none;">
+                <ui:VisualElement name="HealPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 100px; flex-direction: row;" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
