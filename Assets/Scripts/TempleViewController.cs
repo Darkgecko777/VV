@@ -13,6 +13,7 @@ namespace VirulentVentures
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private List<VirusData> availableViruses;
+        [SerializeField] private PartyData partyData; // Added for party presence check
 
         private DropdownField virusDropdown;
         private DropdownField nodeDropdown;
@@ -149,6 +150,9 @@ namespace VirulentVentures
                 button.style.unityFont = uiConfig.PixelFont;
             }
 
+            // Set initial GenerateButton state based on party presence
+            generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
+
             generateButton.clicked += () => eventBus.RaiseExpeditionGenerated(null, null);
             launchButton.clicked += () => eventBus.RaiseLaunchExpedition();
             seedVirusButton.clicked += () =>
@@ -258,6 +262,31 @@ namespace VirulentVentures
                 expeditionPortraitContainer.Add(expeditionPortrait);
                 healPortraitContainer.Add(healPortrait);
             }
+
+            // Disable GenerateButton after party is generated
+            generateButton.SetEnabled(false);
+        }
+
+        private void HandleExpeditionEnded()
+        {
+            // Re-enable GenerateButton when party dies or leaves
+            generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
+        }
+
+        private void SubscribeToEventBus()
+        {
+            eventBus.OnExpeditionUpdated += UpdateNodeVisuals;
+            eventBus.OnVirusSeeded += UpdateVirusNode;
+            eventBus.OnPartyUpdated += UpdatePartyVisuals;
+            //eventBus.OnExpeditionEnded += HandleExpeditionEnded; // Subscribe to new event
+        }
+
+        private void UnsubscribeFromEventBus()
+        {
+            eventBus.OnExpeditionUpdated -= UpdateNodeVisuals;
+            eventBus.OnVirusSeeded -= UpdateVirusNode;
+            eventBus.OnPartyUpdated -= UpdatePartyVisuals;
+            //eventBus.OnExpeditionEnded -= HandleExpeditionEnded; // Unsubscribe from new event
         }
 
         private void UpdateNodeVisuals(EventBusSO.ExpeditionGeneratedData data)
@@ -318,25 +347,12 @@ namespace VirulentVentures
             }
         }
 
-        private void SubscribeToEventBus()
-        {
-            eventBus.OnExpeditionUpdated += UpdateNodeVisuals;
-            eventBus.OnVirusSeeded += UpdateVirusNode;
-            eventBus.OnPartyUpdated += UpdatePartyVisuals;
-        }
-
-        private void UnsubscribeFromEventBus()
-        {
-            eventBus.OnExpeditionUpdated -= UpdateNodeVisuals;
-            eventBus.OnVirusSeeded -= UpdateVirusNode;
-            eventBus.OnPartyUpdated -= UpdatePartyVisuals;
-        }
-
         private bool ValidateReferences()
         {
-            if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || availableViruses == null)
+            if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || availableViruses == null || partyData == null)
             {
-                Debug.LogError($"TempleViewController: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, AvailableViruses: {availableViruses != null}");
+                Debug.LogError($"TempleViewController: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, " +
+                    $"VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, AvailableViruses: {availableViruses != null}, PartyData: {partyData != null}");
                 return false;
             }
             return true;
