@@ -16,12 +16,16 @@ namespace VirulentVentures
         private ExpeditionManager expeditionManager;
         private bool isEndingCombat;
         private List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
+        private List<CharacterStats> heroPositions = new List<CharacterStats>(); // Added for hero targeting
+        private List<CharacterStats> monsterPositions = new List<CharacterStats>(); // Added for monster targeting
         private bool isCombatActive;
         private int roundNumber;
 
         void Awake()
         {
             units.Clear();
+            heroPositions.Clear();
+            monsterPositions.Clear();
             isCombatActive = false;
             roundNumber = 0;
         }
@@ -123,9 +127,10 @@ namespace VirulentVentures
 
                     if (ability == null) continue;
 
+                    // Use position-based targeting
                     var targets = stats.Type == CharacterType.Hero
-                        ? units.Select(u => u.unit).Where(u => u is CharacterStats cs && cs.Type == CharacterType.Monster && u.Health > 0 && !u.HasRetreated).ToList()
-                        : units.Select(u => u.unit).Where(u => u is CharacterStats cs && cs.Type == CharacterType.Hero && u.Health > 0 && !u.HasRetreated).ToList();
+                        ? monsterPositions.Cast<ICombatUnit>().ToList()
+                        : heroPositions.Cast<ICombatUnit>().ToList();
 
                     if (ability.Value.IsMelee)
                     {
@@ -184,16 +189,27 @@ namespace VirulentVentures
         private void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
         {
             units.Clear();
-            foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0))
+            heroPositions.Clear();
+            monsterPositions.Clear();
+
+            // Initialize units and position lists
+            foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0 && !h.HasRetreated))
             {
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
+                heroPositions.Add(hero);
             }
-            foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0))
+            foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0 && !m.HasRetreated))
             {
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
+                monsterPositions.Add(monster);
             }
+
+            // Sort position lists by PartyPosition (1=frontline, 4=back)
+            heroPositions = heroPositions.OrderBy(h => h.PartyPosition).ToList();
+            monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
+
             eventBus.RaiseCombatInitialized(units);
         }
 
@@ -222,6 +238,19 @@ namespace VirulentVentures
                 {
                     eventBus.RaiseLogMessage(damageMessage, Color.white);
                     eventBus.RaiseUnitDamaged(unit, damageMessage);
+                }
+
+                // Remove inactive units from position lists
+                if (unit is CharacterStats stats && (stats.Health <= 0 || stats.HasRetreated))
+                {
+                    if (stats.Type == CharacterType.Hero)
+                    {
+                        heroPositions.Remove(stats);
+                    }
+                    else
+                    {
+                        monsterPositions.Remove(stats);
+                    }
                 }
             }
         }
@@ -299,12 +328,12 @@ namespace VirulentVentures
 
         private bool NoActiveHeroes()
         {
-            return units.Count(u => u.displayStats.isHero && u.unit.Health > 0 && !u.unit.HasRetreated) == 0;
+            return heroPositions.Count == 0;
         }
 
         private bool NoActiveMonsters()
         {
-            return units.Count(u => !u.displayStats.isHero && u.unit.Health > 0 && !u.unit.HasRetreated) == 0;
+            return monsterPositions.Count == 0;
         }
 
         private bool ValidateReferences()
