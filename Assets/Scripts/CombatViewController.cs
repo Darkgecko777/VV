@@ -12,6 +12,7 @@ namespace VirulentVentures
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private CharacterPositions characterPositions;
+        [SerializeField] private CombatConfig combatConfig; // Added for animation speed
         private VisualElement root;
         private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
         private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
@@ -31,7 +32,7 @@ namespace VirulentVentures
             eventBus.OnLogMessage += HandleLogMessage;
             eventBus.OnUnitUpdated += HandleUnitUpdated;
             eventBus.OnUnitDied += HandleUnitDied;
-            eventBus.OnUnitRetreated += HandleUnitRetreated; // Added for retreat visuals
+            eventBus.OnUnitRetreated += HandleUnitRetreated;
             SetupBackground();
         }
 
@@ -43,7 +44,7 @@ namespace VirulentVentures
             eventBus.OnLogMessage -= HandleLogMessage;
             eventBus.OnUnitUpdated -= HandleUnitUpdated;
             eventBus.OnUnitDied -= HandleUnitDied;
-            eventBus.OnUnitRetreated -= HandleUnitRetreated; // Cleanup for retreat handler
+            eventBus.OnUnitRetreated -= HandleUnitRetreated;
             if (backgroundGameObject != null)
             {
                 Destroy(backgroundGameObject);
@@ -152,11 +153,12 @@ namespace VirulentVentures
             }
         }
 
-        private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float panelHeight)
+        private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float height)
         {
             var panel = new VisualElement();
-            panel.AddToClassList("unit-panel");
-            panel.style.height = new StyleLength(Length.Percent(panelHeight));
+            panel.style.height = new StyleLength(Length.Percent(height));
+            panel.AddToClassList(isHero ? "hero-panel" : "monster-panel");
+
             var healthBar = new VisualElement();
             healthBar.AddToClassList("health-bar");
             var healthFill = new VisualElement();
@@ -166,40 +168,47 @@ namespace VirulentVentures
             healthLabel.AddToClassList("health-label");
             healthBar.Add(healthLabel);
             panel.Add(healthBar);
-            UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
+
             var moraleBar = new VisualElement();
             moraleBar.AddToClassList("morale-bar");
             var moraleFill = new VisualElement();
             moraleFill.AddToClassList("morale-fill");
+            moraleFill.style.backgroundColor = new StyleColor(new Color(0.6f, 0.8f, 1f));
             moraleBar.Add(moraleFill);
             var moraleLabel = new Label($"Morale: {stats.morale}/{stats.maxMorale}");
             moraleLabel.AddToClassList("morale-label");
-            UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale);
+            moraleBar.Add(moraleLabel);
             panel.Add(moraleBar);
+
             var statGrid = new VisualElement();
             statGrid.AddToClassList("stat-grid");
-            panel.Add(statGrid);
+
             var atkContainer = new VisualElement();
             atkContainer.AddToClassList("stat-container");
             var atkLabel = new Label($"A: {stats.attack}");
             atkContainer.Add(atkLabel);
             statGrid.Add(atkContainer);
+
             var defContainer = new VisualElement();
             defContainer.AddToClassList("stat-container");
             var defLabel = new Label($"D: {stats.defense}");
             defContainer.Add(defLabel);
             statGrid.Add(defContainer);
+
             var spdContainer = new VisualElement();
             spdContainer.AddToClassList("stat-container");
             var spdLabel = new Label($"S: {stats.speed}");
             spdContainer.Add(spdLabel);
             statGrid.Add(spdContainer);
+
             var evaContainer = new VisualElement();
             evaContainer.AddToClassList("stat-container");
             var evaLabel = new Label($"E: {stats.evasion}");
             evaContainer.Add(evaLabel);
             statGrid.Add(evaContainer);
+
             unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel);
+            panel.Add(statGrid);
             return panel;
         }
 
@@ -261,90 +270,92 @@ namespace VirulentVentures
                 if (animator != null)
                 {
                     bool isHero = data.attacker is CharacterStats charStats && charStats.Type == CharacterType.Hero;
-                    animator.TiltForward(isHero);
+                    animator.TiltForward(isHero, combatConfig.CombatSpeed); // Pass CombatSpeed
+
                 }
             }
         }
 
-        private void HandleUnitDamaged(EventBusSO.DamagePopupData data)
-        {
-            if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
+            private void HandleUnitDamaged(EventBusSO.DamagePopupData data)
             {
-                var animator = targetGo.GetComponent<SpriteAnimation>();
-                if (animator != null)
+                if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
                 {
-                    animator.Jiggle();
+                    var animator = targetGo.GetComponent<SpriteAnimation>();
+                    if (animator != null)
+                    {
+                        animator.Jiggle(combatConfig.CombatSpeed); // Pass CombatSpeed
+                    }
                 }
             }
-        }
 
-        private void HandleUnitDied(ICombatUnit unit)
-        {
-            if (unitPanels.TryGetValue(unit, out VisualElement panel))
+            private void HandleUnitDied(ICombatUnit unit)
             {
-                panel.style.opacity = 0.5f;
-                var moraleBar = panel.Q<VisualElement>(className: "morale-bar");
-                if (moraleBar != null && unit is CharacterStats stats && stats.Morale <= stats.MaxMorale * 0.2f)
+                if (unitPanels.TryGetValue(unit, out VisualElement panel))
                 {
-                    panel.AddToClassList("low-morale");
+                    panel.style.opacity = 0.5f;
+                    var moraleBar = panel.Q<VisualElement>(className: "morale-bar");
+                    if (moraleBar != null && unit is CharacterStats stats && stats.Morale <= stats.MaxMorale * 0.2f)
+                    {
+                        panel.AddToClassList("low-morale");
+                    }
+                }
+                if (unitGameObjects.TryGetValue(unit, out GameObject go))
+                {
+                    StartCoroutine(DeactivateAfterJiggle(go));
                 }
             }
-            if (unitGameObjects.TryGetValue(unit, out GameObject go))
-            {
-                StartCoroutine(DeactivateAfterJiggle(go));
-            }
-        }
 
-        private void HandleUnitRetreated(ICombatUnit unit)
-        {
-            if (unitPanels.TryGetValue(unit, out VisualElement panel))
+            private void HandleUnitRetreated(ICombatUnit unit)
             {
-                panel.style.opacity = 0.5f; // Fade panel to match death visual
+                if (unitPanels.TryGetValue(unit, out VisualElement panel))
+                {
+                    panel.style.opacity = 0.5f;
+                }
+                if (unitGameObjects.TryGetValue(unit, out GameObject go))
+                {
+                    StartCoroutine(DeactivateAfterFade(go));
+                }
             }
-            if (unitGameObjects.TryGetValue(unit, out GameObject go))
-            {
-                StartCoroutine(DeactivateAfterFade(go)); // Deactivate sprite without jiggle
-            }
-        }
 
-        private IEnumerator DeactivateAfterJiggle(GameObject go)
-        {
-            yield return new WaitForSeconds(0.3f);
-            if (go != null)
+            private IEnumerator DeactivateAfterJiggle(GameObject go)
             {
-                go.SetActive(false);
+                yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed); // Scale by CombatSpeed
+                if (go != null)
+                {
+                    go.SetActive(false);
+                }
             }
-        }
 
-        private IEnumerator DeactivateAfterFade(GameObject go)
-        {
-            yield return new WaitForSeconds(0.3f); // Match death timing for consistency
-            if (go != null)
+            private IEnumerator DeactivateAfterFade(GameObject go)
             {
-                go.SetActive(false);
+                yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed); // Scale by CombatSpeed
+                if (go != null)
+                {
+                    go.SetActive(false);
+                }
             }
-        }
 
-        private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)
-        {
-            var go = new GameObject(stats.name);
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = isHero ? visualConfig.GetCombatSprite(stats.name) : visualConfig.GetEnemySprite(stats.name);
-            sr.sortingLayerName = "Characters";
-            sr.sortingOrder = 1;
-            go.transform.position = position;
-            go.transform.localScale = new Vector3(2f, 2f, 1f);
-            go.AddComponent<SpriteAnimation>();
-            return go;
-        }
-
-        private bool ValidateReferences()
-        {
-            if (visualConfig == null || uiConfig == null || eventBus == null || characterPositions == null)
+            private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)
             {
-                return false;
+                var go = new GameObject(stats.name);
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = isHero ? visualConfig.GetCombatSprite(stats.name) : visualConfig.GetEnemySprite(stats.name);
+                sr.sortingLayerName = "Characters";
+                sr.sortingOrder = 1;
+                go.transform.position = position;
+                go.transform.localScale = new Vector3(2f, 2f, 1f);
+                go.AddComponent<SpriteAnimation>();
+                return go;
             }
-            return true;
+
+            private bool ValidateReferences()
+            {
+                if (visualConfig == null || uiConfig == null || eventBus == null || characterPositions == null || combatConfig == null) // Added combatConfig check
+                {
+                    Debug.LogError("CombatViewController: Missing required reference(s). Please assign in the Inspector.");
+                    return false;
+                }
+                return true;
+            }
         }
     }
-}
