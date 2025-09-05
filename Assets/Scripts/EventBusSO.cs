@@ -53,6 +53,7 @@ namespace VirulentVentures
         {
             public ICombatUnit attacker;
             public ICombatUnit target;
+            public string abilityId; // Added for ability-specific animations
         }
 
         [System.Serializable]
@@ -81,8 +82,8 @@ namespace VirulentVentures
         public event Action<ICombatUnit> OnUnitDied;
         public event Action<ICombatUnit> OnUnitRetreated;
         public event Action OnHealParty;
-        public event Action OnExpeditionEnded; // Added for CS1061 fix
-        public event Action OnPlayerProgressUpdated; // Added for CS1061 fix
+        public event Action OnExpeditionEnded;
+        public event Action OnPlayerProgressUpdated;
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -154,9 +155,9 @@ namespace VirulentVentures
             OnContinueClicked?.Invoke();
         }
 
-        public void RaiseUnitAttacking(ICombatUnit attacker, ICombatUnit target)
+        public void RaiseUnitAttacking(ICombatUnit attacker, ICombatUnit target, string abilityId)
         {
-            OnUnitAttacking?.Invoke(new AttackData { attacker = attacker, target = target });
+            OnUnitAttacking?.Invoke(new AttackData { attacker = attacker, target = target, abilityId = abilityId });
         }
 
         public void RaiseUnitDamaged(ICombatUnit unit, string message)

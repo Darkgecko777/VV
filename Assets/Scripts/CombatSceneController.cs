@@ -16,16 +16,25 @@ namespace VirulentVentures
         private ExpeditionManager expeditionManager;
         private bool isEndingCombat;
         private List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
-        private List<CharacterStats> heroPositions = new List<CharacterStats>(); // Added for hero targeting
-        private List<CharacterStats> monsterPositions = new List<CharacterStats>(); // Added for monster targeting
+        private List<CharacterStats> heroPositions = new List<CharacterStats>();
+        private List<CharacterStats> monsterPositions = new List<CharacterStats>();
         private bool isCombatActive;
         private int roundNumber;
+        private List<UnitAttackState> unitAttackStates = new List<UnitAttackState>();
+
+        private class UnitAttackState
+        {
+            public ICombatUnit Unit { get; set; }
+            public int AttacksThisRound { get; set; }
+            public int RoundCounter { get; set; }
+        }
 
         void Awake()
         {
             units.Clear();
             heroPositions.Clear();
             monsterPositions.Clear();
+            unitAttackStates.Clear();
             isCombatActive = false;
             roundNumber = 0;
         }
@@ -106,84 +115,130 @@ namespace VirulentVentures
 
                 foreach (var unit in unitList.ToList())
                 {
+                    var state = unitAttackStates.Find(s => s.Unit == unit);
+                    if (state == null)
+                    {
+                        state = new UnitAttackState { Unit = unit, AttacksThisRound = 0, RoundCounter = 0 };
+                        unitAttackStates.Add(state);
+                    }
+                    state.AttacksThisRound = 0;
+                    state.RoundCounter++;
+                }
+
+                foreach (var unit in unitList.ToList())
+                {
+                    var state = unitAttackStates.Find(s => s.Unit == unit);
+                    if (state == null || unit.Health <= 0 || unit.HasRetreated) continue;
+
                     if (CheckRetreat(unit))
                     {
                         ProcessRetreat(unit);
                         yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-                    }
-                }
-
-                foreach (var unit in unitList)
-                {
-                    if (unit.Health <= 0 || unit.HasRetreated) continue;
-
-                    if (unit is not CharacterStats stats) continue;
-
-                    var partyData = expeditionManager.GetExpedition().Party;
-                    var abilityId = SelectAbility(stats, partyData, unitList);
-                    AbilityData? ability = stats.Type == CharacterType.Hero
-                        ? AbilityDatabase.GetHeroAbility(abilityId)
-                        : AbilityDatabase.GetMonsterAbility(abilityId);
-
-                    if (ability == null) continue;
-
-                    // Use position-based targeting
-                    var targets = stats.Type == CharacterType.Hero
-                        ? monsterPositions.Cast<ICombatUnit>().ToList()
-                        : heroPositions.Cast<ICombatUnit>().ToList();
-
-                    if (ability.Value.IsMelee)
-                    {
-                        targets = targets.Take(2).ToList(); // Restrict to first two occupied positions
-                    }
-
-                    var target = GetRandomAliveTarget(targets);
-                    if (target == null)
-                    {
-                        if (NoActiveHeroes() || NoActiveMonsters())
-                        {
-                            EndCombat();
-                            yield break;
-                        }
                         continue;
                     }
 
-                    eventBus.RaiseUnitAttacking(unit, target);
-                    yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                    if (!CanAttackThisRound(unit, state)) continue;
 
-                    if (ability.HasValue)
-                    {
-                        string abilityLog = ability.Value.Effect?.Invoke(target, partyData) ?? "";
-                        if (!string.IsNullOrEmpty(abilityLog))
-                        {
-                            eventBus.RaiseLogMessage(abilityLog, Color.white);
-                        }
+                    state.AttacksThisRound++;
+                    yield return ProcessAttack(unit, expeditionManager.GetExpedition().Party, unitList);
 
-                        if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
-                        {
-                            int damage = Mathf.Max(1, unit.Attack - target.Defense);
-                            target.Health -= damage;
-                            UpdateUnit(target, $"{target.Id} takes {damage} damage!");
-                        }
-                    }
-
-                    if (target.Health <= 0)
-                    {
-                        eventBus.RaiseUnitDied(target);
-                    }
-
-                    UpdateUnit(unit);
                     if (NoActiveHeroes() || NoActiveMonsters())
                     {
                         EndCombat();
                         yield break;
                     }
+                }
 
-                    yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                foreach (var unit in unitList.ToList())
+                {
+                    var state = unitAttackStates.Find(s => s.Unit == unit);
+                    if (state == null || unit.Health <= 0 || unit.HasRetreated) continue;
+
+                    if (unit is CharacterStats stats && stats.Speed >= combatConfig.SpeedTwoAttacksThreshold && state.AttacksThisRound < 2)
+                    {
+                        state.AttacksThisRound++;
+                        yield return ProcessAttack(unit, expeditionManager.GetExpedition().Party, unitList);
+                    }
+
+                    if (NoActiveHeroes() || NoActiveMonsters())
+                    {
+                        EndCombat();
+                        yield break;
+                    }
                 }
 
                 IncrementRound();
             }
+        }
+
+        private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
+        {
+            if (unit is not CharacterStats stats) return false;
+
+            if (stats.Speed >= combatConfig.SpeedTwoAttacksThreshold)
+                return state.AttacksThisRound < 1;
+            else if (stats.Speed >= combatConfig.SpeedThreePerTwoThreshold)
+                return state.RoundCounter % 2 == 1 ? state.AttacksThisRound < 2 : state.AttacksThisRound < 1;
+            else if (stats.Speed >= combatConfig.SpeedOneAttackThreshold)
+                return state.AttacksThisRound < 1;
+            else if (stats.Speed >= combatConfig.SpeedOnePerTwoThreshold)
+                return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
+            return false;
+        }
+
+        private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> unitList)
+        {
+            if (unit is not CharacterStats stats) yield break;
+
+            var targets = stats.Type == CharacterType.Hero
+                ? monsterPositions.Cast<ICombatUnit>().ToList()
+                : heroPositions.Cast<ICombatUnit>().ToList();
+
+            var abilityId = SelectAbility(stats, partyData, targets);
+            AbilityData? ability = stats.Type == CharacterType.Hero
+                ? AbilityDatabase.GetHeroAbility(abilityId)
+                : AbilityDatabase.GetMonsterAbility(abilityId);
+
+            if (ability == null) yield break;
+
+            if (ability.Value.IsMelee)
+            {
+                targets = targets.Take(2).ToList();
+            }
+
+            var target = GetRandomAliveTarget(targets);
+            if (target == null)
+            {
+                if (NoActiveHeroes() || NoActiveMonsters())
+                {
+                    EndCombat();
+                    yield break;
+                }
+                yield break;
+            }
+
+            eventBus.RaiseUnitAttacking(unit, target, abilityId); // Updated to include abilityId
+            yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+
+            string abilityLog = ability.Value.Effect?.Invoke(target, partyData) ?? "";
+            if (!string.IsNullOrEmpty(abilityLog))
+            {
+                eventBus.RaiseLogMessage(abilityLog, Color.white);
+            }
+
+            if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
+            {
+                int damage = Mathf.Max(1, unit.Attack - target.Defense);
+                target.Health -= damage;
+                UpdateUnit(target, $"{target.Id} takes {damage} damage!");
+            }
+
+            if (target.Health <= 0)
+            {
+                eventBus.RaiseUnitDied(target);
+            }
+
+            UpdateUnit(unit);
         }
 
         private void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
@@ -191,22 +246,23 @@ namespace VirulentVentures
             units.Clear();
             heroPositions.Clear();
             monsterPositions.Clear();
+            unitAttackStates.Clear();
 
-            // Initialize units and position lists
             foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0 && !h.HasRetreated))
             {
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
                 heroPositions.Add(hero);
+                unitAttackStates.Add(new UnitAttackState { Unit = hero, AttacksThisRound = 0, RoundCounter = 0 });
             }
             foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0 && !m.HasRetreated))
             {
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
                 monsterPositions.Add(monster);
+                unitAttackStates.Add(new UnitAttackState { Unit = monster, AttacksThisRound = 0, RoundCounter = 0 });
             }
 
-            // Sort position lists by PartyPosition (1=frontline, 4=back)
             heroPositions = heroPositions.OrderBy(h => h.PartyPosition).ToList();
             monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
 
@@ -240,7 +296,6 @@ namespace VirulentVentures
                     eventBus.RaiseUnitDamaged(unit, damageMessage);
                 }
 
-                // Remove inactive units from position lists
                 if (unit is CharacterStats stats && (stats.Health <= 0 || stats.HasRetreated))
                 {
                     if (stats.Type == CharacterType.Hero)
@@ -340,6 +395,7 @@ namespace VirulentVentures
         {
             if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null)
             {
+                Debug.LogError("CombatSceneController: Missing required reference(s). Please assign in the Inspector.");
                 return false;
             }
             return true;
