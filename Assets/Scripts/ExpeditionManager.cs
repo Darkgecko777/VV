@@ -52,11 +52,6 @@ namespace VirulentVentures
                 Destroy(gameObject);
                 return;
             }
-        }
-
-        void Start()
-        {
-            if (!ValidateReferences()) return;
 
             // Clear data for prototype if toggle is true
             if (clearDataOnStart)
@@ -70,6 +65,11 @@ namespace VirulentVentures
                 playerProgress.Reset();
                 Debug.Log("ExpeditionManager: Cleared all save data for new session");
             }
+        }
+
+        void Start()
+        {
+            if (!ValidateReferences()) return;
 
             // Load existing data if any
             string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
