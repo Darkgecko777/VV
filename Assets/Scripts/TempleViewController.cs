@@ -207,50 +207,26 @@ namespace VirulentVentures
             healPortraitContainer.Clear();
             for (int i = 0; i < 4; i++)
             {
+                VisualElement recruitWrapper = new VisualElement();
+                recruitWrapper.AddToClassList("portrait-wrapper");
                 VisualElement recruitPortrait = new VisualElement();
                 recruitPortrait.AddToClassList("portrait");
-                VisualElement recruitHealthBar = new VisualElement();
-                recruitHealthBar.AddToClassList("health-bar");
-                recruitHealthBar.name = "HealthBar";
-                VisualElement recruitMoraleBar = new VisualElement();
-                recruitMoraleBar.AddToClassList("morale-bar");
-                recruitMoraleBar.name = "MoraleBar";
-                VisualElement recruitBarsContainer = new VisualElement();
-                recruitBarsContainer.AddToClassList("bars-container");
-                recruitBarsContainer.Add(recruitHealthBar);
-                recruitBarsContainer.Add(recruitMoraleBar);
-                recruitPortrait.Add(recruitBarsContainer);
-                recruitPortraitContainer.Add(recruitPortrait);
+                recruitWrapper.Add(recruitPortrait);
+                recruitPortraitContainer.Add(recruitWrapper);
 
+                VisualElement expeditionWrapper = new VisualElement();
+                expeditionWrapper.AddToClassList("portrait-wrapper");
                 VisualElement expeditionPortrait = new VisualElement();
                 expeditionPortrait.AddToClassList("portrait");
-                VisualElement expeditionHealthBar = new VisualElement();
-                expeditionHealthBar.AddToClassList("health-bar");
-                expeditionHealthBar.name = "HealthBar";
-                VisualElement expeditionMoraleBar = new VisualElement();
-                expeditionMoraleBar.AddToClassList("morale-bar");
-                expeditionMoraleBar.name = "MoraleBar";
-                VisualElement expeditionBarsContainer = new VisualElement();
-                expeditionBarsContainer.AddToClassList("bars-container");
-                expeditionBarsContainer.Add(expeditionHealthBar);
-                expeditionBarsContainer.Add(expeditionMoraleBar);
-                expeditionPortrait.Add(expeditionBarsContainer);
-                expeditionPortraitContainer.Add(expeditionPortrait);
+                expeditionWrapper.Add(expeditionPortrait);
+                expeditionPortraitContainer.Add(expeditionWrapper);
 
+                VisualElement healWrapper = new VisualElement();
+                healWrapper.AddToClassList("portrait-wrapper");
                 VisualElement healPortrait = new VisualElement();
                 healPortrait.AddToClassList("portrait");
-                VisualElement healHealthBar = new VisualElement();
-                healHealthBar.AddToClassList("health-bar");
-                healHealthBar.name = "HealthBar";
-                VisualElement healMoraleBar = new VisualElement();
-                healMoraleBar.AddToClassList("morale-bar");
-                healMoraleBar.name = "MoraleBar";
-                VisualElement healBarsContainer = new VisualElement();
-                healBarsContainer.AddToClassList("bars-container");
-                healBarsContainer.Add(healHealthBar);
-                healBarsContainer.Add(healMoraleBar);
-                healPortrait.Add(healBarsContainer);
-                healPortraitContainer.Add(healPortrait);
+                healWrapper.Add(healPortrait);
+                healPortraitContainer.Add(healWrapper);
             }
         }
 
@@ -271,53 +247,25 @@ namespace VirulentVentures
 
             for (int i = 0; i < 4; i++)
             {
+                VisualElement recruitWrapper = new VisualElement();
+                recruitWrapper.AddToClassList("portrait-wrapper");
                 VisualElement recruitPortrait = new VisualElement();
                 recruitPortrait.AddToClassList("portrait");
+                recruitWrapper.Add(recruitPortrait);
+
+                VisualElement expeditionWrapper = new VisualElement();
+                expeditionWrapper.AddToClassList("portrait-wrapper");
                 VisualElement expeditionPortrait = new VisualElement();
                 expeditionPortrait.AddToClassList("portrait");
+                expeditionWrapper.Add(expeditionPortrait);
+
+                VisualElement healWrapper = new VisualElement();
+                healWrapper.AddToClassList("portrait-wrapper");
                 VisualElement healPortrait = new VisualElement();
                 healPortrait.AddToClassList("portrait");
+                healWrapper.Add(healPortrait);
 
-                if (hasActiveParty)
-                {
-                    VisualElement recruitHealthBar = new VisualElement();
-                    recruitHealthBar.AddToClassList("health-bar");
-                    recruitHealthBar.name = "HealthBar";
-                    VisualElement recruitMoraleBar = new VisualElement();
-                    recruitMoraleBar.AddToClassList("morale-bar");
-                    recruitMoraleBar.name = "MoraleBar";
-                    VisualElement recruitBarsContainer = new VisualElement();
-                    recruitBarsContainer.AddToClassList("bars-container");
-                    recruitBarsContainer.Add(recruitHealthBar);
-                    recruitBarsContainer.Add(recruitMoraleBar);
-                    recruitPortrait.Add(recruitBarsContainer);
-
-                    VisualElement expeditionHealthBar = new VisualElement();
-                    expeditionHealthBar.AddToClassList("health-bar");
-                    expeditionHealthBar.name = "HealthBar";
-                    VisualElement expeditionMoraleBar = new VisualElement();
-                    expeditionMoraleBar.AddToClassList("morale-bar");
-                    expeditionMoraleBar.name = "MoraleBar";
-                    VisualElement expeditionBarsContainer = new VisualElement();
-                    expeditionBarsContainer.AddToClassList("bars-container");
-                    expeditionBarsContainer.Add(expeditionHealthBar);
-                    expeditionBarsContainer.Add(expeditionMoraleBar);
-                    expeditionPortrait.Add(expeditionBarsContainer);
-
-                    VisualElement healHealthBar = new VisualElement();
-                    healHealthBar.AddToClassList("health-bar");
-                    healHealthBar.name = "HealthBar";
-                    VisualElement healMoraleBar = new VisualElement();
-                    healMoraleBar.AddToClassList("morale-bar");
-                    healMoraleBar.name = "MoraleBar";
-                    VisualElement healBarsContainer = new VisualElement();
-                    healBarsContainer.AddToClassList("bars-container");
-                    healBarsContainer.Add(healHealthBar);
-                    healBarsContainer.Add(healMoraleBar);
-                    healPortrait.Add(healBarsContainer);
-                }
-
-                if (i < heroes.Count && heroes[i] != null)
+                if (hasActiveParty && i < heroes.Count && heroes[i] != null && !heroes[i].HasRetreated && heroes[i].Health > 0)
                 {
                     string characterID = heroes[i].Id;
                     if (string.IsNullOrEmpty(characterID))
@@ -337,17 +285,50 @@ namespace VirulentVentures
                             expeditionPortrait.tooltip = tooltip;
                             healPortrait.tooltip = tooltip;
 
-                            if (hasActiveParty)
-                            {
-                                float healthPercent = heroes[i].MaxHealth > 0 ? (float)heroes[i].Health / heroes[i].MaxHealth : 0f;
-                                float moralePercent = heroes[i].MaxMorale > 0 ? (float)heroes[i].Morale / heroes[i].MaxMorale : 0f;
-                                recruitPortrait.Q<VisualElement>("HealthBar").style.width = new StyleLength(Length.Percent(healthPercent * 100));
-                                recruitPortrait.Q<VisualElement>("MoraleBar").style.width = new StyleLength(Length.Percent(moralePercent * 100));
-                                expeditionPortrait.Q<VisualElement>("HealthBar").style.width = new StyleLength(Length.Percent(healthPercent * 100));
-                                expeditionPortrait.Q<VisualElement>("MoraleBar").style.width = new StyleLength(Length.Percent(moralePercent * 100));
-                                healPortrait.Q<VisualElement>("HealthBar").style.width = new StyleLength(Length.Percent(healthPercent * 100));
-                                healPortrait.Q<VisualElement>("MoraleBar").style.width = new StyleLength(Length.Percent(moralePercent * 100));
-                            }
+                            VisualElement recruitHealthBar = new VisualElement();
+                            recruitHealthBar.AddToClassList("health-bar");
+                            recruitHealthBar.name = "HealthBar";
+                            VisualElement recruitMoraleBar = new VisualElement();
+                            recruitMoraleBar.AddToClassList("morale-bar");
+                            recruitMoraleBar.name = "MoraleBar";
+                            VisualElement recruitBarsContainer = new VisualElement();
+                            recruitBarsContainer.AddToClassList("bars-container");
+                            recruitBarsContainer.Add(recruitHealthBar);
+                            recruitBarsContainer.Add(recruitMoraleBar);
+                            recruitWrapper.Add(recruitBarsContainer);
+
+                            VisualElement expeditionHealthBar = new VisualElement();
+                            expeditionHealthBar.AddToClassList("health-bar");
+                            expeditionHealthBar.name = "HealthBar";
+                            VisualElement expeditionMoraleBar = new VisualElement();
+                            expeditionMoraleBar.AddToClassList("morale-bar");
+                            expeditionMoraleBar.name = "MoraleBar";
+                            VisualElement expeditionBarsContainer = new VisualElement();
+                            expeditionBarsContainer.AddToClassList("bars-container");
+                            expeditionBarsContainer.Add(expeditionHealthBar);
+                            expeditionBarsContainer.Add(expeditionMoraleBar);
+                            expeditionWrapper.Add(expeditionBarsContainer);
+
+                            VisualElement healHealthBar = new VisualElement();
+                            healHealthBar.AddToClassList("health-bar");
+                            healHealthBar.name = "HealthBar";
+                            VisualElement healMoraleBar = new VisualElement();
+                            healMoraleBar.AddToClassList("morale-bar");
+                            healMoraleBar.name = "MoraleBar";
+                            VisualElement healBarsContainer = new VisualElement();
+                            healBarsContainer.AddToClassList("bars-container");
+                            healBarsContainer.Add(healHealthBar);
+                            healBarsContainer.Add(healMoraleBar);
+                            healWrapper.Add(healBarsContainer);
+
+                            float healthPercent = heroes[i].MaxHealth > 0 ? (float)heroes[i].Health / heroes[i].MaxHealth : 0f;
+                            float moralePercent = heroes[i].MaxMorale > 0 ? (float)heroes[i].Morale / heroes[i].MaxMorale : 0f;
+                            recruitHealthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
+                            recruitMoraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
+                            expeditionHealthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
+                            expeditionMoraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
+                            healHealthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
+                            healMoraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
                         }
                         else
                         {
@@ -356,23 +337,25 @@ namespace VirulentVentures
                     }
                 }
 
-                recruitPortraitContainer.Add(recruitPortrait);
-                expeditionPortraitContainer.Add(expeditionPortrait);
-                healPortraitContainer.Add(healPortrait);
+                recruitPortraitContainer.Add(recruitWrapper);
+                expeditionPortraitContainer.Add(expeditionWrapper);
+                healPortraitContainer.Add(healWrapper);
             }
 
-            generateButton.SetEnabled(false);
+            generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
             healButton.SetEnabled(partyData.CanHealParty());
             UpdateFavourDisplay();
         }
 
         private void UpdateFavourDisplay()
         {
-            favourLabel.text = $"Favour: {ExpeditionManager.Instance.GetPlayerProgress().Favour}";
+            var playerProgress = ExpeditionManager.Instance.GetPlayerProgress();
+            favourLabel.text = $"Favour: {playerProgress.Favour}";
         }
 
         private void HandleExpeditionEnded()
         {
+            Debug.Log($"TempleViewController: HandleExpeditionEnded called, HeroStats count: {(partyData.HeroStats == null ? 0 : partyData.HeroStats.Count)}");
             generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
             healButton.SetEnabled(partyData.CanHealParty());
             UpdateFavourDisplay();

@@ -29,13 +29,18 @@
     height: 950px;
 }
 
+.portrait-wrapper {
+    flex-direction: column;
+    width: 100px;
+    margin-right: 10px;
+}
+
 .portrait {
     border-width: 2px;
     border-color: black;
-    unity-background-scale-mode: scale-to-fit;
+    unity-background-image-scaling: scale-to-fit; /* Updated to correct USS property */
     width: 100px;
     height: 100px;
-    margin-right: 10px;
 }
 
 .bars-container {
@@ -94,6 +99,7 @@
 
 #RecruitPortraitContainer, #ExpeditionPortraitContainer, #HealPortraitContainer, #NodeContainer {
     display: flex;
+    flex-direction: row;
 }
 
 #FavourContainer {

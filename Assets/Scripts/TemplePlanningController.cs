@@ -17,7 +17,7 @@ namespace VirulentVentures
         [SerializeField] private bool testMode = true;
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EventBusSO eventBus;
-        [SerializeField] private HealingConfig healingConfig; // Added for healing formula
+        [SerializeField] private HealingConfig healingConfig;
 
         private bool isExpeditionGenerated = false;
 
@@ -27,7 +27,7 @@ namespace VirulentVentures
             eventBus.OnExpeditionGenerated += GenerateExpedition;
             eventBus.OnVirusSeeded += SeedVirus;
             eventBus.OnLaunchExpedition += LaunchExpedition;
-            eventBus.OnHealParty += HealParty; // Subscribe to new event
+            eventBus.OnHealParty += HealParty;
         }
 
         void Start()
@@ -42,7 +42,7 @@ namespace VirulentVentures
                 eventBus.OnExpeditionGenerated -= GenerateExpedition;
                 eventBus.OnVirusSeeded -= SeedVirus;
                 eventBus.OnLaunchExpedition -= LaunchExpedition;
-                eventBus.OnHealParty -= HealParty; // Unsubscribe from new event
+                eventBus.OnHealParty -= HealParty;
             }
         }
 
@@ -57,14 +57,12 @@ namespace VirulentVentures
             int totalFavour = 0;
             foreach (var hero in partyData.HeroStats)
             {
-                if (hero.Health <= 0 || hero.HasRetreated) continue; // Skip dead or retreated heroes
+                if (hero.Health <= 0 || hero.HasRetreated) continue;
 
-                // Calculate favour for HP and Morale
                 int hpHealed = hero.MaxHealth - hero.Health;
                 int moraleRestored = hero.MaxMorale - hero.Morale;
                 float favour = (healingConfig.HPFavourPerPoint * hpHealed) + (healingConfig.MoraleFavourPerPoint * moraleRestored);
 
-                // Apply healing
                 hero.Health = hero.MaxHealth;
                 hero.Morale = hero.MaxMorale;
                 totalFavour += Mathf.RoundToInt(favour);
@@ -74,8 +72,9 @@ namespace VirulentVentures
             {
                 playerProgress.AddFavour(totalFavour);
                 Debug.Log($"TemplePlanningController: Healed party, earned {totalFavour} favour");
+                eventBus.RaisePlayerProgressUpdated(); // Notify UI of favour change
             }
-            eventBus.RaisePartyUpdated(partyData); // Update UI
+            eventBus.RaisePartyUpdated(partyData);
         }
 
         public bool CanHealParty()
