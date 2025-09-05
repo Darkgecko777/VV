@@ -95,3 +95,15 @@
 #RecruitPortraitContainer, #ExpeditionPortraitContainer, #HealPortraitContainer, #NodeContainer {
     display: flex;
 }
+
+#FavourContainer {
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.favour-label {
+    color: white;
+    font-size: 16px;
+    text-align: center;
+}

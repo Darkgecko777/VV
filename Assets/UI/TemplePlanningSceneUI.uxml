@@ -9,15 +9,15 @@
         </ui:VisualElement>
         <ui:VisualElement name="TabContentContainer" style="position: absolute; top: 70px; left: 50px; width: 1820px; height: 950px;">
             <ui:VisualElement name="RecruitTabContent" class="tab-content">
-                <ui:VisualElement name="RecruitPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 100px; flex-direction: row;" />
-                <ui:VisualElement name="RecruitButtonContainer" style="position: absolute; top: 120px; width: 400px; height: 50px; flex-direction: row;">
+                <ui:VisualElement name="RecruitPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 150px; flex-direction: row;" />
+                <ui:VisualElement name="RecruitButtonContainer" style="position: absolute; top: 170px; width: 400px; height: 50px; flex-direction: row;">
                     <ui:Button name="GenerateButton" text="Generate Expedition" class="button" />
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="ExpeditionTabContent" class="tab-content" style="display: none;">
-                <ui:VisualElement name="ExpeditionPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 100px; flex-direction: row;" />
-                <ui:VisualElement name="NodeContainer" style="position: absolute; top: 120px; width: 1820px; height: 100px; flex-direction: row;" />
-                <ui:VisualElement name="ExpeditionButtonContainer" style="position: absolute; top: 230px; width: 400px; height: 50px; flex-direction: row;">
+                <ui:VisualElement name="ExpeditionPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 150px; flex-direction: row;" />
+                <ui:VisualElement name="NodeContainer" style="position: absolute; top: 170px; width: 1820px; height: 100px; flex-direction: row;" />
+                <ui:VisualElement name="ExpeditionButtonContainer" style="position: absolute; top: 280px; width: 400px; height: 50px; flex-direction: row;">
                     <ui:Button name="LaunchButton" text="Launch Expedition" class="button" />
                 </ui:VisualElement>
             </ui:VisualElement>
@@ -34,6 +34,9 @@
                     <ui:Button name="HealButton" text="Heal Party" class="button" />
                 </ui:VisualElement>
             </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="FavourContainer" style="position: absolute; bottom: 50px; right: 50px; width: 200px; height: 50px;">
+            <ui:Label name="FavourLabel" text="Favour: 0" class="favour-label" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

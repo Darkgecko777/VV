@@ -80,7 +80,9 @@ namespace VirulentVentures
         public event Action<DamagePopupData> OnUnitDamaged;
         public event Action<ICombatUnit> OnUnitDied;
         public event Action<ICombatUnit> OnUnitRetreated;
-        public event Action OnHealParty; // New event for healing
+        public event Action OnHealParty;
+        public event Action OnExpeditionEnded; // Added for CS1061 fix
+        public event Action OnPlayerProgressUpdated; // Added for CS1061 fix
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -175,6 +177,16 @@ namespace VirulentVentures
         public void RaiseHealParty()
         {
             OnHealParty?.Invoke();
+        }
+
+        public void RaiseExpeditionEnded()
+        {
+            OnExpeditionEnded?.Invoke();
+        }
+
+        public void RaisePlayerProgressUpdated()
+        {
+            OnPlayerProgressUpdated?.Invoke();
         }
     }
 }
