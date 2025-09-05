@@ -38,6 +38,24 @@
     margin-right: 10px;
 }
 
+.bars-container {
+    width: 100px;
+    height: 20px;
+    flex-direction: column;
+}
+
+.health-bar {
+    height: 8px;
+    background-color: rgba(255, 0, 0, 0.8);
+    margin-top: 2px;
+}
+
+.morale-bar {
+    height: 8px;
+    background-color: rgba(0, 0, 255, 0.8);
+    margin-top: 2px;
+}
+
 .node-box {
     border-width: 2px;
     border-color: black;

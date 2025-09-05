@@ -237,6 +237,8 @@ MonoBehaviour:
   visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   availableViruses: []
+  partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
+  planningController: {fileID: 0}
 --- !u!1 &363512853
 GameObject:
   m_ObjectHideFlags: 0
@@ -516,6 +518,7 @@ MonoBehaviour:
   testMode: 0
   defaultPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  healingConfig: {fileID: 11400000, guid: 6a1e4f63fa251a445a7bf57aefb9948d, type: 2}
 --- !u!4 &2139730225
 Transform:
   m_ObjectHideFlags: 0

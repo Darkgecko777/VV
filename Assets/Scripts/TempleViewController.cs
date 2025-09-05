@@ -13,13 +13,14 @@ namespace VirulentVentures
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private List<VirusData> availableViruses;
-        [SerializeField] private PartyData partyData; // Added for party presence check
+        [SerializeField] private PartyData partyData;
 
         private DropdownField virusDropdown;
         private DropdownField nodeDropdown;
         private Button generateButton;
         private Button launchButton;
         private Button seedVirusButton;
+        private Button healButton;
         private VisualElement recruitPortraitContainer;
         private VisualElement expeditionPortraitContainer;
         private VisualElement healPortraitContainer;
@@ -48,6 +49,7 @@ namespace VirulentVentures
             generateButton = root.Q<Button>("GenerateButton");
             launchButton = root.Q<Button>("LaunchButton");
             seedVirusButton = root.Q<Button>("SeedVirusButton");
+            healButton = root.Q<Button>("HealButton");
             recruitPortraitContainer = root.Q<VisualElement>("RecruitPortraitContainer");
             expeditionPortraitContainer = root.Q<VisualElement>("ExpeditionPortraitContainer");
             healPortraitContainer = root.Q<VisualElement>("HealPortraitContainer");
@@ -67,12 +69,12 @@ namespace VirulentVentures
             };
             tabButtons = new List<Button> { recruitTabButton, expeditionTabButton, virusTabButton, healTabButton };
 
-            if (virusDropdown == null || nodeDropdown == null || generateButton == null || launchButton == null || seedVirusButton == null ||
+            if (virusDropdown == null || nodeDropdown == null || generateButton == null || launchButton == null || seedVirusButton == null || healButton == null ||
                 recruitPortraitContainer == null || expeditionPortraitContainer == null || healPortraitContainer == null || nodeContainer == null ||
                 tabContentContainer == null || recruitTabButton == null || expeditionTabButton == null || virusTabButton == null || healTabButton == null)
             {
                 Debug.LogError($"TempleViewController: Missing UI elements! VirusDropdown: {virusDropdown != null}, NodeDropdown: {nodeDropdown != null}, " +
-                    $"GenerateButton: {generateButton != null}, LaunchButton: {launchButton != null}, SeedVirusButton: {seedVirusButton != null}, " +
+                    $"GenerateButton: {generateButton != null}, LaunchButton: {launchButton != null}, SeedVirusButton: {seedVirusButton != null}, HealButton: {healButton != null}, " +
                     $"RecruitPortraitContainer: {recruitPortraitContainer != null}, ExpeditionPortraitContainer: {expeditionPortraitContainer != null}, " +
                     $"HealPortraitContainer: {healPortraitContainer != null}, NodeContainer: {nodeContainer != null}, " +
                     $"TabContentContainer: {tabContentContainer != null}, RecruitTab: {recruitTabButton != null}, " +
@@ -91,7 +93,7 @@ namespace VirulentVentures
             {
                 SubscribeToEventBus();
                 InitializeEmptyPortraits();
-                SwitchTab(0); // Default to Recruit tab
+                SwitchTab(0);
             }
         }
 
@@ -110,6 +112,7 @@ namespace VirulentVentures
             generateButton = null;
             launchButton = null;
             seedVirusButton = null;
+            healButton = null;
             recruitPortraitContainer = null;
             expeditionPortraitContainer = null;
             healPortraitContainer = null;
@@ -143,6 +146,8 @@ namespace VirulentVentures
             launchButton.style.unityFont = uiConfig.PixelFont;
             seedVirusButton.style.color = uiConfig.TextColor;
             seedVirusButton.style.unityFont = uiConfig.PixelFont;
+            healButton.style.color = uiConfig.TextColor;
+            healButton.style.unityFont = uiConfig.PixelFont;
 
             foreach (var button in tabButtons)
             {
@@ -150,8 +155,8 @@ namespace VirulentVentures
                 button.style.unityFont = uiConfig.PixelFont;
             }
 
-            // Set initial GenerateButton state based on party presence
             generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
+            healButton.SetEnabled(partyData.CanHealParty());
 
             generateButton.clicked += () => eventBus.RaiseExpeditionGenerated(null, null);
             launchButton.clicked += () => eventBus.RaiseLaunchExpedition();
@@ -166,6 +171,7 @@ namespace VirulentVentures
                     Debug.LogWarning("TempleViewController: Invalid dropdown selection for virus seeding!");
                 }
             };
+            healButton.clicked += () => eventBus.RaiseHealParty();
 
             recruitTabButton.clicked += () => SwitchTab(0);
             expeditionTabButton.clicked += () => SwitchTab(1);
@@ -205,6 +211,15 @@ namespace VirulentVentures
 
                 VisualElement healPortrait = new VisualElement();
                 healPortrait.AddToClassList("portrait");
+                VisualElement healthBar = new VisualElement();
+                healthBar.AddToClassList("health-bar");
+                VisualElement moraleBar = new VisualElement();
+                moraleBar.AddToClassList("morale-bar");
+                VisualElement barsContainer = new VisualElement();
+                barsContainer.AddToClassList("bars-container");
+                barsContainer.Add(healthBar);
+                barsContainer.Add(moraleBar);
+                healPortrait.Add(barsContainer);
                 healPortraitContainer.Add(healPortrait);
             }
         }
@@ -230,6 +245,15 @@ namespace VirulentVentures
                 expeditionPortrait.AddToClassList("portrait");
                 VisualElement healPortrait = new VisualElement();
                 healPortrait.AddToClassList("portrait");
+                VisualElement healthBar = new VisualElement();
+                healthBar.AddToClassList("health-bar");
+                VisualElement moraleBar = new VisualElement();
+                moraleBar.AddToClassList("morale-bar");
+                VisualElement barsContainer = new VisualElement();
+                barsContainer.AddToClassList("bars-container");
+                barsContainer.Add(healthBar);
+                barsContainer.Add(moraleBar);
+                healPortrait.Add(barsContainer);
 
                 if (i < heroes.Count && heroes[i] != null)
                 {
@@ -246,10 +270,15 @@ namespace VirulentVentures
                             recruitPortrait.style.backgroundImage = new StyleBackground(sprite);
                             expeditionPortrait.style.backgroundImage = new StyleBackground(sprite);
                             healPortrait.style.backgroundImage = new StyleBackground(sprite);
-                            string tooltip = $"Health: {heroes[i].Health}, ATK: {heroes[i].Attack}, DEF: {heroes[i].Defense}, Morale: {heroes[i].Morale}";
+                            string tooltip = $"Health: {heroes[i].Health}/{heroes[i].MaxHealth}, Morale: {heroes[i].Morale}/{heroes[i].MaxMorale}";
                             recruitPortrait.tooltip = tooltip;
                             expeditionPortrait.tooltip = tooltip;
                             healPortrait.tooltip = tooltip;
+
+                            float healthPercent = heroes[i].MaxHealth > 0 ? (float)heroes[i].Health / heroes[i].MaxHealth : 0f;
+                            float moralePercent = heroes[i].MaxMorale > 0 ? (float)heroes[i].Morale / heroes[i].MaxMorale : 0f;
+                            healthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
+                            moraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
                         }
                         else
                         {
@@ -263,14 +292,14 @@ namespace VirulentVentures
                 healPortraitContainer.Add(healPortrait);
             }
 
-            // Disable GenerateButton after party is generated
             generateButton.SetEnabled(false);
+            healButton.SetEnabled(partyData.CanHealParty());
         }
 
         private void HandleExpeditionEnded()
         {
-            // Re-enable GenerateButton when party dies or leaves
             generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
+            healButton.SetEnabled(partyData.CanHealParty());
         }
 
         private void SubscribeToEventBus()
@@ -278,7 +307,7 @@ namespace VirulentVentures
             eventBus.OnExpeditionUpdated += UpdateNodeVisuals;
             eventBus.OnVirusSeeded += UpdateVirusNode;
             eventBus.OnPartyUpdated += UpdatePartyVisuals;
-            //eventBus.OnExpeditionEnded += HandleExpeditionEnded; // Subscribe to new event
+            //eventBus.OnExpeditionEnded += HandleExpeditionEnded;
         }
 
         private void UnsubscribeFromEventBus()
@@ -286,7 +315,7 @@ namespace VirulentVentures
             eventBus.OnExpeditionUpdated -= UpdateNodeVisuals;
             eventBus.OnVirusSeeded -= UpdateVirusNode;
             eventBus.OnPartyUpdated -= UpdatePartyVisuals;
-            //eventBus.OnExpeditionEnded -= HandleExpeditionEnded; // Unsubscribe from new event
+            //eventBus.OnExpeditionEnded -= HandleExpeditionEnded;
         }
 
         private void UpdateNodeVisuals(EventBusSO.ExpeditionGeneratedData data)
@@ -352,7 +381,8 @@ namespace VirulentVentures
             if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || availableViruses == null || partyData == null)
             {
                 Debug.LogError($"TempleViewController: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, " +
-                    $"VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, AvailableViruses: {availableViruses != null}, PartyData: {partyData != null}");
+                    $"VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, AvailableViruses: {availableViruses != null}, " +
+                    $"PartyData: {partyData != null}");
                 return false;
             }
             return true;

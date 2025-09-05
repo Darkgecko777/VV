@@ -17,6 +17,7 @@ namespace VirulentVentures
         [SerializeField] private bool testMode = true;
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EventBusSO eventBus;
+        [SerializeField] private HealingConfig healingConfig; // Added for healing formula
 
         private bool isExpeditionGenerated = false;
 
@@ -26,6 +27,7 @@ namespace VirulentVentures
             eventBus.OnExpeditionGenerated += GenerateExpedition;
             eventBus.OnVirusSeeded += SeedVirus;
             eventBus.OnLaunchExpedition += LaunchExpedition;
+            eventBus.OnHealParty += HealParty; // Subscribe to new event
         }
 
         void Start()
@@ -40,7 +42,52 @@ namespace VirulentVentures
                 eventBus.OnExpeditionGenerated -= GenerateExpedition;
                 eventBus.OnVirusSeeded -= SeedVirus;
                 eventBus.OnLaunchExpedition -= LaunchExpedition;
+                eventBus.OnHealParty -= HealParty; // Unsubscribe from new event
             }
+        }
+
+        private void HealParty()
+        {
+            if (partyData == null || partyData.HeroStats == null || partyData.HeroStats.Count == 0)
+            {
+                Debug.LogWarning("TemplePlanningController: No party to heal!");
+                return;
+            }
+
+            int totalFavour = 0;
+            foreach (var hero in partyData.HeroStats)
+            {
+                if (hero.Health <= 0 || hero.HasRetreated) continue; // Skip dead or retreated heroes
+
+                // Calculate favour for HP and Morale
+                int hpHealed = hero.MaxHealth - hero.Health;
+                int moraleRestored = hero.MaxMorale - hero.Morale;
+                float favour = (healingConfig.HPFavourPerPoint * hpHealed) + (healingConfig.MoraleFavourPerPoint * moraleRestored);
+
+                // Apply healing
+                hero.Health = hero.MaxHealth;
+                hero.Morale = hero.MaxMorale;
+                totalFavour += Mathf.RoundToInt(favour);
+            }
+
+            if (totalFavour > 0)
+            {
+                playerProgress.AddFavour(totalFavour);
+                Debug.Log($"TemplePlanningController: Healed party, earned {totalFavour} favour");
+            }
+            eventBus.RaisePartyUpdated(partyData); // Update UI
+        }
+
+        public bool CanHealParty()
+        {
+            if (partyData == null || partyData.HeroStats == null || partyData.HeroStats.Count == 0)
+            {
+                return false;
+            }
+
+            return partyData.HeroStats.Any(hero =>
+                !hero.HasRetreated && hero.Health > 0 &&
+                (hero.Health < hero.MaxHealth || hero.Morale < hero.MaxMorale));
         }
 
         private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData data)
@@ -77,11 +124,9 @@ namespace VirulentVentures
 
             nodes.AddRange(expeditionNodes);
 
-            // Initialize party if needed
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
                 partyData.HeroIds = new List<string>();
-                // Demo: Fixed heroes, one per position, validated against unlocked heroes
                 var positionMap = new Dictionary<int, string>
                 {
                     { 1, "Fighter" },
@@ -160,13 +205,13 @@ namespace VirulentVentures
         {
             if (expeditionData == null || partyData == null || playerProgress == null || availableViruses == null || visualConfig == null ||
                 combatNodeGenerator == null || nonCombatNodeGenerator == null || combatEncounterData == null ||
-                defaultPositions == null || eventBus == null)
+                defaultPositions == null || eventBus == null || healingConfig == null)
             {
                 Debug.LogError($"TemplePlanningController: Missing references! ExpeditionData: {expeditionData != null}, " +
                     $"PartyData: {partyData != null}, PlayerProgress: {playerProgress != null}, AvailableViruses: {availableViruses != null}, " +
                     $"VisualConfig: {visualConfig != null}, CombatNodeGenerator: {combatNodeGenerator != null}, " +
                     $"NonCombatNodeGenerator: {nonCombatNodeGenerator != null}, CombatEncounterData: {combatEncounterData != null}, " +
-                    $"DefaultPositions: {defaultPositions != null}, EventBus: {eventBus != null}");
+                    $"DefaultPositions: {defaultPositions != null}, EventBus: {eventBus != null}, HealingConfig: {healingConfig != null}");
                 return false;
             }
             return true;

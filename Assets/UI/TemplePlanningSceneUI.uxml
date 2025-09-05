@@ -29,7 +29,10 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="HealTabContent" class="tab-content" style="display: none;">
-                <ui:VisualElement name="HealPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 100px; flex-direction: row;" />
+                <ui:VisualElement name="HealPortraitContainer" style="position: absolute; top: 10px; width: 1820px; height: 150px; flex-direction: row;" />
+                <ui:VisualElement name="HealButtonContainer" style="position: absolute; top: 170px; width: 400px; height: 50px; flex-direction: row;">
+                    <ui:Button name="HealButton" text="Heal Party" class="button" />
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
