@@ -180,16 +180,16 @@ namespace VirulentVentures
         private static readonly Dictionary<string, CharacterData> MonsterData = new Dictionary<string, CharacterData>
         {
             {
-                "Ghoul", new CharacterData
+                "Bog Fiend", new CharacterData
                 {
-                    Id = "Ghoul",
+                    Id = "Bog Fiend",
                     MaxHealth = 70,
                     Attack = 15,
                     Defense = 10,
                     Speed = 4,
                     Evasion = 25,
                     MaxMorale = 80,
-                    AbilityIds = new List<string> { "BasicAttack", "GhoulClaw" },
+                    AbilityIds = new List<string> { "BasicAttack", "Bog FiendClaw" },
                     CanBeCultist = false,
                     PartyPosition = 1
                 }

@@ -17,7 +17,7 @@ namespace VirulentVentures
         [System.Serializable]
         public struct EnemyVisuals
         {
-            public string enemyID; // e.g., "Ghoul", "Wraith"
+            public string enemyID; // e.g., "Bog Fiend", "Wraith"
             public Sprite combatSprite;
         }
 

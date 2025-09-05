@@ -138,16 +138,16 @@ namespace VirulentVentures
                 useCondition: (user, party, targets) => false
             ));
 
-            monsterAbilities.Add("GhoulClaw", new AbilityData(
-                id: "GhoulClaw",
-                animationTrigger: "GhoulClaw",
+            monsterAbilities.Add("Bog FiendClaw", new AbilityData(
+                id: "Bog FiendClaw",
+                animationTrigger: "Bog FiendClaw",
                 effect: (target, partyData) => "",
                 isMelee: true // Melee attack
             ));
 
-            monsterAbilities.Add("GhoulRend", new AbilityData(
-                id: "GhoulRend",
-                animationTrigger: "GhoulRend",
+            monsterAbilities.Add("Bog FiendRend", new AbilityData(
+                id: "Bog FiendRend",
+                animationTrigger: "Bog FiendRend",
                 effect: (target, partyData) => "",
                 isMelee: true // Melee attack
             ));
