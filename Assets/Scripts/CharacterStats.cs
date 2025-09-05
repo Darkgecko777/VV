@@ -21,9 +21,10 @@ namespace VirulentVentures
             public int evasion;
             public int morale;
             public int maxMorale;
+            public int immunity; // New immunity stat
             public bool isHero;
 
-            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, bool isHero)
+            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int immunity, bool isHero)
             {
                 this.name = name;
                 this.health = health;
@@ -34,6 +35,7 @@ namespace VirulentVentures
                 this.evasion = evasion;
                 this.morale = morale;
                 this.maxMorale = maxMorale;
+                this.immunity = immunity;
                 this.isHero = isHero;
             }
         }
@@ -47,6 +49,7 @@ namespace VirulentVentures
         [SerializeField] private int _evasion;
         [SerializeField] private int _morale;
         [SerializeField] private int _maxMorale;
+        [SerializeField] private int _immunity; // New immunity stat
         [SerializeField] private Vector3 _position;
         [SerializeField] private string _abilityId;
         [SerializeField] private bool _isCultist;
@@ -66,6 +69,7 @@ namespace VirulentVentures
             _evasion = data.Evasion;
             _morale = type == CharacterType.Hero ? data.Morale : data.MaxMorale;
             _maxMorale = data.MaxMorale;
+            _immunity = data.Immunity; // Initialize immunity
             _position = position;
             _abilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
             _isCultist = type == CharacterType.Hero && data.CanBeCultist;
@@ -83,6 +87,7 @@ namespace VirulentVentures
         public int Evasion { get => _evasion; set => _evasion = Mathf.Clamp(value, 0, 100); }
         public int Morale { get => _morale; set => _morale = Mathf.Clamp(value, 0, _maxMorale); }
         public int MaxMorale { get => _maxMorale; set => _maxMorale = value; }
+        public int Immunity { get => _immunity; set => _immunity = Mathf.Clamp(value, 0, 100); } // New immunity property
         public Vector3 Position => _position;
         public string AbilityId { get => _abilityId; set => _abilityId = value; }
         public int PartyPosition => _partyPosition;
@@ -103,6 +108,7 @@ namespace VirulentVentures
                 evasion: Evasion,
                 morale: Morale,
                 maxMorale: MaxMorale,
+                immunity: Immunity, // Add immunity to display stats
                 isHero: _type == CharacterType.Hero
             );
         }
@@ -120,6 +126,7 @@ namespace VirulentVentures
                 Evasion = _evasion,
                 Morale = _type == CharacterType.Hero ? _morale : _maxMorale,
                 MaxMorale = _maxMorale,
+                Immunity = _immunity, // Add immunity to serialized data
                 AbilityIds = new List<string> { _abilityId },
                 CanBeCultist = _isCultist,
                 PartyPosition = _partyPosition
@@ -137,6 +144,7 @@ namespace VirulentVentures
             stats.Evasion = data.Evasion;
             stats.MaxHealth = data.MaxHealth;
             stats.MaxMorale = data.MaxMorale;
+            stats._immunity = data.Immunity; // Add immunity deserialization
             stats._abilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
             stats._isCultist = type == CharacterType.Hero && data.CanBeCultist;
             stats._partyPosition = data.PartyPosition;
