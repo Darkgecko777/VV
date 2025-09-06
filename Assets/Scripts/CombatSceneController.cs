@@ -27,6 +27,7 @@ namespace VirulentVentures
             public ICombatUnit Unit { get; set; }
             public int AttacksThisRound { get; set; }
             public int RoundCounter { get; set; }
+            public Dictionary<string, int> AbilityCooldowns { get; set; } = new Dictionary<string, int>();
         }
 
         void Awake()
@@ -64,15 +65,22 @@ namespace VirulentVentures
                 ? CharacterLibrary.GetHeroData(unit.Id)
                 : CharacterLibrary.GetMonsterData(unit.Id);
 
+            var state = unitAttackStates.Find(s => s.Unit == unit);
+            if (state == null) return "BasicAttack";
+
             foreach (var abilityId in data.AbilityIds)
             {
                 var ability = unit.Type == CharacterType.Hero
                     ? AbilityDatabase.GetHeroAbility(abilityId)
                     : AbilityDatabase.GetMonsterAbility(abilityId);
 
-                if (ability.HasValue && ability.Value.UseCondition(unit, partyData, targets))
+                int cd = 0;
+                if (ability.HasValue && (!state.AbilityCooldowns.TryGetValue(abilityId, out cd) || cd <= 0))
                 {
-                    return abilityId;
+                    if (ability.Value.UseCondition(unit, partyData, targets))
+                    {
+                        return abilityId;
+                    }
                 }
             }
 
@@ -135,6 +143,14 @@ namespace VirulentVentures
             {
                 eventBus.RaiseUnitDied(target);
             }
+            if (abilityId != "BasicAttack")
+            {
+                var state = unitAttackStates.Find(s => s.Unit == unit);
+                if (state != null)
+                {
+                    state.AbilityCooldowns[abilityId] = 1;
+                }
+            }
             UpdateUnit(unit);
         }
 
@@ -178,11 +194,19 @@ namespace VirulentVentures
                     var state = unitAttackStates.Find(s => s.Unit == unit);
                     if (state == null)
                     {
-                        state = new UnitAttackState { Unit = unit, AttacksThisRound = 0, RoundCounter = 0 };
+                        state = new UnitAttackState { Unit = unit, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>() };
                         unitAttackStates.Add(state);
                     }
                     state.AttacksThisRound = 0;
                     state.RoundCounter++;
+                    foreach (var abilityCd in state.AbilityCooldowns.ToList())
+                    {
+                        state.AbilityCooldowns[abilityCd.Key] = Mathf.Max(0, abilityCd.Value - 1);
+                        if (state.AbilityCooldowns[abilityCd.Key] == 0)
+                        {
+                            state.AbilityCooldowns.Remove(abilityCd.Key);
+                        }
+                    }
                 }
 
                 foreach (var unit in unitList.ToList())
@@ -243,14 +267,14 @@ namespace VirulentVentures
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
                 heroPositions.Add(hero);
-                unitAttackStates.Add(new UnitAttackState { Unit = hero, AttacksThisRound = 0, RoundCounter = 0 });
+                unitAttackStates.Add(new UnitAttackState { Unit = hero, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>() });
             }
             foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0 && !m.HasRetreated))
             {
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
                 monsterPositions.Add(monster);
-                unitAttackStates.Add(new UnitAttackState { Unit = monster, AttacksThisRound = 0, RoundCounter = 0 });
+                unitAttackStates.Add(new UnitAttackState { Unit = monster, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>() });
             }
 
             heroPositions = heroPositions.OrderBy(h => h.PartyPosition).ToList();
