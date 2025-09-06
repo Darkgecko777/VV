@@ -29,6 +29,7 @@ namespace VirulentVentures
             public int RoundCounter { get; set; }
             public Dictionary<string, int> AbilityCooldowns { get; set; } = new Dictionary<string, int>();
             public bool SkipNextAttack { get; set; } = false;
+            public Dictionary<string, (int value, int duration)> TempStats { get; set; } = new Dictionary<string, (int value, int duration)>();
         }
 
         void Awake()
@@ -93,7 +94,7 @@ namespace VirulentVentures
             if (unit is not CharacterStats stats) return false;
             if (state.SkipNextAttack)
             {
-                state.SkipNextAttack = false; // Clear after skipping
+                state.SkipNextAttack = false;
                 return false;
             }
             if (stats.Speed >= combatConfig.SpeedTwoAttacksThreshold)
@@ -132,6 +133,25 @@ namespace VirulentVentures
                 }
                 yield break;
             }
+
+            // Apply temporary stat changes before damage calculation
+            var state = unitAttackStates.Find(s => s.Unit == unit);
+            var targetState = unitAttackStates.Find(s => s.Unit == target);
+            int originalAttack = stats.Attack;
+            int originalDefense = target is CharacterStats targetStats ? targetStats.Defense : 0;
+            int originalSpeed = stats.Speed;
+            int originalEvasion = stats.Evasion;
+            if (state != null)
+            {
+                if (state.TempStats.TryGetValue("Attack", out var attackMod)) stats.Attack += attackMod.value;
+                if (state.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
+                if (state.TempStats.TryGetValue("Evasion", out var evasionMod)) stats.Evasion += evasionMod.value;
+            }
+            if (targetState != null && target is CharacterStats targetStats2)
+            {
+                if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats2.Defense += defMod.value;
+            }
+
             eventBus.RaiseUnitAttacking(unit, target, abilityId);
             yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
             string abilityLog = ability.Value.Effect?.Invoke(target, partyData) ?? "";
@@ -141,36 +161,40 @@ namespace VirulentVentures
             }
             if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
             {
-                int damage = Mathf.Max(1, unit.Attack - target.Defense);
+                int damage = Mathf.Max(1, stats.Attack - (target is CharacterStats ts ? ts.Defense : 0));
                 target.Health -= damage;
                 UpdateUnit(target, $"{target.Id} takes {damage} damage!");
             }
             // Handle attack skip effects
             if (abilityId == "IronResolve")
             {
-                var state = unitAttackStates.Find(s => s.Unit == unit);
                 if (state != null)
                 {
                     state.SkipNextAttack = true;
+                    state.TempStats["Defense"] = (5, 1);
                     eventBus.RaiseLogMessage($"{unit.Id} will skip their next attack due to Iron Resolve!", Color.white);
                 }
             }
             else if (abilityId == "Entangle")
             {
-                var targetState = unitAttackStates.Find(s => s.Unit == target);
                 if (targetState != null)
                 {
                     targetState.SkipNextAttack = true;
                     eventBus.RaiseLogMessage($"{target.Id} is entangled and will skip their next attack!", Color.white);
                 }
             }
+            // Revert temporary stat changes after use
+            stats.Attack = originalAttack;
+            stats.Speed = originalSpeed;
+            stats.Evasion = originalEvasion;
+            if (target is CharacterStats targetStats3) targetStats3.Defense = originalDefense;
+
             if (target.Health <= 0)
             {
                 eventBus.RaiseUnitDied(target);
             }
             if (abilityId != "BasicAttack")
             {
-                var state = unitAttackStates.Find(s => s.Unit == unit);
                 if (state != null)
                 {
                     state.AbilityCooldowns[abilityId] = 1;
@@ -219,7 +243,7 @@ namespace VirulentVentures
                     var state = unitAttackStates.Find(s => s.Unit == unit);
                     if (state == null)
                     {
-                        state = new UnitAttackState { Unit = unit, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>() };
+                        state = new UnitAttackState { Unit = unit, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false, TempStats = new Dictionary<string, (int, int)>() };
                         unitAttackStates.Add(state);
                     }
                     state.AttacksThisRound = 0;
@@ -230,6 +254,23 @@ namespace VirulentVentures
                         if (state.AbilityCooldowns[abilityCd.Key] == 0)
                         {
                             state.AbilityCooldowns.Remove(abilityCd.Key);
+                        }
+                    }
+                    foreach (var tempStat in state.TempStats.ToList())
+                    {
+                        state.TempStats[tempStat.Key] = (tempStat.Value.value, tempStat.Value.duration - 1);
+                        if (state.TempStats[tempStat.Key].duration <= 0)
+                        {
+                            state.TempStats.Remove(tempStat.Key);
+                            if (unit is CharacterStats stats)
+                            {
+                                var baseData = stats.Type == CharacterType.Hero
+                                    ? CharacterLibrary.GetHeroData(stats.Id)
+                                    : CharacterLibrary.GetMonsterData(stats.Id);
+                                if (tempStat.Key == "Defense") stats.Defense = baseData.Defense;
+                                else if (tempStat.Key == "Speed") stats.Speed = baseData.Speed;
+                                else if (tempStat.Key == "Evasion") stats.Evasion = baseData.Evasion;
+                            }
                         }
                     }
                 }
@@ -292,14 +333,14 @@ namespace VirulentVentures
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
                 heroPositions.Add(hero);
-                unitAttackStates.Add(new UnitAttackState { Unit = hero, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false });
+                unitAttackStates.Add(new UnitAttackState { Unit = hero, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false, TempStats = new Dictionary<string, (int, int)>() });
             }
             foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0 && !m.HasRetreated))
             {
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
                 monsterPositions.Add(monster);
-                unitAttackStates.Add(new UnitAttackState { Unit = monster, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false });
+                unitAttackStates.Add(new UnitAttackState { Unit = monster, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false, TempStats = new Dictionary<string, (int, int)>() });
             }
 
             heroPositions = heroPositions.OrderBy(h => h.PartyPosition).ToList();
