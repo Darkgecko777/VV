@@ -12,7 +12,7 @@ namespace VirulentVentures
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private CharacterPositions characterPositions;
-        [SerializeField] private CombatConfig combatConfig; // Added for animation speed
+        [SerializeField] private CombatConfig combatConfig;
         private VisualElement root;
         private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
         private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
@@ -110,6 +110,96 @@ namespace VirulentVentures
             }
         }
 
+        private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float heightPercent)
+        {
+            var panel = new VisualElement();
+            panel.AddToClassList("unit-panel");
+            panel.style.height = Length.Percent(heightPercent);
+
+            var nameLabel = new Label(stats.name);
+            nameLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            panel.Add(nameLabel);
+
+            var healthBar = new VisualElement();
+            healthBar.AddToClassList("health-bar");
+            var healthFill = new VisualElement();
+            healthFill.AddToClassList("health-fill");
+            healthBar.Add(healthFill);
+            var healthLabel = new Label();
+            healthLabel.AddToClassList("health-label");
+            healthBar.Add(healthLabel);
+            UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
+            panel.Add(healthBar);
+
+            if (isHero)
+            {
+                var moraleBar = new VisualElement();
+                moraleBar.AddToClassList("morale-bar");
+                var moraleFill = new VisualElement();
+                moraleFill.AddToClassList("morale-fill");
+                moraleBar.Add(moraleFill);
+                var moraleLabel = new Label();
+                moraleLabel.AddToClassList("morale-label");
+                moraleBar.Add(moraleLabel);
+                UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale);
+                panel.Add(moraleBar);
+            }
+
+            var statGrid = new VisualElement();
+            statGrid.AddToClassList("stat-grid");
+
+            var atkContainer = new VisualElement();
+            atkContainer.AddToClassList("stat-container");
+            var atkLabel = new Label($"A: {stats.attack}");
+            atkContainer.Add(atkLabel);
+
+            var defContainer = new VisualElement();
+            defContainer.AddToClassList("stat-container");
+            var defLabel = new Label($"D: {stats.defense}");
+            defContainer.Add(defLabel);
+
+            var spdContainer = new VisualElement();
+            spdContainer.AddToClassList("stat-container");
+            var spdLabel = new Label($"S: {stats.speed}");
+            spdContainer.Add(spdLabel);
+
+            var evaContainer = new VisualElement();
+            evaContainer.AddToClassList("stat-container");
+            var evaLabel = new Label($"E: {stats.evasion}");
+            evaContainer.Add(evaLabel);
+
+            statGrid.Add(atkContainer);
+            statGrid.Add(defContainer);
+            statGrid.Add(spdContainer);
+            statGrid.Add(evaContainer);
+
+            panel.Add(statGrid);
+
+            unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, isHero ? new Label($"Morale: {stats.morale}/{stats.maxMorale}") : null);
+            if (isHero)
+            {
+                statGrid.Add(unitStatLabels[unit].morale);
+            }
+
+            return panel;
+        }
+
+        private void UpdateHealthBar(VisualElement fill, Label label, int current, int max)
+        {
+            float percent = max > 0 ? (float)current / max * 100f : 0f;
+            fill.style.width = Length.Percent(percent);
+            label.text = $"Health: {current}/{max}";
+            fill.style.backgroundColor = new StyleColor(new Color(1f, 0f, 0f));
+        }
+
+        private void UpdateMoraleBar(VisualElement fill, Label label, int current, int max)
+        {
+            float percent = max > 0 ? (float)current / max * 100f : 0f;
+            fill.style.width = Length.Percent(percent);
+            label.text = $"Morale: {current}/{max}";
+            fill.style.backgroundColor = new StyleColor(new Color(0.6f, 0.8f, 1f));
+        }
+
         private void InitializeCombat(EventBusSO.CombatInitData data)
         {
             unitGameObjects.Clear();
@@ -153,80 +243,6 @@ namespace VirulentVentures
             }
         }
 
-        private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float height)
-        {
-            var panel = new VisualElement();
-            panel.style.height = new StyleLength(Length.Percent(height));
-            panel.AddToClassList(isHero ? "hero-panel" : "monster-panel");
-
-            var healthBar = new VisualElement();
-            healthBar.AddToClassList("health-bar");
-            var healthFill = new VisualElement();
-            healthFill.AddToClassList("health-fill");
-            healthBar.Add(healthFill);
-            var healthLabel = new Label($"HP: {stats.health}/{stats.maxHealth}");
-            healthLabel.AddToClassList("health-label");
-            healthBar.Add(healthLabel);
-            panel.Add(healthBar);
-
-            var moraleBar = new VisualElement();
-            moraleBar.AddToClassList("morale-bar");
-            var moraleFill = new VisualElement();
-            moraleFill.AddToClassList("morale-fill");
-            moraleFill.style.backgroundColor = new StyleColor(new Color(0.6f, 0.8f, 1f));
-            moraleBar.Add(moraleFill);
-            var moraleLabel = new Label($"Morale: {stats.morale}/{stats.maxMorale}");
-            moraleLabel.AddToClassList("morale-label");
-            moraleBar.Add(moraleLabel);
-            panel.Add(moraleBar);
-
-            var statGrid = new VisualElement();
-            statGrid.AddToClassList("stat-grid");
-
-            var atkContainer = new VisualElement();
-            atkContainer.AddToClassList("stat-container");
-            var atkLabel = new Label($"A: {stats.attack}");
-            atkContainer.Add(atkLabel);
-            statGrid.Add(atkContainer);
-
-            var defContainer = new VisualElement();
-            defContainer.AddToClassList("stat-container");
-            var defLabel = new Label($"D: {stats.defense}");
-            defContainer.Add(defLabel);
-            statGrid.Add(defContainer);
-
-            var spdContainer = new VisualElement();
-            spdContainer.AddToClassList("stat-container");
-            var spdLabel = new Label($"S: {stats.speed}");
-            spdContainer.Add(spdLabel);
-            statGrid.Add(spdContainer);
-
-            var evaContainer = new VisualElement();
-            evaContainer.AddToClassList("stat-container");
-            var evaLabel = new Label($"E: {stats.evasion}");
-            evaContainer.Add(evaLabel);
-            statGrid.Add(evaContainer);
-
-            unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel);
-            panel.Add(statGrid);
-            return panel;
-        }
-
-        private void UpdateHealthBar(VisualElement fill, Label label, int current, int max)
-        {
-            float percent = max > 0 ? (float)current / max * 100f : 0f;
-            fill.style.width = new StyleLength(Length.Percent(percent));
-            label.text = $"HP: {current}/{max}";
-        }
-
-        private void UpdateMoraleBar(VisualElement fill, Label label, int current, int max)
-        {
-            float percent = max > 0 ? (float)current / max * 100f : 0f;
-            fill.style.width = new StyleLength(Length.Percent(percent));
-            label.text = $"Morale: {current}/{max}";
-            fill.style.backgroundColor = new StyleColor(new Color(0.6f, 0.8f, 1f));
-        }
-
         private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
         {
             if (unitPanels.TryGetValue(data.unit, out VisualElement panel))
@@ -241,14 +257,17 @@ namespace VirulentVentures
                         UpdateHealthBar(fill, label, data.displayStats.health, data.displayStats.maxHealth);
                     }
                 }
-                var moraleBar = panel.Q<VisualElement>(className: "morale-bar");
-                if (moraleBar != null)
+                if (data.displayStats.isHero)
                 {
-                    var fill = moraleBar.Q<VisualElement>(className: "morale-fill");
-                    var label = moraleBar.Q<Label>(className: "morale-label");
-                    if (fill != null && label != null)
+                    var moraleBar = panel.Q<VisualElement>(className: "morale-bar");
+                    if (moraleBar != null)
                     {
-                        UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale);
+                        var fill = moraleBar.Q<VisualElement>(className: "morale-fill");
+                        var label = moraleBar.Q<Label>(className: "morale-label");
+                        if (fill != null && label != null)
+                        {
+                            UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale);
+                        }
                     }
                 }
                 if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
@@ -257,7 +276,10 @@ namespace VirulentVentures
                     statLabels.def.text = $"D: {data.displayStats.defense}";
                     statLabels.spd.text = $"S: {data.displayStats.speed}";
                     statLabels.eva.text = $"E: {data.displayStats.evasion}";
-                    statLabels.morale.text = $"Morale: {data.displayStats.morale}/{data.displayStats.maxMorale}";
+                    if (data.displayStats.isHero && statLabels.morale != null)
+                    {
+                        statLabels.morale.text = $"Morale: {data.displayStats.morale}/{data.displayStats.maxMorale}";
+                    }
                 }
             }
         }
@@ -270,92 +292,94 @@ namespace VirulentVentures
                 if (animator != null)
                 {
                     bool isHero = data.attacker is CharacterStats charStats && charStats.Type == CharacterType.Hero;
-                    animator.TiltForward(isHero, combatConfig.CombatSpeed); // Pass CombatSpeed
-
+                    animator.TiltForward(isHero, combatConfig.CombatSpeed);
                 }
             }
         }
 
-            private void HandleUnitDamaged(EventBusSO.DamagePopupData data)
+        private void HandleUnitDamaged(EventBusSO.DamagePopupData data)
+        {
+            if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
             {
-                if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
+                var animator = targetGo.GetComponent<SpriteAnimation>();
+                if (animator != null)
                 {
-                    var animator = targetGo.GetComponent<SpriteAnimation>();
-                    if (animator != null)
-                    {
-                        animator.Jiggle(combatConfig.CombatSpeed); // Pass CombatSpeed
-                    }
+                    animator.Jiggle(combatConfig.CombatSpeed);
                 }
             }
+        }
 
-            private void HandleUnitDied(ICombatUnit unit)
+        private void HandleUnitDied(ICombatUnit unit)
+        {
+            if (unitPanels.TryGetValue(unit, out VisualElement panel))
             {
-                if (unitPanels.TryGetValue(unit, out VisualElement panel))
+                panel.style.opacity = 0.5f;
+                if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && stats.Morale <= stats.MaxMorale * 0.2f)
                 {
-                    panel.style.opacity = 0.5f;
-                    var moraleBar = panel.Q<VisualElement>(className: "morale-bar");
-                    if (moraleBar != null && unit is CharacterStats stats && stats.Morale <= stats.MaxMorale * 0.2f)
-                    {
-                        panel.AddToClassList("low-morale");
-                    }
-                }
-                if (unitGameObjects.TryGetValue(unit, out GameObject go))
-                {
-                    StartCoroutine(DeactivateAfterJiggle(go));
+                    panel.AddToClassList("low-morale");
                 }
             }
+            if (unitGameObjects.TryGetValue(unit, out GameObject go))
+            {
+                StartCoroutine(DeactivateAfterJiggle(go));
+            }
+        }
 
-            private void HandleUnitRetreated(ICombatUnit unit)
+        private void HandleUnitRetreated(ICombatUnit unit)
+        {
+            if (unitPanels.TryGetValue(unit, out VisualElement panel))
             {
-                if (unitPanels.TryGetValue(unit, out VisualElement panel))
+                panel.style.opacity = 0.5f;
+                if (unit is CharacterStats stats && stats.Type == CharacterType.Hero)
                 {
-                    panel.style.opacity = 0.5f;
-                }
-                if (unitGameObjects.TryGetValue(unit, out GameObject go))
-                {
-                    StartCoroutine(DeactivateAfterFade(go));
+                    panel.AddToClassList("retreat-slide");
                 }
             }
+            if (unitGameObjects.TryGetValue(unit, out GameObject go))
+            {
+                StartCoroutine(DeactivateAfterFade(go));
+            }
+        }
 
-            private IEnumerator DeactivateAfterJiggle(GameObject go)
+        private IEnumerator DeactivateAfterJiggle(GameObject go)
+        {
+            yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
+            if (go != null)
             {
-                yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed); // Scale by CombatSpeed
-                if (go != null)
-                {
-                    go.SetActive(false);
-                }
+                go.SetActive(false);
             }
+        }
 
-            private IEnumerator DeactivateAfterFade(GameObject go)
+        private IEnumerator DeactivateAfterFade(GameObject go)
+        {
+            yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
+            if (go != null)
             {
-                yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed); // Scale by CombatSpeed
-                if (go != null)
-                {
-                    go.SetActive(false);
-                }
+                go.SetActive(false);
             }
+        }
 
-            private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)
-            {
-                var go = new GameObject(stats.name);
-                var sr = go.AddComponent<SpriteRenderer>();
-                sr.sprite = isHero ? visualConfig.GetCombatSprite(stats.name) : visualConfig.GetEnemySprite(stats.name);
-                sr.sortingLayerName = "Characters";
-                sr.sortingOrder = 1;
-                go.transform.position = position;
-                go.transform.localScale = new Vector3(2f, 2f, 1f);
-                go.AddComponent<SpriteAnimation>();
-                return go;
-            }
+        private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)
+        {
+            var go = new GameObject(stats.name);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = isHero ? visualConfig.GetCombatSprite(stats.name) : visualConfig.GetEnemySprite(stats.name);
+            sr.sortingLayerName = "Characters";
+            sr.sortingOrder = 1;
+            go.transform.position = position;
+            go.transform.localScale = new Vector3(2f, 2f, 1f);
+            go.AddComponent<SpriteAnimation>();
+            return go;
+        }
 
-            private bool ValidateReferences()
+        private bool ValidateReferences()
+        {
+            if (visualConfig == null || uiConfig == null || eventBus == null || characterPositions == null || combatConfig == null)
             {
-                if (visualConfig == null || uiConfig == null || eventBus == null || characterPositions == null || combatConfig == null) // Added combatConfig check
-                {
-                    Debug.LogError("CombatViewController: Missing required reference(s). Please assign in the Inspector.");
-                    return false;
-                }
-                return true;
+                Debug.LogError("CombatViewController: Missing required reference(s). Please assign in the Inspector.");
+                return false;
             }
+            return true;
         }
     }
+}

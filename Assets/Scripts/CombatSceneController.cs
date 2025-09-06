@@ -44,6 +44,7 @@ namespace VirulentVentures
             expeditionManager = ExpeditionManager.Instance;
             if (expeditionManager == null)
             {
+                Debug.LogError("CombatSceneController: ExpeditionManager not found.");
                 return;
             }
             if (!ValidateReferences()) return;
@@ -76,6 +77,65 @@ namespace VirulentVentures
             }
 
             return "BasicAttack";
+        }
+
+        private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
+        {
+            if (unit is not CharacterStats stats) return false;
+            if (stats.Speed >= combatConfig.SpeedTwoAttacksThreshold)
+                return state.AttacksThisRound < 1;
+            else if (stats.Speed >= combatConfig.SpeedThreePerTwoThreshold)
+                return state.RoundCounter % 2 == 1 ? state.AttacksThisRound < 2 : state.AttacksThisRound < 1;
+            else if (stats.Speed >= combatConfig.SpeedOneAttackThreshold)
+                return state.AttacksThisRound < 1;
+            else if (stats.Speed >= combatConfig.SpeedOnePerTwoThreshold)
+                return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
+            return false;
+        }
+
+        private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> unitList)
+        {
+            if (unit is not CharacterStats stats) yield break;
+            var targets = stats.Type == CharacterType.Hero
+                ? monsterPositions.Cast<ICombatUnit>().ToList()
+                : heroPositions.Cast<ICombatUnit>().ToList();
+            var abilityId = SelectAbility(stats, partyData, targets);
+            AbilityData? ability = stats.Type == CharacterType.Hero
+                ? AbilityDatabase.GetHeroAbility(abilityId)
+                : AbilityDatabase.GetMonsterAbility(abilityId);
+            if (ability == null) yield break;
+            if (ability.Value.IsMelee)
+            {
+                targets = targets.Take(2).ToList();
+            }
+            var target = GetRandomAliveTarget(targets);
+            if (target == null)
+            {
+                if (NoActiveHeroes() || NoActiveMonsters())
+                {
+                    EndCombat();
+                    yield break;
+                }
+                yield break;
+            }
+            eventBus.RaiseUnitAttacking(unit, target, abilityId);
+            yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+            string abilityLog = ability.Value.Effect?.Invoke(target, partyData) ?? "";
+            if (!string.IsNullOrEmpty(abilityLog))
+            {
+                eventBus.RaiseLogMessage(abilityLog, Color.white);
+            }
+            if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
+            {
+                int damage = Mathf.Max(1, unit.Attack - target.Defense);
+                target.Health -= damage;
+                UpdateUnit(target, $"{target.Id} takes {damage} damage!");
+            }
+            if (target.Health <= 0)
+            {
+                eventBus.RaiseUnitDied(target);
+            }
+            UpdateUnit(unit);
         }
 
         private IEnumerator RunCombat()
@@ -130,7 +190,7 @@ namespace VirulentVentures
                     var state = unitAttackStates.Find(s => s.Unit == unit);
                     if (state == null || unit.Health <= 0 || unit.HasRetreated) continue;
 
-                    if (CheckRetreat(unit))
+                    if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && CheckRetreat(unit))
                     {
                         ProcessRetreat(unit);
                         yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
@@ -154,7 +214,7 @@ namespace VirulentVentures
                     var state = unitAttackStates.Find(s => s.Unit == unit);
                     if (state == null || unit.Health <= 0 || unit.HasRetreated) continue;
 
-                    if (unit is CharacterStats stats && stats.Speed >= combatConfig.SpeedTwoAttacksThreshold && state.AttacksThisRound < 2)
+                    if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && stats.Speed >= combatConfig.SpeedTwoAttacksThreshold && state.AttacksThisRound < 2)
                     {
                         state.AttacksThisRound++;
                         yield return ProcessAttack(unit, expeditionManager.GetExpedition().Party, unitList);
@@ -169,76 +229,6 @@ namespace VirulentVentures
 
                 IncrementRound();
             }
-        }
-
-        private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
-        {
-            if (unit is not CharacterStats stats) return false;
-
-            if (stats.Speed >= combatConfig.SpeedTwoAttacksThreshold)
-                return state.AttacksThisRound < 1;
-            else if (stats.Speed >= combatConfig.SpeedThreePerTwoThreshold)
-                return state.RoundCounter % 2 == 1 ? state.AttacksThisRound < 2 : state.AttacksThisRound < 1;
-            else if (stats.Speed >= combatConfig.SpeedOneAttackThreshold)
-                return state.AttacksThisRound < 1;
-            else if (stats.Speed >= combatConfig.SpeedOnePerTwoThreshold)
-                return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
-            return false;
-        }
-
-        private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> unitList)
-        {
-            if (unit is not CharacterStats stats) yield break;
-
-            var targets = stats.Type == CharacterType.Hero
-                ? monsterPositions.Cast<ICombatUnit>().ToList()
-                : heroPositions.Cast<ICombatUnit>().ToList();
-
-            var abilityId = SelectAbility(stats, partyData, targets);
-            AbilityData? ability = stats.Type == CharacterType.Hero
-                ? AbilityDatabase.GetHeroAbility(abilityId)
-                : AbilityDatabase.GetMonsterAbility(abilityId);
-
-            if (ability == null) yield break;
-
-            if (ability.Value.IsMelee)
-            {
-                targets = targets.Take(2).ToList();
-            }
-
-            var target = GetRandomAliveTarget(targets);
-            if (target == null)
-            {
-                if (NoActiveHeroes() || NoActiveMonsters())
-                {
-                    EndCombat();
-                    yield break;
-                }
-                yield break;
-            }
-
-            eventBus.RaiseUnitAttacking(unit, target, abilityId); // Updated to include abilityId
-            yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-
-            string abilityLog = ability.Value.Effect?.Invoke(target, partyData) ?? "";
-            if (!string.IsNullOrEmpty(abilityLog))
-            {
-                eventBus.RaiseLogMessage(abilityLog, Color.white);
-            }
-
-            if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
-            {
-                int damage = Mathf.Max(1, unit.Attack - target.Defense);
-                target.Health -= damage;
-                UpdateUnit(target, $"{target.Id} takes {damage} damage!");
-            }
-
-            if (target.Health <= 0)
-            {
-                eventBus.RaiseUnitDied(target);
-            }
-
-            UpdateUnit(unit);
         }
 
         private void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
@@ -312,22 +302,17 @@ namespace VirulentVentures
 
         private bool CheckRetreat(ICombatUnit unit)
         {
-            return unit is CharacterStats stats && stats.Morale <= combatConfig.RetreatMoraleThreshold && !stats.HasRetreated;
+            return unit is CharacterStats stats && stats.Type == CharacterType.Hero && stats.Morale <= combatConfig.RetreatMoraleThreshold && !stats.HasRetreated;
         }
 
         private void ProcessRetreat(ICombatUnit unit)
         {
             if (unit == null || unit.HasRetreated) return;
 
-            if (unit is CharacterStats stats)
+            if (unit is CharacterStats stats && stats.Type == CharacterType.Hero)
             {
                 stats.HasRetreated = true;
-
-                if (stats.IsHero)
-                {
-                    stats.Morale = Mathf.Min(stats.Morale + 20, stats.MaxMorale);
-                }
-
+                stats.Morale = Mathf.Min(stats.Morale + 20, stats.MaxMorale);
                 LogMessage($"{stats.Id} fled!", uiConfig.TextColor);
                 eventBus.RaiseUnitRetreated(unit);
 

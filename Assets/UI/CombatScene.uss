@@ -105,7 +105,7 @@
     font-size: 12px;
 }
 
-/* Morale bar styles */
+/* Morale bar styles for heroes only */
 .morale-bar {
     width: 80%; /* Match health bar */
     max-width: 150px;
@@ -134,7 +134,7 @@
     font-size: 12px;
 }
 
-/* Low morale flash effect */
+/* Low morale flash effect for heroes */
 .low-morale {
     transition-property: background-color;
     transition-duration: 0.5s;
@@ -146,7 +146,7 @@
     background-color: rgb(80, 80, 80); /* Revert to default */
 }
 
-/* Retreat slide effect */
+/* Retreat slide effect for heroes */
 .retreat-slide {
     transition-property: translate;
     transition-duration: 0.5s;
