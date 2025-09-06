@@ -16,7 +16,7 @@ namespace VirulentVentures
             public int Evasion;
             public int Morale;
             public int MaxMorale;
-            public int Immunity;
+            public int Infectivity;
             public List<string> AbilityIds;
             public bool CanBeCultist;
             public int PartyPosition;
@@ -33,7 +33,7 @@ namespace VirulentVentures
                     evasion: Mathf.Clamp(Evasion, 0, 100),
                     morale: isHero ? Morale : 0,
                     maxMorale: isHero ? MaxMorale : 0,
-                    immunity: Immunity,
+                    infectivity: Infectivity,
                     isHero: isHero
                 );
             }
@@ -47,13 +47,13 @@ namespace VirulentVentures
                     Id = "Fighter",
                     Health = 80,
                     MaxHealth = 100,
-                    Attack = 15,
-                    Defense = 15,
-                    Speed = 5,
-                    Evasion = 20,
+                    Attack = 14,
+                    Defense = 8,
+                    Speed = 3,
+                    Evasion = 0,
                     Morale = 100,
                     MaxMorale = 100,
-                    Immunity = 20,
+                    Infectivity = 40,
                     AbilityIds = new List<string> { "BasicAttack", "ShieldBash", "IronResolve" },
                     CanBeCultist = true,
                     PartyPosition = 1
@@ -64,14 +64,14 @@ namespace VirulentVentures
                 {
                     Id = "Healer",
                     Health = 60,
-                    MaxHealth = 80,
-                    Attack = 10,
-                    Defense = 5,
-                    Speed = 3,
-                    Evasion = 30,
+                    MaxHealth = 60,
+                    Attack = 8,
+                    Defense = 3,
+                    Speed = 4,
+                    Evasion = 15,
                     Morale = 100,
                     MaxMorale = 100,
-                    Immunity = 50,
+                    Infectivity = 50,
                     AbilityIds = new List<string> { "BasicAttack", "HealerHeal" },
                     CanBeCultist = false,
                     PartyPosition = 4
@@ -82,14 +82,14 @@ namespace VirulentVentures
                 {
                     Id = "Scout",
                     Health = 65,
-                    MaxHealth = 85,
+                    MaxHealth = 75,
                     Attack = 15,
-                    Defense = 10,
-                    Speed = 6,
-                    Evasion = 40,
+                    Defense = 2,
+                    Speed = 5,
+                    Evasion = 25,
                     Morale = 100,
                     MaxMorale = 100,
-                    Immunity = 30,
+                    Infectivity = 40,
                     AbilityIds = new List<string> { "BasicAttack", "SniperShot" },
                     CanBeCultist = true,
                     PartyPosition = 3
@@ -100,14 +100,14 @@ namespace VirulentVentures
                 {
                     Id = "Monk",
                     Health = 75,
-                    MaxHealth = 95,
+                    MaxHealth = 90,
                     Attack = 18,
-                    Defense = 14,
-                    Speed = 4,
-                    Evasion = 25,
+                    Defense = 4,
+                    Speed = 5,
+                    Evasion = 35,
                     Morale = 100,
                     MaxMorale = 100,
-                    Immunity = 35,
+                    Infectivity = 70,
                     AbilityIds = new List<string> { "BasicAttack", "ChiStrike", "InnerFocus" },
                     CanBeCultist = false,
                     PartyPosition = 2
@@ -121,12 +121,12 @@ namespace VirulentVentures
                 "Bog Fiend", new CharacterData
                 {
                     Id = "Bog Fiend",
-                    MaxHealth = 70,
+                    MaxHealth = 80,
                     Attack = 15,
-                    Defense = 10,
+                    Defense = 7,
                     Speed = 4,
-                    Evasion = 25,
-                    Immunity = 0,
+                    Evasion = 0,
+                    Infectivity = 80,
                     AbilityIds = new List<string> { "BasicAttack", "SludgeSlam", "MireGrasp" },
                     CanBeCultist = false,
                     PartyPosition = 1
@@ -136,12 +136,12 @@ namespace VirulentVentures
                 "Wraith", new CharacterData
                 {
                     Id = "Wraith",
-                    MaxHealth = 80,
-                    Attack = 18,
-                    Defense = 5,
+                    MaxHealth = 50,
+                    Attack = 10,
+                    Defense = 4,
                     Speed = 6,
-                    Evasion = 40,
-                    Immunity = 0,
+                    Evasion = 50,
+                    Infectivity = 50,
                     AbilityIds = new List<string> { "TrueStrike", "SpectralDrain", "EtherealWail" },
                     CanBeCultist = false,
                     PartyPosition = 4
@@ -153,10 +153,10 @@ namespace VirulentVentures
                     Id = "Mire Shambler",
                     MaxHealth = 75,
                     Attack = 12,
-                    Defense = 15,
+                    Defense = 13,
                     Speed = 3,
                     Evasion = 10,
-                    Immunity = 0,
+                    Infectivity = 60,
                     AbilityIds = new List<string> { "BasicAttack", "ThornNeedle", "Entangle" },
                     CanBeCultist = false,
                     PartyPosition = 2
@@ -166,12 +166,12 @@ namespace VirulentVentures
                 "Umbral Corvax", new CharacterData
                 {
                     Id = "Umbral Corvax",
-                    MaxHealth = 85,
+                    MaxHealth = 60,
                     Attack = 22,
                     Defense = 8,
                     Speed = 5,
                     Evasion = 30,
-                    Immunity = 0,
+                    Infectivity = 55,
                     AbilityIds = new List<string> { "BasicAttack", "ShriekOfDespair", "FlocksVigor" },
                     CanBeCultist = false,
                     PartyPosition = 3
@@ -197,7 +197,7 @@ namespace VirulentVentures
                 Evasion = 10,
                 Morale = 100,
                 MaxMorale = 100,
-                Immunity = 20,
+                Infectivity = 20,
                 AbilityIds = new List<string> { "BasicAttack" },
                 CanBeCultist = false,
                 PartyPosition = 1
@@ -219,7 +219,7 @@ namespace VirulentVentures
                 Defense = 5,
                 Speed = 3,
                 Evasion = 10,
-                Immunity = 0,
+                Infectivity = 0,
                 AbilityIds = new List<string> { "BasicAttack" },
                 CanBeCultist = false,
                 PartyPosition = 0

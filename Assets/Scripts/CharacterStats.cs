@@ -36,7 +36,7 @@ namespace VirulentVentures
             Evasion = data.Evasion;
             Morale = type == CharacterType.Hero ? data.Morale : 0;
             MaxMorale = type == CharacterType.Hero ? data.MaxMorale : 0;
-            Immunity = data.Immunity;
+            Immunity = data.Infectivity;
             // Map Vector3 position to PartyPosition (1-4 based on index or x-coordinate)
             PartyPosition = data.PartyPosition; // Use CharacterLibrary's PartyPosition
         }
@@ -55,7 +55,7 @@ namespace VirulentVentures
             public int immunity;
             public bool isHero;
 
-            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int immunity, bool isHero)
+            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero)
             {
                 this.name = name;
                 this.health = health;
@@ -66,7 +66,7 @@ namespace VirulentVentures
                 this.evasion = evasion;
                 this.morale = morale;
                 this.maxMorale = maxMorale;
-                this.immunity = immunity;
+                this.immunity = infectivity;
                 this.isHero = isHero;
             }
         }
@@ -83,7 +83,7 @@ namespace VirulentVentures
                 evasion: Mathf.Clamp(Evasion, 0, 100),
                 morale: Morale,
                 maxMorale: MaxMorale,
-                immunity: Immunity,
+                infectivity: Immunity,
                 isHero: IsHero
             );
         }

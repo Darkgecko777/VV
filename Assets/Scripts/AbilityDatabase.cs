@@ -183,7 +183,7 @@ namespace VirulentVentures
                 animationTrigger: "TrueStrike",
                 effect: (target, partyData) => "",
                 isMelee: true,
-                canDodge: true,
+                canDodge: false,
                 useCondition: (user, party, targets) => true
             ));
 
