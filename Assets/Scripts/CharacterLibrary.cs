@@ -47,7 +47,7 @@ namespace VirulentVentures
                     Id = "Fighter",
                     Health = 80,
                     MaxHealth = 100,
-                    Attack = 25,
+                    Attack = 15,
                     Defense = 15,
                     Speed = 5,
                     Evasion = 20,
@@ -222,9 +222,9 @@ namespace VirulentVentures
                 }
             },
             {
-                "Skeleton", new CharacterData
+                "Mire Shambler", new CharacterData
                 {
-                    Id = "Skeleton",
+                    Id = "Mire Shambler",
                     MaxHealth = 75,
                     Attack = 12,
                     Defense = 15,
@@ -232,15 +232,15 @@ namespace VirulentVentures
                     Evasion = 10,
                     MaxMorale = 70,
                     Immunity = 0, // Monsters default to 0
-                    AbilityIds = new List<string> { "BasicAttack", "SkeletonSlash" },
+                    AbilityIds = new List<string> { "BasicAttack", "Mire ShamblerSlash" },
                     CanBeCultist = false,
                     PartyPosition = 2
                 }
             },
             {
-                "Vampire", new CharacterData
+                "Umbral Corvax", new CharacterData
                 {
-                    Id = "Vampire",
+                    Id = "Umbral Corvax",
                     MaxHealth = 85,
                     Attack = 22,
                     Defense = 8,
@@ -248,7 +248,7 @@ namespace VirulentVentures
                     Evasion = 30,
                     MaxMorale = 85,
                     Immunity = 0, // Monsters default to 0
-                    AbilityIds = new List<string> { "BasicAttack", "VampireBite" },
+                    AbilityIds = new List<string> { "BasicAttack", "Umbral CorvaxBite" },
                     CanBeCultist = false,
                     PartyPosition = 3
                 }

@@ -159,16 +159,16 @@ namespace VirulentVentures
                 canDodge: true
             ));
 
-            monsterAbilities.Add("SkeletonSlash", new AbilityData(
-                id: "SkeletonSlash",
-                animationTrigger: "SkeletonSlash",
+            monsterAbilities.Add("Mire ShamblerSlash", new AbilityData(
+                id: "Mire ShamblerSlash",
+                animationTrigger: "Mire ShamblerSlash",
                 effect: (target, partyData) => "",
                 isMelee: true // Melee attack
             ));
 
-            monsterAbilities.Add("VampireBite", new AbilityData(
-                id: "VampireBite",
-                animationTrigger: "VampireBite",
+            monsterAbilities.Add("Umbral CorvaxBite", new AbilityData(
+                id: "Umbral CorvaxBite",
+                animationTrigger: "Umbral CorvaxBite",
                 effect: (target, partyData) => "",
                 isMelee: true // Melee attack
             ));

@@ -31,7 +31,7 @@ namespace VirulentVentures
                 if (monsterPool.Count == 0)
                 {
                     Debug.LogWarning("CombatNodeGenerator: CharacterLibrary.GetMonsterIds returned empty, using fallback monster IDs.");
-                    monsterPool = new List<string> { "Bog Fiend", "Wraith", "Skeleton", "Vampire" };
+                    monsterPool = new List<string> { "Bog Fiend", "Wraith", "Mire Shambler", "Umbral Corvax" };
                 }
             }
         }
@@ -48,7 +48,7 @@ namespace VirulentVentures
             if (!monsterPool.Any(id => validMonsterIds.Contains(id)))
             {
                 Debug.LogWarning("CombatNodeGenerator: monsterPool contains no valid monster IDs. Using fallback.");
-                monsterPool = validMonsterIds.Count > 0 ? validMonsterIds : new List<string> { "Bog Fiend", "Wraith", "Skeleton", "Vampire" };
+                monsterPool = validMonsterIds.Count > 0 ? validMonsterIds : new List<string> { "Bog Fiend", "Wraith", "Mire Shambler", "Umbral Corvax" };
             }
             return true;
         }
