@@ -364,6 +364,10 @@ namespace VirulentVentures
                     if (abilityId == "Entangle") selfDamage = 10;
                     stats.Health -= selfDamage;
                     UpdateUnit(unit, $"{unit.Id} takes {selfDamage} self-damage!");
+                    if (stats.Health <= 0)
+                    {
+                        eventBus.RaiseUnitDied(unit);
+                    }
                 }
 
                 // Infection Mechanic (Placeholder)
