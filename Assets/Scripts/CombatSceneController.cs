@@ -164,20 +164,33 @@ namespace VirulentVentures
             {
                 var targetState = unitAttackStates.Find(s => s.Unit == target);
                 int originalDefense = target is CharacterStats targetStats ? targetStats.Defense : 0;
+                int currentEvasion = target is CharacterStats targetStats1 ? targetStats1.Evasion : 0;
                 if (targetState != null && target is CharacterStats targetStats2)
                 {
                     if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats2.Defense += defMod.value;
+                    if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) currentEvasion += evaMod.value;
                 }
 
                 eventBus.RaiseUnitAttacking(unit, target, abilityId);
                 yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
 
+                // Evasion check
+                if (ability.Value.CanDodge && target is CharacterStats targetStats3)
+                {
+                    float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
+                    if (Random.value <= dodgeChance)
+                    {
+                        eventBus.RaiseLogMessage($"{targetStats3.Id} dodges the attack!", Color.white);
+                        continue; // Skip to next target
+                    }
+                }
+
                 // Damage calculation with ignore DEF/flat damage
-                bool ignoreDEF = abilityId == "BasicAttack" && unit.Id == "MireShambler" || abilityId == "ThornNeedle" || abilityId == "Entangle" || abilityId == "ChiStrike";
+                bool ignoreDEF = abilityId == "BasicAttack" && unit.Id == "Mire Shambler" || abilityId == "ThornNeedle" || abilityId == "Entangle" || abilityId == "ChiStrike";
                 int damage = 0;
                 if (ignoreDEF)
                 {
-                    if (abilityId == "BasicAttack" && unit.Id == "MireShambler" || abilityId == "Entangle")
+                    if (abilityId == "BasicAttack" && unit.Id == "Mire Shambler" || abilityId == "Entangle")
                     {
                         damage = 8;
                     }
@@ -187,12 +200,12 @@ namespace VirulentVentures
                     }
                     else if (abilityId == "ChiStrike")
                     {
-                        damage = Mathf.Max(1, stats.Attack - ((target is CharacterStats ts ? ts.Defense : 0) / 2));
+                        damage = Mathf.Max(1, stats.Attack - ((target is CharacterStats targetStats4 ? targetStats4.Defense : 0) / 2));
                     }
                 }
                 else if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
                 {
-                    damage = Mathf.Max(1, stats.Attack - (target is CharacterStats ts ? ts.Defense : 0));
+                    damage = Mathf.Max(1, stats.Attack - (target is CharacterStats targetStats5 ? targetStats5.Defense : 0));
                 }
                 if (damage > 0)
                 {
@@ -231,10 +244,10 @@ namespace VirulentVentures
                 }
                 else if (abilityId == "SniperShot")
                 {
-                    if (targetState != null && target is CharacterStats ts)
+                    if (targetState != null && target is CharacterStats targetStats6)
                     {
-                        targetState.TempStats["Evasion"] = (-(ts.Evasion / 4), 1);
-                        eventBus.RaiseLogMessage($"{ts.Id}'s Evasion reduced by 25%!", Color.white);
+                        targetState.TempStats["Evasion"] = (-(targetStats6.Evasion / 4), 1);
+                        eventBus.RaiseLogMessage($"{targetStats6.Id}'s Evasion reduced by 25%!", Color.white);
                     }
                 }
                 else if (abilityId == "HealerHeal")
@@ -257,9 +270,9 @@ namespace VirulentVentures
                         UpdateUnit(lowestHealthAlly);
                     }
                 }
-                else if (abilityId == "BasicAttack" && unit.Id == "BogFiend")
+                else if (abilityId == "BasicAttack" && unit.Id == "Bog Fiend")
                 {
-                    if (targetState != null && target is CharacterStats ts)
+                    if (targetState != null && target is CharacterStats targetStats7)
                     {
                         targetState.TempStats["Evasion"] = (5, 1);
                     }
@@ -271,11 +284,11 @@ namespace VirulentVentures
                 }
                 else if (abilityId == "MireGrasp")
                 {
-                    if (targetState != null && target is CharacterStats ts)
+                    if (targetState != null && target is CharacterStats targetStats8)
                     {
                         targetState.TempStats["Speed"] = (-3, 1);
-                        ts.Morale = Mathf.Max(0, ts.Morale - 5);
-                        UpdateUnit(ts, $"{ts.Id}'s Speed reduced by 3 and Morale by 5!");
+                        targetStats8.Morale = Mathf.Max(0, targetStats8.Morale - 5);
+                        UpdateUnit(targetStats8, $"{targetStats8.Id}'s Speed reduced by 3 and Morale by 5!");
                     }
                 }
                 else if (abilityId == "Entangle")
@@ -313,10 +326,10 @@ namespace VirulentVentures
                     {
                         state.TempStats["Evasion"] = (15, 1);
                     }
-                    if (target is CharacterStats ts)
+                    if (target is CharacterStats targetStats9)
                     {
-                        ts.Morale = Mathf.Max(0, ts.Morale - 5);
-                        UpdateUnit(ts, $"{ts.Id}'s Morale drops by 5!");
+                        targetStats9.Morale = Mathf.Max(0, targetStats9.Morale - 5);
+                        UpdateUnit(targetStats9, $"{targetStats9.Id}'s Morale drops by 5!");
                     }
                 }
                 else if (abilityId == "SpectralDrain")
@@ -325,10 +338,10 @@ namespace VirulentVentures
                     {
                         state.TempStats["Evasion"] = (15, 1);
                     }
-                    if (targetState != null && target is CharacterStats ts)
+                    if (targetState != null && target is CharacterStats targetStats10)
                     {
                         targetState.TempStats["Defense"] = (-5, 1);
-                        UpdateUnit(ts, $"{ts.Id}'s Defense reduced by 5!");
+                        UpdateUnit(targetStats10, $"{targetStats10.Id}'s Defense reduced by 5!");
                     }
                 }
                 else if (abilityId == "EtherealWail")
@@ -345,7 +358,7 @@ namespace VirulentVentures
                 }
 
                 // Self-Damage
-                if (unit.Id == "Wraith" || (abilityId == "Entangle" && unit.Id == "MireShambler"))
+                if (unit.Id == "Wraith" || (abilityId == "Entangle" && unit.Id == "Mire Shambler"))
                 {
                     int selfDamage = 8;
                     if (abilityId == "Entangle") selfDamage = 10;
@@ -356,10 +369,10 @@ namespace VirulentVentures
                 // Infection Mechanic (Placeholder)
                 if (stats.Type == CharacterType.Monster && Random.value < 0.7f)
                 {
-                    if (target is CharacterStats targetStats4)
+                    if (target is CharacterStats targetStats11)
                     {
-                        targetStats4.IsInfected = true;
-                        eventBus.RaiseLogMessage($"{target.Id} is infected!", Color.white);
+                        targetStats11.IsInfected = true;
+                        eventBus.RaiseLogMessage($"{targetStats11.Id} is infected!", Color.white);
                     }
                 }
                 else if (abilityId == "HealerHeal")
@@ -371,7 +384,7 @@ namespace VirulentVentures
                     }
                 }
 
-                if (target is CharacterStats targetStats3) targetStats3.Defense = originalDefense;
+                if (target is CharacterStats targetStats12) targetStats12.Defense = originalDefense;
                 if (target.Health <= 0)
                 {
                     eventBus.RaiseUnitDied(target);
@@ -448,7 +461,7 @@ namespace VirulentVentures
                     foreach (var tempStat in state.TempStats.ToList())
                     {
                         state.TempStats[tempStat.Key] = (tempStat.Value.value, tempStat.Value.duration - 1);
-                        if (state.TempStats[tempStat.Key].duration <= 0)
+                        if (tempStat.Value.duration <= 0)
                         {
                             state.TempStats.Remove(tempStat.Key);
                             if (unit is CharacterStats stats)
@@ -546,7 +559,7 @@ namespace VirulentVentures
 
         private void LogMessage(string message, Color color)
         {
-            eventBus.RaiseLogMessage(message, Color.white);
+            eventBus.RaiseLogMessage(message, color);
         }
 
         private void UpdateUnit(ICombatUnit unit, string damageMessage = null)
