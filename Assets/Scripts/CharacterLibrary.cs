@@ -118,9 +118,9 @@ namespace VirulentVentures
         private static readonly Dictionary<string, CharacterData> MonsterData = new Dictionary<string, CharacterData>
         {
             {
-                "BogFiend", new CharacterData
+                "Bog Fiend", new CharacterData
                 {
-                    Id = "BogFiend",
+                    Id = "Bog Fiend",
                     MaxHealth = 70,
                     Attack = 15,
                     Defense = 10,
@@ -148,9 +148,9 @@ namespace VirulentVentures
                 }
             },
             {
-                "MireShambler", new CharacterData
+                "Mire Shambler", new CharacterData
                 {
-                    Id = "MireShambler",
+                    Id = "Mire Shambler",
                     MaxHealth = 75,
                     Attack = 12,
                     Defense = 15,
@@ -163,9 +163,9 @@ namespace VirulentVentures
                 }
             },
             {
-                "UmbralCorvax", new CharacterData
+                "Umbral Corvax", new CharacterData
                 {
-                    Id = "UmbralCorvax",
+                    Id = "Umbral Corvax",
                     MaxHealth = 85,
                     Attack = 22,
                     Defense = 8,

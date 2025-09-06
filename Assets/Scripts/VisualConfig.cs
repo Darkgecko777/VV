@@ -9,22 +9,22 @@ namespace VirulentVentures
         [System.Serializable]
         public struct CharacterVisuals
         {
-            public string characterID; // e.g., "Fighter", "Healer" from HeroSO.Stats.Type.Id
-            public Sprite portrait; // Temple/Expedition
-            public Sprite combatSprite; // CombatScene
+            public string characterID;
+            public Sprite portrait;
+            public Sprite combatSprite;
         }
 
         [System.Serializable]
         public struct EnemyVisuals
         {
-            public string enemyID; // e.g., "Bog Fiend", "Wraith"
+            public string enemyID;
             public Sprite combatSprite;
         }
 
         [System.Serializable]
         public struct NodeVisuals
         {
-            public string nodeType; // e.g., "Combat", "NonCombat", "Temple"
+            public string nodeType;
             public Color highlightColor;
         }
 
@@ -32,22 +32,26 @@ namespace VirulentVentures
         {
             new CharacterVisuals { characterID = "Fighter", portrait = null, combatSprite = null },
             new CharacterVisuals { characterID = "Healer", portrait = null, combatSprite = null },
-            new CharacterVisuals { characterID = "Ranger", portrait = null, combatSprite = null },
-            new CharacterVisuals { characterID = "TreasureHunter", portrait = null, combatSprite = null },
-            new CharacterVisuals { characterID = "Monk", portrait = null, combatSprite = null },
-            new CharacterVisuals { characterID = "Assassin", portrait = null, combatSprite = null },
-            new CharacterVisuals { characterID = "Bard", portrait = null, combatSprite = null },
-            new CharacterVisuals { characterID = "Barbarian", portrait = null, combatSprite = null }
+            new CharacterVisuals { characterID = "Scout", portrait = null, combatSprite = null },
+            new CharacterVisuals { characterID = "Monk", portrait = null, combatSprite = null }
         };
 
-        public List<EnemyVisuals> enemyVisuals;
+        public List<EnemyVisuals> enemyVisuals = new List<EnemyVisuals>
+        {
+            new EnemyVisuals { enemyID = "Bog Fiend", combatSprite = null },
+            new EnemyVisuals { enemyID = "Mire Shambler", combatSprite = null },
+            new EnemyVisuals { enemyID = "Umbral Corvax", combatSprite = null },
+            new EnemyVisuals { enemyID = "Wraith", combatSprite = null }
+        };
+
         public List<NodeVisuals> nodeVisuals = new List<NodeVisuals>
         {
-            new NodeVisuals { nodeType = "Combat", highlightColor = new Color(0.8f, 0.2f, 0.2f) }, // Reddish for Combat
-            new NodeVisuals { nodeType = "NonCombat", highlightColor = new Color(0.2f, 0.4f, 0.8f) }, // Bluish for NonCombat
-            new NodeVisuals { nodeType = "Temple", highlightColor = Color.white } // White for Temple
+            new NodeVisuals { nodeType = "Combat", highlightColor = new Color(0.8f, 0.2f, 0.2f) },
+            new NodeVisuals { nodeType = "NonCombat", highlightColor = new Color(0.2f, 0.4f, 0.8f) },
+            new NodeVisuals { nodeType = "Temple", highlightColor = Color.white }
         };
-        [SerializeField] private Sprite combatBackground; // 512x512 background for Combat scene
+
+        [SerializeField] private Sprite combatBackground;
 
         public Sprite GetPortrait(string characterID)
         {
@@ -72,7 +76,11 @@ namespace VirulentVentures
         public Sprite GetEnemySprite(string enemyID)
         {
             var visual = enemyVisuals.Find(v => v.enemyID == enemyID);
-            return visual.combatSprite != null ? visual.combatSprite : null;
+            if (visual.combatSprite == null)
+            {
+                Debug.LogWarning($"VisualConfig.GetEnemySprite: No combat sprite found for {enemyID}");
+            }
+            return visual.combatSprite;
         }
 
         public Color GetNodeColor(string nodeType)
@@ -91,7 +99,6 @@ namespace VirulentVentures
             if (combatBackground == null)
             {
                 Debug.LogWarning("VisualConfig.GetCombatBackground: No combat background sprite assigned!");
-                // Fallback: Try loading from Resources for prototype
                 combatBackground = Resources.Load<Sprite>("CombatBackground");
                 if (combatBackground == null)
                 {
