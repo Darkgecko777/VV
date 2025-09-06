@@ -28,6 +28,7 @@ namespace VirulentVentures
             public int AttacksThisRound { get; set; }
             public int RoundCounter { get; set; }
             public Dictionary<string, int> AbilityCooldowns { get; set; } = new Dictionary<string, int>();
+            public bool SkipNextAttack { get; set; } = false;
         }
 
         void Awake()
@@ -90,6 +91,11 @@ namespace VirulentVentures
         private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
         {
             if (unit is not CharacterStats stats) return false;
+            if (state.SkipNextAttack)
+            {
+                state.SkipNextAttack = false; // Clear after skipping
+                return false;
+            }
             if (stats.Speed >= combatConfig.SpeedTwoAttacksThreshold)
                 return state.AttacksThisRound < 1;
             else if (stats.Speed >= combatConfig.SpeedThreePerTwoThreshold)
@@ -138,6 +144,25 @@ namespace VirulentVentures
                 int damage = Mathf.Max(1, unit.Attack - target.Defense);
                 target.Health -= damage;
                 UpdateUnit(target, $"{target.Id} takes {damage} damage!");
+            }
+            // Handle attack skip effects
+            if (abilityId == "IronResolve")
+            {
+                var state = unitAttackStates.Find(s => s.Unit == unit);
+                if (state != null)
+                {
+                    state.SkipNextAttack = true;
+                    eventBus.RaiseLogMessage($"{unit.Id} will skip their next attack due to Iron Resolve!", Color.white);
+                }
+            }
+            else if (abilityId == "Entangle")
+            {
+                var targetState = unitAttackStates.Find(s => s.Unit == target);
+                if (targetState != null)
+                {
+                    targetState.SkipNextAttack = true;
+                    eventBus.RaiseLogMessage($"{target.Id} is entangled and will skip their next attack!", Color.white);
+                }
             }
             if (target.Health <= 0)
             {
@@ -267,14 +292,14 @@ namespace VirulentVentures
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
                 heroPositions.Add(hero);
-                unitAttackStates.Add(new UnitAttackState { Unit = hero, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>() });
+                unitAttackStates.Add(new UnitAttackState { Unit = hero, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false });
             }
             foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0 && !m.HasRetreated))
             {
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
                 monsterPositions.Add(monster);
-                unitAttackStates.Add(new UnitAttackState { Unit = monster, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>() });
+                unitAttackStates.Add(new UnitAttackState { Unit = monster, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false });
             }
 
             heroPositions = heroPositions.OrderBy(h => h.PartyPosition).ToList();
