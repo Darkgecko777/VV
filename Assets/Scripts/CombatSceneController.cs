@@ -22,18 +22,11 @@ namespace VirulentVentures
         private int roundNumber;
         private List<UnitAttackState> unitAttackStates = new List<UnitAttackState>();
 
-        private class UnitAttackState
-        {
-            public ICombatUnit Unit { get; set; }
-            public int AttacksThisRound { get; set; }
-            public int RoundCounter { get; set; }
-            public Dictionary<string, int> AbilityCooldowns { get; set; } = new Dictionary<string, int>();
-            public bool SkipNextAttack { get; set; } = false;
-            public Dictionary<string, (int value, int duration)> TempStats { get; set; } = new Dictionary<string, (int value, int duration)>();
-        }
+        public static CombatSceneController Instance { get; private set; }
 
         void Awake()
         {
+            Instance = this;
             units.Clear();
             heroPositions.Clear();
             monsterPositions.Clear();
@@ -59,6 +52,16 @@ namespace VirulentVentures
         void OnDestroy()
         {
             eventBus.OnCombatEnded -= EndCombat;
+        }
+
+        public static UnitAttackState GetUnitAttackState(ICombatUnit unit)
+        {
+            return Instance.unitAttackStates.Find(s => s.Unit == unit);
+        }
+
+        public static List<CharacterStats> GetMonsterUnits()
+        {
+            return Instance.monsterPositions;
         }
 
         private string SelectAbility(CharacterStats unit, PartyData partyData, List<ICombatUnit> targets)
@@ -119,12 +122,24 @@ namespace VirulentVentures
                 ? AbilityDatabase.GetHeroAbility(abilityId)
                 : AbilityDatabase.GetMonsterAbility(abilityId);
             if (ability == null) yield break;
-            if (ability.Value.IsMelee)
+            List<ICombatUnit> selectedTargets;
+            if (ability.Value.IsMultiTarget && abilityId == "SludgeSlam")
             {
-                targets = targets.Take(2).ToList();
+                selectedTargets = targets.Where(t => t is CharacterStats cs && (cs.PartyPosition == 1 || cs.PartyPosition == 2) && t.Health > 0 && !t.HasRetreated).ToList();
             }
-            var target = GetRandomAliveTarget(targets);
-            if (target == null)
+            else if (!ability.Value.IsMelee)
+            {
+                selectedTargets = targets.Where(t => t.Health > 0 && !t.HasRetreated).ToList();
+                var target = GetRandomAliveTarget(selectedTargets);
+                selectedTargets = target != null ? new List<ICombatUnit> { target } : new List<ICombatUnit>();
+            }
+            else
+            {
+                selectedTargets = targets.Take(2).Where(t => t.Health > 0 && !t.HasRetreated).ToList();
+                var target = GetRandomAliveTarget(selectedTargets);
+                selectedTargets = target != null ? new List<ICombatUnit> { target } : new List<ICombatUnit>();
+            }
+            if (selectedTargets.Count == 0)
             {
                 if (NoActiveHeroes() || NoActiveMonsters())
                 {
@@ -134,11 +149,8 @@ namespace VirulentVentures
                 yield break;
             }
 
-            // Apply temporary stat changes before damage calculation
             var state = unitAttackStates.Find(s => s.Unit == unit);
-            var targetState = unitAttackStates.Find(s => s.Unit == target);
             int originalAttack = stats.Attack;
-            int originalDefense = target is CharacterStats targetStats ? targetStats.Defense : 0;
             int originalSpeed = stats.Speed;
             int originalEvasion = stats.Evasion;
             if (state != null)
@@ -147,52 +159,229 @@ namespace VirulentVentures
                 if (state.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
                 if (state.TempStats.TryGetValue("Evasion", out var evasionMod)) stats.Evasion += evasionMod.value;
             }
-            if (targetState != null && target is CharacterStats targetStats2)
+
+            foreach (var target in selectedTargets)
             {
-                if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats2.Defense += defMod.value;
+                var targetState = unitAttackStates.Find(s => s.Unit == target);
+                int originalDefense = target is CharacterStats targetStats ? targetStats.Defense : 0;
+                if (targetState != null && target is CharacterStats targetStats2)
+                {
+                    if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats2.Defense += defMod.value;
+                }
+
+                eventBus.RaiseUnitAttacking(unit, target, abilityId);
+                yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+
+                // Damage calculation with ignore DEF/flat damage
+                bool ignoreDEF = abilityId == "BasicAttack" && unit.Id == "MireShambler" || abilityId == "ThornNeedle" || abilityId == "Entangle" || abilityId == "ChiStrike";
+                int damage = 0;
+                if (ignoreDEF)
+                {
+                    if (abilityId == "BasicAttack" && unit.Id == "MireShambler" || abilityId == "Entangle")
+                    {
+                        damage = 8;
+                    }
+                    else if (abilityId == "ThornNeedle")
+                    {
+                        damage = 6;
+                    }
+                    else if (abilityId == "ChiStrike")
+                    {
+                        damage = Mathf.Max(1, stats.Attack - ((target is CharacterStats ts ? ts.Defense : 0) / 2));
+                    }
+                }
+                else if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
+                {
+                    damage = Mathf.Max(1, stats.Attack - (target is CharacterStats ts ? ts.Defense : 0));
+                }
+                if (damage > 0)
+                {
+                    target.Health -= damage;
+                    UpdateUnit(target, $"{target.Id} takes {damage} damage!");
+                }
+
+                // Specific ability effects
+                if (abilityId == "IronResolve")
+                {
+                    if (state != null)
+                    {
+                        state.SkipNextAttack = true;
+                        state.TempStats["Defense"] = (5, 1);
+                        stats.Morale = Mathf.Min(stats.Morale + 15, stats.MaxMorale);
+                        eventBus.RaiseLogMessage($"{unit.Id} bolsters defense and morale but will skip next attack!", Color.white);
+                    }
+                }
+                else if (abilityId == "ChiStrike")
+                {
+                    if (state != null)
+                    {
+                        state.TempStats["Evasion"] = (5, 1);
+                        eventBus.RaiseLogMessage($"{unit.Id} gains +5 Evasion!", Color.white);
+                    }
+                }
+                else if (abilityId == "InnerFocus")
+                {
+                    if (state != null)
+                    {
+                        state.TempStats["Speed"] = (3, 1);
+                        stats.Morale = Mathf.Min(stats.Morale + 10, stats.MaxMorale);
+                        stats.Health -= 5;
+                        UpdateUnit(unit, $"{unit.Id} boosts speed and morale but takes 5 damage!");
+                    }
+                }
+                else if (abilityId == "SniperShot")
+                {
+                    if (targetState != null && target is CharacterStats ts)
+                    {
+                        targetState.TempStats["Evasion"] = (-(ts.Evasion / 4), 1);
+                        eventBus.RaiseLogMessage($"{ts.Id}'s Evasion reduced by 25%!", Color.white);
+                    }
+                }
+                else if (abilityId == "HealerHeal")
+                {
+                    var lowestHealthAlly = partyData.FindLowestHealthAlly();
+                    if (lowestHealthAlly != null)
+                    {
+                        int oldHealth = lowestHealthAlly.Health;
+                        lowestHealthAlly.Health = Mathf.Min(lowestHealthAlly.Health + 10, lowestHealthAlly.MaxHealth);
+                        lowestHealthAlly.Morale = Mathf.Min(lowestHealthAlly.Morale + 5, lowestHealthAlly.MaxMorale);
+                        if (lowestHealthAlly.IsInfected)
+                        {
+                            lowestHealthAlly.IsInfected = false;
+                            eventBus.RaiseLogMessage($"Healer heals {lowestHealthAlly.Id} for {lowestHealthAlly.Health - oldHealth} HP, +5 Morale, and cures infection!", Color.white);
+                        }
+                        else
+                        {
+                            eventBus.RaiseLogMessage($"Healer heals {lowestHealthAlly.Id} for {lowestHealthAlly.Health - oldHealth} HP and +5 Morale!", Color.white);
+                        }
+                        UpdateUnit(lowestHealthAlly);
+                    }
+                }
+                else if (abilityId == "BasicAttack" && unit.Id == "BogFiend")
+                {
+                    if (targetState != null && target is CharacterStats ts)
+                    {
+                        targetState.TempStats["Evasion"] = (5, 1);
+                    }
+                    foreach (var hero in heroPositions)
+                    {
+                        hero.Morale = Mathf.Max(0, hero.Morale - 5);
+                        UpdateUnit(hero, $"{hero.Id}'s morale drops by 5!");
+                    }
+                }
+                else if (abilityId == "MireGrasp")
+                {
+                    if (targetState != null && target is CharacterStats ts)
+                    {
+                        targetState.TempStats["Speed"] = (-3, 1);
+                        ts.Morale = Mathf.Max(0, ts.Morale - 5);
+                        UpdateUnit(ts, $"{ts.Id}'s Speed reduced by 3 and Morale by 5!");
+                    }
+                }
+                else if (abilityId == "Entangle")
+                {
+                    if (targetState != null)
+                    {
+                        targetState.SkipNextAttack = true;
+                        eventBus.RaiseLogMessage($"{target.Id} is entangled and will skip their next attack!", Color.white);
+                    }
+                }
+                else if (abilityId == "ShriekOfDespair")
+                {
+                    foreach (var hero in heroPositions)
+                    {
+                        hero.Morale = Mathf.Max(0, hero.Morale - 10);
+                        UpdateUnit(hero, $"{hero.Id}'s morale drops by 10!");
+                    }
+                }
+                else if (abilityId == "FlocksVigor")
+                {
+                    foreach (var monster in monsterPositions)
+                    {
+                        var monsterState = unitAttackStates.Find(s => s.Unit == monster);
+                        if (monsterState != null)
+                        {
+                            monsterState.TempStats["Speed"] = (3, 1);
+                            monsterState.TempStats["Evasion"] = (10, 1);
+                        }
+                    }
+                    eventBus.RaiseLogMessage("All monsters gain +3 Speed and +10 Evasion!", Color.white);
+                }
+                else if (abilityId == "TrueStrike")
+                {
+                    if (state != null)
+                    {
+                        state.TempStats["Evasion"] = (15, 1);
+                    }
+                    if (target is CharacterStats ts)
+                    {
+                        ts.Morale = Mathf.Max(0, ts.Morale - 5);
+                        UpdateUnit(ts, $"{ts.Id}'s Morale drops by 5!");
+                    }
+                }
+                else if (abilityId == "SpectralDrain")
+                {
+                    if (state != null)
+                    {
+                        state.TempStats["Evasion"] = (15, 1);
+                    }
+                    if (targetState != null && target is CharacterStats ts)
+                    {
+                        targetState.TempStats["Defense"] = (-5, 1);
+                        UpdateUnit(ts, $"{ts.Id}'s Defense reduced by 5!");
+                    }
+                }
+                else if (abilityId == "EtherealWail")
+                {
+                    if (state != null)
+                    {
+                        state.TempStats["Evasion"] = (15, 1);
+                    }
+                    foreach (var hero in heroPositions)
+                    {
+                        hero.Morale = Mathf.Max(0, hero.Morale - 8);
+                        UpdateUnit(hero, $"{hero.Id}'s morale drops by 8!");
+                    }
+                }
+
+                // Self-Damage
+                if (unit.Id == "Wraith" || (abilityId == "Entangle" && unit.Id == "MireShambler"))
+                {
+                    int selfDamage = 8;
+                    if (abilityId == "Entangle") selfDamage = 10;
+                    stats.Health -= selfDamage;
+                    UpdateUnit(unit, $"{unit.Id} takes {selfDamage} self-damage!");
+                }
+
+                // Infection Mechanic (Placeholder)
+                if (stats.Type == CharacterType.Monster && Random.value < 0.7f)
+                {
+                    if (target is CharacterStats targetStats4)
+                    {
+                        targetStats4.IsInfected = true;
+                        eventBus.RaiseLogMessage($"{target.Id} is infected!", Color.white);
+                    }
+                }
+                else if (abilityId == "HealerHeal")
+                {
+                    var lowestHealthAlly = partyData.FindLowestHealthAlly();
+                    if (lowestHealthAlly != null && lowestHealthAlly.IsInfected)
+                    {
+                        lowestHealthAlly.IsInfected = false;
+                    }
+                }
+
+                if (target is CharacterStats targetStats3) targetStats3.Defense = originalDefense;
+                if (target.Health <= 0)
+                {
+                    eventBus.RaiseUnitDied(target);
+                }
             }
 
-            eventBus.RaiseUnitAttacking(unit, target, abilityId);
-            yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-            string abilityLog = ability.Value.Effect?.Invoke(target, partyData) ?? "";
-            if (!string.IsNullOrEmpty(abilityLog))
-            {
-                eventBus.RaiseLogMessage(abilityLog, Color.white);
-            }
-            if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
-            {
-                int damage = Mathf.Max(1, stats.Attack - (target is CharacterStats ts ? ts.Defense : 0));
-                target.Health -= damage;
-                UpdateUnit(target, $"{target.Id} takes {damage} damage!");
-            }
-            // Handle attack skip effects
-            if (abilityId == "IronResolve")
-            {
-                if (state != null)
-                {
-                    state.SkipNextAttack = true;
-                    state.TempStats["Defense"] = (5, 1);
-                    eventBus.RaiseLogMessage($"{unit.Id} will skip their next attack due to Iron Resolve!", Color.white);
-                }
-            }
-            else if (abilityId == "Entangle")
-            {
-                if (targetState != null)
-                {
-                    targetState.SkipNextAttack = true;
-                    eventBus.RaiseLogMessage($"{target.Id} is entangled and will skip their next attack!", Color.white);
-                }
-            }
-            // Revert temporary stat changes after use
             stats.Attack = originalAttack;
             stats.Speed = originalSpeed;
             stats.Evasion = originalEvasion;
-            if (target is CharacterStats targetStats3) targetStats3.Defense = originalDefense;
 
-            if (target.Health <= 0)
-            {
-                eventBus.RaiseUnitDied(target);
-            }
             if (abilityId != "BasicAttack")
             {
                 if (state != null)
@@ -357,7 +546,7 @@ namespace VirulentVentures
 
         private void LogMessage(string message, Color color)
         {
-            eventBus.RaiseLogMessage(message, color);
+            eventBus.RaiseLogMessage(message, Color.white);
         }
 
         private void UpdateUnit(ICombatUnit unit, string damageMessage = null)

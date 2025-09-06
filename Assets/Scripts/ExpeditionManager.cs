@@ -29,7 +29,7 @@ namespace VirulentVentures
         [SerializeField] private PartyData partyData;
         [SerializeField] private PlayerProgress playerProgress;
         [SerializeField] private EventBusSO eventBus;
-        [SerializeField] private bool clearDataOnStart = true; // Toggle for prototype (false for full release)
+        [SerializeField] private bool clearDataOnStart = true;
 
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
@@ -53,7 +53,6 @@ namespace VirulentVentures
                 return;
             }
 
-            // Clear data for prototype if toggle is true
             if (clearDataOnStart)
             {
                 PlayerPrefs.DeleteKey("ExpeditionSave");
@@ -71,7 +70,6 @@ namespace VirulentVentures
         {
             if (!ValidateReferences()) return;
 
-            // Load existing data if any
             string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
             if (!string.IsNullOrEmpty(expeditionSaveData))
             {
@@ -146,7 +144,7 @@ namespace VirulentVentures
         {
             expeditionData.Reset();
             partyData.Reset();
-            if (!clearDataOnStart) // Preserve progress unless wiping
+            if (!clearDataOnStart)
             {
                 playerProgress.Reset();
             }
@@ -200,7 +198,6 @@ namespace VirulentVentures
             foreach (var hero in partyData.HeroStats)
             {
                 var data = CharacterLibrary.GetHeroData(hero.Id);
-                hero.AbilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
                 hero.Speed = data.Speed;
             }
             foreach (var node in expeditionData.NodeData)
@@ -208,7 +205,6 @@ namespace VirulentVentures
                 foreach (var monster in node.Monsters)
                 {
                     var data = CharacterLibrary.GetMonsterData(monster.Id);
-                    monster.AbilityId = data.AbilityIds.Count > 0 ? data.AbilityIds[0] : "BasicAttack";
                 }
             }
         }

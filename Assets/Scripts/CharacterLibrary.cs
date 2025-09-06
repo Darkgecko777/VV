@@ -8,14 +8,14 @@ namespace VirulentVentures
         public struct CharacterData
         {
             public string Id;
-            public int Health; // Only used for heroes
+            public int Health;
             public int MaxHealth;
             public int Attack;
             public int Defense;
             public int Speed;
             public int Evasion;
-            public int Morale; // Only used for heroes
-            public int MaxMorale; // Only used for heroes
+            public int Morale;
+            public int MaxMorale;
             public int Immunity;
             public List<string> AbilityIds;
             public bool CanBeCultist;
@@ -31,8 +31,8 @@ namespace VirulentVentures
                     defense: Defense,
                     speed: Mathf.Clamp(Speed, 1, 8),
                     evasion: Mathf.Clamp(Evasion, 0, 100),
-                    morale: isHero ? Morale : 0, // 0 for monsters
-                    maxMorale: isHero ? MaxMorale : 0, // 0 for monsters
+                    morale: isHero ? Morale : 0,
+                    maxMorale: isHero ? MaxMorale : 0,
                     immunity: Immunity,
                     isHero: isHero
                 );
@@ -54,7 +54,7 @@ namespace VirulentVentures
                     Morale = 100,
                     MaxMorale = 100,
                     Immunity = 20,
-                    AbilityIds = new List<string> { "BasicAttack", "FighterAttack" },
+                    AbilityIds = new List<string> { "BasicAttack", "ShieldBash", "IronResolve" },
                     CanBeCultist = true,
                     PartyPosition = 1
                 }
@@ -90,26 +90,8 @@ namespace VirulentVentures
                     Morale = 100,
                     MaxMorale = 100,
                     Immunity = 30,
-                    AbilityIds = new List<string> { "BasicAttack", "ScoutDefend" },
+                    AbilityIds = new List<string> { "BasicAttack", "SniperShot" },
                     CanBeCultist = true,
-                    PartyPosition = 3
-                }
-            },
-            {
-                "TreasureHunter", new CharacterData
-                {
-                    Id = "TreasureHunter",
-                    Health = 70,
-                    MaxHealth = 90,
-                    Attack = 20,
-                    Defense = 12,
-                    Speed = 4,
-                    Evasion = 35,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    Immunity = 25,
-                    AbilityIds = new List<string> { "BasicAttack", "TreasureFind" },
-                    CanBeCultist = false,
                     PartyPosition = 3
                 }
             },
@@ -126,63 +108,9 @@ namespace VirulentVentures
                     Morale = 100,
                     MaxMorale = 100,
                     Immunity = 35,
-                    AbilityIds = new List<string> { "BasicAttack" },
+                    AbilityIds = new List<string> { "BasicAttack", "ChiStrike", "InnerFocus" },
                     CanBeCultist = false,
                     PartyPosition = 2
-                }
-            },
-            {
-                "Assassin", new CharacterData
-                {
-                    Id = "Assassin",
-                    Health = 60,
-                    MaxHealth = 80,
-                    Attack = 22,
-                    Defense = 8,
-                    Speed = 7,
-                    Evasion = 45,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    Immunity = 15,
-                    AbilityIds = new List<string> { "BasicAttack" },
-                    CanBeCultist = true,
-                    PartyPosition = 2
-                }
-            },
-            {
-                "Bard", new CharacterData
-                {
-                    Id = "Bard",
-                    Health = 55,
-                    MaxHealth = 75,
-                    Attack = 12,
-                    Defense = 6,
-                    Speed = 5,
-                    Evasion = 30,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    Immunity = 25,
-                    AbilityIds = new List<string> { "BasicAttack" },
-                    CanBeCultist = false,
-                    PartyPosition = 4
-                }
-            },
-            {
-                "Barbarian", new CharacterData
-                {
-                    Id = "Barbarian",
-                    Health = 85,
-                    MaxHealth = 105,
-                    Attack = 28,
-                    Defense = 10,
-                    Speed = 4,
-                    Evasion = 15,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    Immunity = 10,
-                    AbilityIds = new List<string> { "BasicAttack" },
-                    CanBeCultist = true,
-                    PartyPosition = 1
                 }
             }
         };
@@ -190,16 +118,16 @@ namespace VirulentVentures
         private static readonly Dictionary<string, CharacterData> MonsterData = new Dictionary<string, CharacterData>
         {
             {
-                "Bog Fiend", new CharacterData
+                "BogFiend", new CharacterData
                 {
-                    Id = "Bog Fiend",
+                    Id = "BogFiend",
                     MaxHealth = 70,
                     Attack = 15,
                     Defense = 10,
                     Speed = 4,
                     Evasion = 25,
                     Immunity = 0,
-                    AbilityIds = new List<string> { "BasicAttack", "Bog FiendClaw" },
+                    AbilityIds = new List<string> { "BasicAttack", "SludgeSlam", "MireGrasp" },
                     CanBeCultist = false,
                     PartyPosition = 1
                 }
@@ -214,37 +142,37 @@ namespace VirulentVentures
                     Speed = 6,
                     Evasion = 40,
                     Immunity = 0,
-                    AbilityIds = new List<string> { "BasicAttack", "WraithStrike" },
+                    AbilityIds = new List<string> { "TrueStrike", "SpectralDrain", "EtherealWail" },
                     CanBeCultist = false,
                     PartyPosition = 4
                 }
             },
             {
-                "Mire Shambler", new CharacterData
+                "MireShambler", new CharacterData
                 {
-                    Id = "Mire Shambler",
+                    Id = "MireShambler",
                     MaxHealth = 75,
                     Attack = 12,
                     Defense = 15,
                     Speed = 3,
                     Evasion = 10,
                     Immunity = 0,
-                    AbilityIds = new List<string> { "BasicAttack", "Mire ShamblerSlash" },
+                    AbilityIds = new List<string> { "BasicAttack", "ThornNeedle", "Entangle" },
                     CanBeCultist = false,
                     PartyPosition = 2
                 }
             },
             {
-                "Umbral Corvax", new CharacterData
+                "UmbralCorvax", new CharacterData
                 {
-                    Id = "Umbral Corvax",
+                    Id = "UmbralCorvax",
                     MaxHealth = 85,
                     Attack = 22,
                     Defense = 8,
                     Speed = 5,
                     Evasion = 30,
                     Immunity = 0,
-                    AbilityIds = new List<string> { "BasicAttack", "Umbral CorvaxBite" },
+                    AbilityIds = new List<string> { "BasicAttack", "ShriekOfDespair", "FlocksVigor" },
                     CanBeCultist = false,
                     PartyPosition = 3
                 }

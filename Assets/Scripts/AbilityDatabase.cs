@@ -11,7 +11,8 @@ namespace VirulentVentures
         public System.Func<object, PartyData, string> Effect { get; private set; }
         public bool IsCommon { get; private set; }
         public bool CanDodge { get; private set; }
-        public bool IsMelee { get; private set; } // Added melee flag
+        public bool IsMelee { get; private set; }
+        public bool IsMultiTarget { get; private set; }
         public System.Func<CharacterStats, PartyData, List<ICombatUnit>, bool> UseCondition { get; private set; }
 
         public AbilityData(
@@ -20,7 +21,8 @@ namespace VirulentVentures
             System.Func<object, PartyData, string> effect,
             bool isCommon = false,
             bool canDodge = false,
-            bool isMelee = false, // Default to false
+            bool isMelee = false,
+            bool isMultiTarget = false,
             System.Func<CharacterStats, PartyData, List<ICombatUnit>, bool> useCondition = null)
         {
             Id = id;
@@ -29,6 +31,7 @@ namespace VirulentVentures
             IsCommon = isCommon;
             CanDodge = canDodge;
             IsMelee = isMelee;
+            IsMultiTarget = isMultiTarget;
             UseCondition = useCondition ?? ((user, party, targets) => false);
         }
     }
@@ -51,73 +54,65 @@ namespace VirulentVentures
                 animationTrigger: "BasicAttack",
                 effect: (target, partyData) => "",
                 isCommon: true,
-                isMelee: true, // Melee attack
+                isMelee: true,
                 useCondition: (user, party, targets) =>
                 {
                     if (user.Id == "Healer")
                     {
-                        bool shouldHeal = party.HeroStats.Any(h => h.Type == CharacterType.Hero && h.Health < h.MaxHealth * 0.75f);
-                        return !shouldHeal;
+                        return !party.HeroStats.Any(h => h.Type == CharacterType.Hero && h.Health < h.MaxHealth * 0.75f);
                     }
                     return true;
                 }
             ));
 
-            heroAbilities.Add("FighterAttack", new AbilityData(
-                id: "FighterAttack",
-                animationTrigger: "FighterAttack",
-                effect: (target, partyData) =>
-                {
-                    if (target is CharacterStats stats && stats.IsHero && stats.Health < stats.MaxHealth * 0.3f)
-                    {
-                        stats.Attack += 3;
-                        return $"{stats.Id}'s Attack increased by 3!";
-                    }
-                    return "";
-                },
-                isMelee: true, // Melee attack
-                useCondition: (user, party, targets) => false
+            heroAbilities.Add("ShieldBash", new AbilityData(
+                id: "ShieldBash",
+                animationTrigger: "ShieldBash",
+                effect: (target, partyData) => "",
+                isMelee: true,
+                useCondition: (user, party, targets) =>
+                    user.Health > user.MaxHealth * 0.5f && targets.Any(t => t.Attack > user.Defense)
+            ));
+
+            heroAbilities.Add("IronResolve", new AbilityData(
+                id: "IronResolve",
+                animationTrigger: "IronResolve",
+                effect: (target, partyData) => "",
+                useCondition: (user, party, targets) =>
+                    user.Morale < user.MaxMorale * 0.7f && user.Health > user.MaxHealth * 0.3f
+            ));
+
+            heroAbilities.Add("ChiStrike", new AbilityData(
+                id: "ChiStrike",
+                animationTrigger: "ChiStrike",
+                effect: (target, partyData) => "",
+                isMelee: true,
+                useCondition: (user, party, targets) =>
+                    targets.Any(t => t is CharacterStats ts && ts.Defense > user.Attack / 2)
+            ));
+
+            heroAbilities.Add("InnerFocus", new AbilityData(
+                id: "InnerFocus",
+                animationTrigger: "InnerFocus",
+                effect: (target, partyData) => "",
+                useCondition: (user, party, targets) =>
+                    user.Health < user.MaxHealth * 0.7f && user.Morale < user.MaxMorale * 0.6f
+            ));
+
+            heroAbilities.Add("SniperShot", new AbilityData(
+                id: "SniperShot",
+                animationTrigger: "SniperShot",
+                effect: (target, partyData) => "",
+                useCondition: (user, party, targets) =>
+                    targets.Any(t => t.Health < t.MaxHealth * 0.3f)
             ));
 
             heroAbilities.Add("HealerHeal", new AbilityData(
                 id: "HealerHeal",
                 animationTrigger: "HealerHeal",
-                effect: (target, partyData) =>
-                {
-                    var lowestHealthAlly = partyData.FindLowestHealthAlly();
-                    if (lowestHealthAlly != null)
-                    {
-                        int oldHealth = lowestHealthAlly.Health;
-                        lowestHealthAlly.Health = Mathf.Min(lowestHealthAlly.Health + 10, lowestHealthAlly.MaxHealth);
-                        return $"Healer heals {lowestHealthAlly.Id} for {lowestHealthAlly.Health - oldHealth} HP!";
-                    }
-                    return "";
-                },
+                effect: (target, partyData) => "",
                 useCondition: (user, party, targets) =>
                     party.HeroStats.Any(h => h.Type == CharacterType.Hero && h.Health < h.MaxHealth * 0.75f)
-            ));
-
-            heroAbilities.Add("ScoutDefend", new AbilityData(
-                id: "ScoutDefend",
-                animationTrigger: "ScoutDefend",
-                effect: (target, partyData) =>
-                {
-                    if (target is CharacterStats stats && stats.IsHero)
-                    {
-                        stats.Defense += 2;
-                        return $"{stats.Id}'s Defense increased by 2!";
-                    }
-                    return "";
-                },
-                isMelee: true, // Melee-based defense
-                useCondition: (user, party, targets) => false
-            ));
-
-            heroAbilities.Add("TreasureFind", new AbilityData(
-                id: "TreasureFind",
-                animationTrigger: "TreasureFind",
-                effect: (target, partyData) => "Treasure found!",
-                useCondition: (user, party, targets) => false
             ));
         }
 
@@ -128,49 +123,87 @@ namespace VirulentVentures
                 animationTrigger: "BasicAttack",
                 effect: (target, partyData) => "",
                 isCommon: true,
-                isMelee: true // Melee attack
+                isMelee: true
             ));
 
-            monsterAbilities.Add("DefaultMonsterAbility", new AbilityData(
-                id: "DefaultMonsterAbility",
-                animationTrigger: "DefaultMonsterAttack",
+            monsterAbilities.Add("SludgeSlam", new AbilityData(
+                id: "SludgeSlam",
+                animationTrigger: "SludgeSlam",
                 effect: (target, partyData) => "",
-                useCondition: (user, party, targets) => false
+                isMelee: true,
+                isMultiTarget: true,
+                useCondition: (user, party, targets) =>
+                    targets.Count(t => t is CharacterStats cs && (cs.PartyPosition == 1 || cs.PartyPosition == 2) && t.Health > 0 && !t.HasRetreated) >= 2
             ));
 
-            monsterAbilities.Add("Bog FiendClaw", new AbilityData(
-                id: "Bog FiendClaw",
-                animationTrigger: "Bog FiendClaw",
+            monsterAbilities.Add("MireGrasp", new AbilityData(
+                id: "MireGrasp",
+                animationTrigger: "MireGrasp",
                 effect: (target, partyData) => "",
-                isMelee: true // Melee attack
+                isMelee: true,
+                useCondition: (user, party, targets) =>
+                    targets.Any(t => t.Speed > user.Speed)
             ));
 
-            monsterAbilities.Add("Bog FiendRend", new AbilityData(
-                id: "Bog FiendRend",
-                animationTrigger: "Bog FiendRend",
+            monsterAbilities.Add("ThornNeedle", new AbilityData(
+                id: "ThornNeedle",
+                animationTrigger: "ThornNeedle",
                 effect: (target, partyData) => "",
-                isMelee: true // Melee attack
+                useCondition: (user, party, targets) =>
+                    targets.Any(t => t is CharacterStats cs && (cs.PartyPosition == 3 || cs.PartyPosition == 4) && t.Health > 0 && !t.HasRetreated)
             ));
 
-            monsterAbilities.Add("WraithStrike", new AbilityData(
-                id: "WraithStrike",
-                animationTrigger: "WraithStrike",
+            monsterAbilities.Add("Entangle", new AbilityData(
+                id: "Entangle",
+                animationTrigger: "Entangle",
                 effect: (target, partyData) => "",
-                canDodge: true
+                isMelee: true,
+                useCondition: (user, party, targets) =>
+                    targets.Any(t => t.Speed > user.Speed)
             ));
 
-            monsterAbilities.Add("Mire ShamblerSlash", new AbilityData(
-                id: "Mire ShamblerSlash",
-                animationTrigger: "Mire ShamblerSlash",
+            monsterAbilities.Add("ShriekOfDespair", new AbilityData(
+                id: "ShriekOfDespair",
+                animationTrigger: "ShriekOfDespair",
                 effect: (target, partyData) => "",
-                isMelee: true // Melee attack
+                useCondition: (user, party, targets) =>
+                    party.HeroStats.Any(h => h.Morale > h.MaxMorale * 0.6f)
             ));
 
-            monsterAbilities.Add("Umbral CorvaxBite", new AbilityData(
-                id: "Umbral CorvaxBite",
-                animationTrigger: "Umbral CorvaxBite",
+            monsterAbilities.Add("FlocksVigor", new AbilityData(
+                id: "FlocksVigor",
+                animationTrigger: "FlocksVigor",
                 effect: (target, partyData) => "",
-                isMelee: true // Melee attack
+                useCondition: (user, party, targets) =>
+                    targets.Any(t => t is CharacterStats cs && cs.Type == CharacterType.Monster && t.Health < t.MaxHealth * 0.5f)
+            ));
+
+            monsterAbilities.Add("TrueStrike", new AbilityData(
+                id: "TrueStrike",
+                animationTrigger: "TrueStrike",
+                effect: (target, partyData) => "",
+                isMelee: true,
+                canDodge: true,
+                useCondition: (user, party, targets) => true
+            ));
+
+            monsterAbilities.Add("SpectralDrain", new AbilityData(
+                id: "SpectralDrain",
+                animationTrigger: "SpectralDrain",
+                effect: (target, partyData) => "",
+                isMelee: true,
+                canDodge: true,
+                useCondition: (user, party, targets) =>
+                    targets.Any(t => t is CharacterStats ts && ts.Defense > 5)
+            ));
+
+            monsterAbilities.Add("EtherealWail", new AbilityData(
+                id: "EtherealWail",
+                animationTrigger: "EtherealWail",
+                effect: (target, partyData) => "",
+                canDodge: true,
+                useCondition: (user, party, targets) =>
+                    party.HeroStats.Any(h => h.Morale > h.MaxMorale * 0.5f)
             ));
         }
 
