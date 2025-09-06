@@ -181,11 +181,11 @@ namespace VirulentVentures
                     if (Random.value <= dodgeChance)
                     {
                         eventBus.RaiseLogMessage($"{targetStats3.Id} dodges the attack!", Color.white);
-                        continue; // Skip to next target
+                        continue;
                     }
                 }
 
-                // Damage calculation with ignore DEF/flat damage
+                // Damage calculation with new formula
                 bool ignoreDEF = abilityId == "BasicAttack" && unit.Id == "Mire Shambler" || abilityId == "ThornNeedle" || abilityId == "Entangle" || abilityId == "ChiStrike";
                 int damage = 0;
                 if (ignoreDEF)
@@ -200,12 +200,12 @@ namespace VirulentVentures
                     }
                     else if (abilityId == "ChiStrike")
                     {
-                        damage = Mathf.Max(1, stats.Attack - ((target is CharacterStats targetStats4 ? targetStats4.Defense : 0) / 2));
+                        damage = Mathf.Max(0, Mathf.RoundToInt(stats.Attack * (1f - 0.025f * (target is CharacterStats targetStats4 ? targetStats4.Defense : 0))));
                     }
                 }
                 else if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
                 {
-                    damage = Mathf.Max(1, stats.Attack - (target is CharacterStats targetStats5 ? targetStats5.Defense : 0));
+                    damage = Mathf.Max(0, Mathf.RoundToInt(stats.Attack * (1f - 0.05f * (target is CharacterStats targetStats5 ? targetStats5.Defense : 0))));
                 }
                 if (damage > 0)
                 {
@@ -240,6 +240,10 @@ namespace VirulentVentures
                         stats.Morale = Mathf.Min(stats.Morale + 10, stats.MaxMorale);
                         stats.Health -= 5;
                         UpdateUnit(unit, $"{unit.Id} boosts speed and morale but takes 5 damage!");
+                        if (stats.Health <= 0)
+                        {
+                            eventBus.RaiseUnitDied(unit);
+                        }
                     }
                 }
                 else if (abilityId == "SniperShot")
