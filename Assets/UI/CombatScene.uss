@@ -41,7 +41,6 @@
     border-color: rgb(50, 50, 50); /* Dark grey border */
     margin: 1px; /* Small margin to prevent overlap */
     flex-direction: column; /* Stack content vertically */
-    justify-content: center; /* Center content */
 }
 
 /* Unit panel labels */
@@ -52,10 +51,10 @@
 }
 
 /* Infected label */
-.infected-label {
-    font-size: 12px;
-    color: rgb(255, 0, 0); /* Red to match health-fill */
-    margin: 2px 5px;
+.unit-panel .infected-label {
+    font-size: 10px; /* Match stat labels for compactness */
+    color: rgb(255, 0, 0) !important; /* Red, override parent label color */
+    margin: 1px 5px; /* Reduced margin for less vertical space */
 }
 
 /* Combat log ScrollView */
@@ -86,15 +85,16 @@
 .health-bar {
     width: 80%; /* Condensed width */
     max-width: 150px; /* Cap for larger panels */
-    height: 20px;
+    height: 16px; /* Reduced for space */
     background-color: rgb(0, 255, 0); /* Green background */
     position: relative;
-    margin: 5px auto; /* Center horizontally */
+    margin: 2px auto; /* Reduced margin */
     border-width: 2px;
     border-color: rgb(255, 255, 255); /* White border for contrast */
     border-radius: 4px; /* Subtle rounded corners */
 }
 
+/* Health fill */
 .health-fill {
     height: 100%;
     background-color: rgb(255, 0, 0); /* Red fill */
@@ -104,27 +104,29 @@
     border-radius: 4px; /* Match parent border radius */
 }
 
+/* Health label */
 .health-label {
     position: absolute;
     width: 100%;
     height: 100%;
     color: rgb(255, 255, 255); /* White text */
-    font-size: 12px;
+    font-size: 10px; /* Reduced for compactness */
 }
 
 /* Morale bar styles for heroes only */
 .morale-bar {
     width: 80%; /* Match health bar */
     max-width: 150px;
-    height: 20px;
+    height: 16px; /* Reduced for space */
     background-color: rgb(200, 200, 200); /* Light grey background */
     position: relative;
-    margin: 3px auto;
+    margin: 2px auto; /* Reduced margin */
     border-width: 2px;
     border-color: rgb(255, 255, 255); /* White border */
     border-radius: 4px;
 }
 
+/* Morale fill */
 .morale-fill {
     height: 100%;
     position: absolute;
@@ -133,12 +135,13 @@
     border-radius: 4px;
 }
 
+/* Morale label */
 .morale-label {
     position: absolute;
     width: 100%;
     height: 100%;
     color: rgb(255, 255, 255); /* White text */
-    font-size: 12px;
+    font-size: 10px; /* Reduced for compactness */
 }
 
 /* Low morale flash effect for heroes */
@@ -149,6 +152,7 @@
     background-color: rgb(255, 50, 50); /* Red flash */
 }
 
+/* Low morale hover effect */
 .low-morale:hover {
     background-color: rgb(80, 80, 80); /* Revert to default */
 }
@@ -165,7 +169,7 @@
 .stat-grid {
     width: 80%; /* Match health bar */
     max-width: 150px;
-    margin: 3px auto; /* Center below health bar */
+    margin: 2px auto; /* Reduced margin */
     flex-direction: row;
     flex-wrap: wrap; /* Two columns */
     justify-content: space-between;
@@ -174,7 +178,7 @@
 /* Individual stat containers */
 .stat-container {
     width: 48%; /* Two columns with small gap */
-    height: 16px; /* Compact for text */
+    height: 12px; /* Reduced for space */
     margin: 1px;
     flex-direction: row;
     align-items: center;

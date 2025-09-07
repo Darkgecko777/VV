@@ -195,7 +195,7 @@ namespace VirulentVentures
             var evaContainer = new VisualElement();
             evaContainer.AddToClassList("stat-container");
             var evaLabel = new Label($"E: {stats.evasion}");
-            evaContainer.Add(evaLabel);
+            atkContainer.Add(evaLabel);
             statGrid.Add(evaContainer);
 
             panel.Add(statGrid);
@@ -213,9 +213,9 @@ namespace VirulentVentures
             unitStatLabels.Clear();
             infectedLabels.Clear();
             var heroes = data.units.Where(u => u.stats.isHero).ToList();
-            var monsters = data.units.Where(u => !u.stats.isHero).ToList();
+            var infectedHeroCount = heroes.Count(h => h.stats.isInfected);
             var leftPanel = root.Q<VisualElement>("left-panel");
-            float heroPanelHeight = heroes.Count > 0 ? 100f / Mathf.Min(heroes.Count, 4) : 25f;
+            float heroPanelHeight = heroes.Count > 0 ? 100f / Mathf.Min(heroes.Count + infectedHeroCount * 0.3f, 4) : 25f;
             for (int i = 0; i < heroes.Count && i < 4; i++)
             {
                 var unit = heroes[i].unit;
@@ -225,11 +225,11 @@ namespace VirulentVentures
                 unitPanels[unit] = panel;
             }
             var rightPanel = root.Q<VisualElement>("right-panel");
-            float monsterPanelHeight = monsters.Count > 0 ? 100f / Mathf.Min(monsters.Count, 4) : 25f;
-            for (int i = 0; i < monsters.Count && i < 4; i++)
+            float monsterPanelHeight = data.units.Count(u => !u.stats.isHero) > 0 ? 100f / Mathf.Min(data.units.Count(u => !u.stats.isHero), 4) : 25f;
+            for (int i = 0; i < data.units.Count(u => !u.stats.isHero) && i < 4; i++)
             {
-                var unit = monsters[i].unit;
-                var stats = monsters[i].stats;
+                var unit = data.units.Where(u => !u.stats.isHero).ToList()[i].unit;
+                var stats = data.units.Where(u => !u.stats.isHero).ToList()[i].stats;
                 var panel = CreateUnitPanel(unit, stats, false, monsterPanelHeight);
                 rightPanel.Add(panel);
                 unitPanels[unit] = panel;
@@ -241,10 +241,10 @@ namespace VirulentVentures
                 var go = CreateUnitGameObject(unit, stats, true, characterPositions.heroPositions[i]);
                 unitGameObjects[unit] = go;
             }
-            for (int i = 0; i < monsters.Count && i < characterPositions.monsterPositions.Length; i++)
+            for (int i = 0; i < data.units.Count(u => !u.stats.isHero) && i < characterPositions.monsterPositions.Length; i++)
             {
-                var unit = monsters[i].unit;
-                var stats = monsters[i].stats;
+                var unit = data.units.Where(u => !u.stats.isHero).ToList()[i].unit;
+                var stats = data.units.Where(u => !u.stats.isHero).ToList()[i].stats;
                 var go = CreateUnitGameObject(unit, stats, false, characterPositions.monsterPositions[i]);
                 unitGameObjects[unit] = go;
             }
@@ -276,12 +276,11 @@ namespace VirulentVentures
                             UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale);
                         }
                     }
-                    // Update infected label
                     if (data.displayStats.isInfected && !infectedLabels.ContainsKey(data.unit))
                     {
                         var infectedLabel = new Label("Infected");
                         infectedLabel.AddToClassList("infected-label");
-                        panel.Insert(1, infectedLabel); // Insert below name
+                        panel.Insert(1, infectedLabel);
                         infectedLabels[data.unit] = infectedLabel;
                     }
                     else if (!data.displayStats.isInfected && infectedLabels.ContainsKey(data.unit))
