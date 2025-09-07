@@ -51,6 +51,13 @@
     margin: 5px;
 }
 
+/* Infected label */
+.infected-label {
+    font-size: 12px;
+    color: rgb(255, 0, 0); /* Red to match health-fill */
+    margin: 2px 5px;
+}
+
 /* Combat log ScrollView */
 .log-scrollview {
     width: 100%;

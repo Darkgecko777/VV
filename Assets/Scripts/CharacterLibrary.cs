@@ -34,7 +34,8 @@ namespace VirulentVentures
                     morale: isHero ? Morale : 0,
                     maxMorale: isHero ? MaxMorale : 0,
                     infectivity: Infectivity,
-                    isHero: isHero
+                    isHero: isHero,
+                    isInfected: false
                 );
             }
         }

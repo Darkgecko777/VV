@@ -37,8 +37,7 @@ namespace VirulentVentures
             Morale = type == CharacterType.Hero ? data.Morale : 0;
             MaxMorale = type == CharacterType.Hero ? data.MaxMorale : 0;
             Infectivity = data.Infectivity;
-            // Map Vector3 position to PartyPosition (1-4 based on index or x-coordinate)
-            PartyPosition = data.PartyPosition; // Use CharacterLibrary's PartyPosition
+            PartyPosition = data.PartyPosition;
         }
 
         public struct DisplayStats
@@ -54,8 +53,9 @@ namespace VirulentVentures
             public int maxMorale;
             public int infectivity;
             public bool isHero;
+            public bool isInfected;
 
-            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero)
+            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected)
             {
                 this.name = name;
                 this.health = health;
@@ -68,6 +68,7 @@ namespace VirulentVentures
                 this.maxMorale = maxMorale;
                 this.infectivity = infectivity;
                 this.isHero = isHero;
+                this.isInfected = isInfected;
             }
         }
 
@@ -84,7 +85,8 @@ namespace VirulentVentures
                 morale: Morale,
                 maxMorale: MaxMorale,
                 infectivity: Infectivity,
-                isHero: IsHero
+                isHero: IsHero,
+                isInfected: IsInfected
             );
         }
     }

@@ -17,6 +17,7 @@ namespace VirulentVentures
         private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
         private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
         private Dictionary<ICombatUnit, (Label atk, Label def, Label spd, Label eva, Label morale)> unitStatLabels = new Dictionary<ICombatUnit, (Label, Label, Label, Label, Label)>();
+        private Dictionary<ICombatUnit, Label> infectedLabels = new Dictionary<ICombatUnit, Label>();
         private GameObject backgroundGameObject;
         private VisualElement logContent;
         private List<Label> logMessages = new List<Label>();
@@ -110,6 +111,20 @@ namespace VirulentVentures
             }
         }
 
+        private void UpdateHealthBar(VisualElement fill, Label label, int health, int maxHealth)
+        {
+            float healthPercent = maxHealth > 0 ? (float)health / maxHealth : 0;
+            fill.style.width = Length.Percent(healthPercent * 100);
+            label.text = $"{health}/{maxHealth}";
+        }
+
+        private void UpdateMoraleBar(VisualElement fill, Label label, int morale, int maxMorale)
+        {
+            float moralePercent = maxMorale > 0 ? (float)morale / maxMorale : 0;
+            fill.style.width = Length.Percent(moralePercent * 100);
+            label.text = $"{morale}/{maxMorale}";
+        }
+
         private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float heightPercent)
         {
             var panel = new VisualElement();
@@ -119,6 +134,14 @@ namespace VirulentVentures
             var nameLabel = new Label(stats.name);
             nameLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             panel.Add(nameLabel);
+
+            if (isHero && stats.isInfected)
+            {
+                var infectedLabel = new Label("Infected");
+                infectedLabel.AddToClassList("infected-label");
+                panel.Add(infectedLabel);
+                infectedLabels[unit] = infectedLabel;
+            }
 
             var healthBar = new VisualElement();
             healthBar.AddToClassList("health-bar");
@@ -131,14 +154,17 @@ namespace VirulentVentures
             UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
             panel.Add(healthBar);
 
+            VisualElement moraleBar = null;
+            VisualElement moraleFill = null;
+            Label moraleLabel = null;
             if (isHero)
             {
-                var moraleBar = new VisualElement();
+                moraleBar = new VisualElement();
                 moraleBar.AddToClassList("morale-bar");
-                var moraleFill = new VisualElement();
+                moraleFill = new VisualElement();
                 moraleFill.AddToClassList("morale-fill");
                 moraleBar.Add(moraleFill);
-                var moraleLabel = new Label();
+                moraleLabel = new Label();
                 moraleLabel.AddToClassList("morale-label");
                 moraleBar.Add(moraleLabel);
                 UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale);
@@ -152,52 +178,32 @@ namespace VirulentVentures
             atkContainer.AddToClassList("stat-container");
             var atkLabel = new Label($"A: {stats.attack}");
             atkContainer.Add(atkLabel);
+            statGrid.Add(atkContainer);
 
             var defContainer = new VisualElement();
             defContainer.AddToClassList("stat-container");
             var defLabel = new Label($"D: {stats.defense}");
             defContainer.Add(defLabel);
+            statGrid.Add(defContainer);
 
             var spdContainer = new VisualElement();
             spdContainer.AddToClassList("stat-container");
             var spdLabel = new Label($"S: {stats.speed}");
             spdContainer.Add(spdLabel);
+            statGrid.Add(spdContainer);
 
             var evaContainer = new VisualElement();
             evaContainer.AddToClassList("stat-container");
             var evaLabel = new Label($"E: {stats.evasion}");
             evaContainer.Add(evaLabel);
-
-            statGrid.Add(atkContainer);
-            statGrid.Add(defContainer);
-            statGrid.Add(spdContainer);
             statGrid.Add(evaContainer);
 
             panel.Add(statGrid);
 
-            unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, isHero ? new Label($"Morale: {stats.morale}/{stats.maxMorale}") : null);
-            if (isHero)
-            {
-                statGrid.Add(unitStatLabels[unit].morale);
-            }
+            unitPanels[unit] = panel;
+            unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel);
 
             return panel;
-        }
-
-        private void UpdateHealthBar(VisualElement fill, Label label, int current, int max)
-        {
-            float percent = max > 0 ? (float)current / max * 100f : 0f;
-            fill.style.width = Length.Percent(percent);
-            label.text = $"Health: {current}/{max}";
-            fill.style.backgroundColor = new StyleColor(new Color(1f, 0f, 0f));
-        }
-
-        private void UpdateMoraleBar(VisualElement fill, Label label, int current, int max)
-        {
-            float percent = max > 0 ? (float)current / max * 100f : 0f;
-            fill.style.width = Length.Percent(percent);
-            label.text = $"Morale: {current}/{max}";
-            fill.style.backgroundColor = new StyleColor(new Color(0.6f, 0.8f, 1f));
         }
 
         private void InitializeCombat(EventBusSO.CombatInitData data)
@@ -205,6 +211,7 @@ namespace VirulentVentures
             unitGameObjects.Clear();
             unitPanels.Clear();
             unitStatLabels.Clear();
+            infectedLabels.Clear();
             var heroes = data.units.Where(u => u.stats.isHero).ToList();
             var monsters = data.units.Where(u => !u.stats.isHero).ToList();
             var leftPanel = root.Q<VisualElement>("left-panel");
@@ -268,6 +275,19 @@ namespace VirulentVentures
                         {
                             UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale);
                         }
+                    }
+                    // Update infected label
+                    if (data.displayStats.isInfected && !infectedLabels.ContainsKey(data.unit))
+                    {
+                        var infectedLabel = new Label("Infected");
+                        infectedLabel.AddToClassList("infected-label");
+                        panel.Insert(1, infectedLabel); // Insert below name
+                        infectedLabels[data.unit] = infectedLabel;
+                    }
+                    else if (!data.displayStats.isInfected && infectedLabels.ContainsKey(data.unit))
+                    {
+                        panel.Remove(infectedLabels[data.unit]);
+                        infectedLabels.Remove(data.unit);
                     }
                 }
                 if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
