@@ -20,7 +20,9 @@ namespace VirulentVentures
         private bool isCombatActive;
         private int roundNumber;
         private List<UnitAttackState> unitAttackStates = new List<UnitAttackState>();
+        private List<string> allCombatLogs = new List<string>(); // Tracks all logs per combat
         public static CombatSceneController Instance { get; private set; }
+
         void Awake()
         {
             Instance = this;
@@ -30,7 +32,9 @@ namespace VirulentVentures
             unitAttackStates.Clear();
             isCombatActive = false;
             roundNumber = 0;
+            allCombatLogs.Clear(); // Clear logs at awake
         }
+
         void Start()
         {
             expeditionManager = ExpeditionManager.Instance;
@@ -43,18 +47,22 @@ namespace VirulentVentures
             eventBus.OnCombatEnded += EndCombat;
             StartCoroutine(RunCombat());
         }
+
         void OnDestroy()
         {
             eventBus.OnCombatEnded -= EndCombat;
         }
+
         public static UnitAttackState GetUnitAttackState(ICombatUnit unit)
         {
             return Instance.unitAttackStates.Find(s => s.Unit == unit);
         }
+
         public static List<CharacterStats> GetMonsterUnits()
         {
             return Instance.monsterPositions;
         }
+
         private string SelectAbility(CharacterStats unit, PartyData partyData, List<ICombatUnit> targets)
         {
             var data = unit.Type == CharacterType.Hero
@@ -78,6 +86,7 @@ namespace VirulentVentures
             }
             return "BasicAttack";
         }
+
         private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
         {
             if (unit is not CharacterStats stats) return false;
@@ -96,6 +105,7 @@ namespace VirulentVentures
                 return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
             return false;
         }
+
         private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> unitList)
         {
             if (unit is not CharacterStats stats) yield break;
@@ -145,7 +155,7 @@ namespace VirulentVentures
             }
             foreach (var target in selectedTargets)
             {
-                var targetStats = target as CharacterStats; // Single declaration
+                var targetStats = target as CharacterStats;
                 var targetState = unitAttackStates.Find(s => s.Unit == target);
                 int originalDefense = targetStats != null ? targetStats.Defense : 0;
                 int currentEvasion = targetStats != null ? targetStats.Evasion : 0;
@@ -160,51 +170,70 @@ namespace VirulentVentures
                 if (ability.Value.CanDodge && targetStats != null)
                 {
                     float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
+                    string dodgeMessage = $"{targetStats.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>";
                     if (Random.value <= dodgeChance)
                     {
-                        eventBus.RaiseLogMessage($"{targetStats.Id} dodges the attack!", Color.white);
+                        allCombatLogs.Add(dodgeMessage);
+                        eventBus.RaiseLogMessage(dodgeMessage, Color.white);
                         continue;
                     }
+                    allCombatLogs.Add($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>");
+                    eventBus.RaiseLogMessage($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>", Color.white);
                 }
                 // Damage calculation with new formula
                 bool ignoreDEF = abilityId == "BasicAttack" && unit.Id == "Mire Shambler" || abilityId == "ThornNeedle" || abilityId == "Entangle" || abilityId == "ChiStrike";
                 int damage = 0;
+                string damageFormula = "";
                 if (ignoreDEF)
                 {
                     if (abilityId == "BasicAttack" && unit.Id == "Mire Shambler" || abilityId == "Entangle")
                     {
                         damage = 8;
+                        damageFormula = "[Fixed 8 DMG]";
                     }
                     else if (abilityId == "ThornNeedle")
                     {
                         damage = 6;
+                        damageFormula = "[Fixed 6 DMG]";
                     }
                     else if (abilityId == "ChiStrike")
                     {
                         damage = Mathf.Max(0, Mathf.RoundToInt(stats.Attack * (1f - 0.025f * (targetStats != null ? targetStats.Defense : 0))));
+                        damageFormula = $"[{stats.Attack} ATK - {targetStats?.Defense ?? 0} DEF * 2.5%]";
                     }
                 }
                 else if (abilityId == "BasicAttack" || abilityId.EndsWith("Claw") || abilityId.EndsWith("Strike") || abilityId.EndsWith("Slash") || abilityId.EndsWith("Bite"))
                 {
                     damage = Mathf.Max(0, Mathf.RoundToInt(stats.Attack * (1f - 0.05f * (targetStats != null ? targetStats.Defense : 0))));
+                    damageFormula = $"[{stats.Attack} ATK - {targetStats?.Defense ?? 0} DEF * 5%]";
                 }
                 if (damage > 0)
                 {
                     target.Health -= damage;
-                    UpdateUnit(target, $"{target.Id} takes {damage} damage!");
+                    string damageMessage = $"{stats.Id} hits {targetStats?.Id} for {damage} damage with {abilityId} <color=#FFFF00>{damageFormula}</color>";
+                    allCombatLogs.Add(damageMessage);
+                    UpdateUnit(target, damageMessage);
                     // Infection check for monster attacks on heroes
                     if (stats.Type == CharacterType.Monster && targetStats != null)
                     {
                         float infectionCarryChance = stats.Infectivity / 100f;
+                        float resistanceChance = targetStats.Infectivity / 100f;
+                        string infectionMessage = "";
                         if (Random.value <= infectionCarryChance)
                         {
-                            float resistanceChance = targetStats.Infectivity / 100f;
                             if (Random.value > resistanceChance && !targetStats.IsInfected)
                             {
                                 targetStats.IsInfected = true;
-                                eventBus.RaiseUnitInfected(targetStats, "Virus"); // Generic virus ID
-                                eventBus.RaiseLogMessage($"{targetStats.Id} is infected!", Color.white);
-                                UpdateUnit(targetStats);
+                                infectionMessage = $"{targetStats.Id} is infected! <color=#FFFF00>[{stats.Infectivity}% Infection vs {targetStats.Infectivity}% Resistance]</color>";
+                                allCombatLogs.Add(infectionMessage);
+                                eventBus.RaiseUnitInfected(targetStats, "Virus");
+                                UpdateUnit(targetStats, infectionMessage);
+                            }
+                            else
+                            {
+                                infectionMessage = $"{targetStats.Id} resists infection! <color=#FFFF00>[{stats.Infectivity}% Infection vs {targetStats.Infectivity}% Resistance]</color>";
+                                allCombatLogs.Add(infectionMessage);
+                                eventBus.RaiseLogMessage(infectionMessage, Color.white);
                             }
                         }
                     }
@@ -217,7 +246,9 @@ namespace VirulentVentures
                         state.SkipNextAttack = true;
                         state.TempStats["Defense"] = (5, 1);
                         stats.Morale = Mathf.Min(stats.Morale + 15, stats.MaxMorale);
-                        eventBus.RaiseLogMessage($"{unit.Id} bolsters defense and morale but will skip next attack!", Color.white);
+                        string message = $"{unit.Id} bolsters defense and morale but will skip next attack! <color=#FFFF00>[+5 DEF, +15 Morale]</color>";
+                        allCombatLogs.Add(message);
+                        eventBus.RaiseLogMessage(message, Color.white);
                     }
                 }
                 else if (abilityId == "ChiStrike")
@@ -225,7 +256,9 @@ namespace VirulentVentures
                     if (state != null)
                     {
                         state.TempStats["Evasion"] = (5, 1);
-                        eventBus.RaiseLogMessage($"{unit.Id} gains +5 Evasion!", Color.white);
+                        string message = $"{unit.Id} gains +5 Evasion! <color=#FFFF00>[+5 EVA]</color>";
+                        allCombatLogs.Add(message);
+                        eventBus.RaiseLogMessage(message, Color.white);
                     }
                 }
                 else if (abilityId == "InnerFocus")
@@ -235,7 +268,9 @@ namespace VirulentVentures
                         state.TempStats["Speed"] = (3, 1);
                         stats.Morale = Mathf.Min(stats.Morale + 10, stats.MaxMorale);
                         stats.Health -= 5;
-                        UpdateUnit(unit, $"{unit.Id} boosts speed and morale but takes 5 damage!");
+                        string message = $"{unit.Id} boosts speed and morale but takes 5 damage! <color=#FFFF00>[+3 SPD, +10 Morale, -5 HP]</color>";
+                        allCombatLogs.Add(message);
+                        UpdateUnit(unit, message);
                         if (stats.Health <= 0)
                         {
                             eventBus.RaiseUnitDied(unit);
@@ -246,8 +281,11 @@ namespace VirulentVentures
                 {
                     if (targetState != null && targetStats != null)
                     {
-                        targetState.TempStats["Evasion"] = (-(targetStats.Evasion / 4), 1);
-                        eventBus.RaiseLogMessage($"{targetStats.Id}'s Evasion reduced by 25%!", Color.white);
+                        int evasionReduction = targetStats.Evasion / 4;
+                        targetState.TempStats["Evasion"] = (-evasionReduction, 1);
+                        string message = $"{targetStats.Id}'s Evasion reduced by 25%! <color=#FFFF00>[-{evasionReduction} EVA]</color>";
+                        allCombatLogs.Add(message);
+                        eventBus.RaiseLogMessage(message, Color.white);
                     }
                 }
                 else if (abilityId == "HealerHeal")
@@ -258,14 +296,19 @@ namespace VirulentVentures
                         int oldHealth = lowestHealthAlly.Health;
                         lowestHealthAlly.Health = Mathf.Min(lowestHealthAlly.Health + 10, lowestHealthAlly.MaxHealth);
                         lowestHealthAlly.Morale = Mathf.Min(lowestHealthAlly.Morale + 5, lowestHealthAlly.MaxMorale);
+                        string message;
                         if (lowestHealthAlly.IsInfected)
                         {
                             lowestHealthAlly.IsInfected = false;
-                            eventBus.RaiseLogMessage($"Healer heals {lowestHealthAlly.Id} for {lowestHealthAlly.Health - oldHealth} HP, +5 Morale, and cures infection!", Color.white);
+                            message = $"Healer heals {lowestHealthAlly.Id} for {lowestHealthAlly.Health - oldHealth} HP, +5 Morale, and cures infection! <color=#FFFF00>[+{lowestHealthAlly.Health - oldHealth} HP, +5 Morale]</color>";
+                            allCombatLogs.Add(message);
+                            eventBus.RaiseLogMessage(message, Color.white);
                         }
                         else
                         {
-                            eventBus.RaiseLogMessage($"Healer heals {lowestHealthAlly.Id} for {lowestHealthAlly.Health - oldHealth} HP and +5 Morale!", Color.white);
+                            message = $"Healer heals {lowestHealthAlly.Id} for {lowestHealthAlly.Health - oldHealth} HP and +5 Morale! <color=#FFFF00>[+{lowestHealthAlly.Health - oldHealth} HP, +5 Morale]</color>";
+                            allCombatLogs.Add(message);
+                            eventBus.RaiseLogMessage(message, Color.white);
                         }
                         UpdateUnit(lowestHealthAlly);
                     }
@@ -279,7 +322,9 @@ namespace VirulentVentures
                     foreach (var hero in heroPositions)
                     {
                         hero.Morale = Mathf.Max(0, hero.Morale - 5);
-                        UpdateUnit(hero, $"{hero.Id}'s morale drops by 5!");
+                        string message = $"{hero.Id}'s morale drops by 5! <color=#FFFF00>[-5 Morale]</color>";
+                        allCombatLogs.Add(message);
+                        UpdateUnit(hero, message);
                     }
                 }
                 else if (abilityId == "MireGrasp")
@@ -288,7 +333,9 @@ namespace VirulentVentures
                     {
                         targetState.TempStats["Speed"] = (-3, 1);
                         targetStats.Morale = Mathf.Max(0, targetStats.Morale - 5);
-                        UpdateUnit(targetStats, $"{targetStats.Id}'s Speed reduced by 3 and Morale by 5!");
+                        string message = $"{targetStats.Id}'s Speed reduced by 3 and Morale by 5! <color=#FFFF00>[-3 SPD, -5 Morale]</color>";
+                        allCombatLogs.Add(message);
+                        UpdateUnit(targetStats, message);
                     }
                 }
                 else if (abilityId == "Entangle")
@@ -296,7 +343,9 @@ namespace VirulentVentures
                     if (targetState != null)
                     {
                         targetState.SkipNextAttack = true;
-                        eventBus.RaiseLogMessage($"{target.Id} is entangled and will skip their next attack!", Color.white);
+                        string message = $"{target.Id} is entangled and will skip their next attack! <color=#FFFF00>[Skip Next Attack]</color>";
+                        allCombatLogs.Add(message);
+                        eventBus.RaiseLogMessage(message, Color.white);
                     }
                 }
                 else if (abilityId == "ShriekOfDespair")
@@ -304,7 +353,9 @@ namespace VirulentVentures
                     foreach (var hero in heroPositions)
                     {
                         hero.Morale = Mathf.Max(0, hero.Morale - 10);
-                        UpdateUnit(hero, $"{hero.Id}'s morale drops by 10!");
+                        string message = $"{hero.Id}'s morale drops by 10! <color=#FFFF00>[-10 Morale]</color>";
+                        allCombatLogs.Add(message);
+                        UpdateUnit(hero, message);
                     }
                 }
                 else if (abilityId == "FlocksVigor")
@@ -318,7 +369,9 @@ namespace VirulentVentures
                             monsterState.TempStats["Evasion"] = (10, 1);
                         }
                     }
-                    eventBus.RaiseLogMessage("All monsters gain +3 Speed and +10 Evasion!", Color.white);
+                    string message = "All monsters gain +3 Speed and +10 Evasion! <color=#FFFF00>[+3 SPD, +10 EVA]</color>";
+                    allCombatLogs.Add(message);
+                    eventBus.RaiseLogMessage(message, Color.white);
                 }
                 else if (abilityId == "TrueStrike")
                 {
@@ -329,7 +382,9 @@ namespace VirulentVentures
                     if (targetStats != null)
                     {
                         targetStats.Morale = Mathf.Max(0, targetStats.Morale - 5);
-                        UpdateUnit(targetStats, $"{targetStats.Id}'s Morale drops by 5!");
+                        string message = $"{targetStats.Id}'s Morale drops by 5! <color=#FFFF00>[-5 Morale]</color>";
+                        allCombatLogs.Add(message);
+                        UpdateUnit(targetStats, message);
                     }
                 }
                 else if (abilityId == "SpectralDrain")
@@ -341,7 +396,9 @@ namespace VirulentVentures
                     if (targetState != null && targetStats != null)
                     {
                         targetState.TempStats["Defense"] = (-5, 1);
-                        UpdateUnit(targetStats, $"{targetStats.Id}'s Defense reduced by 5!");
+                        string message = $"{targetStats.Id}'s Defense reduced by 5! <color=#FFFF00>[-5 DEF]</color>";
+                        allCombatLogs.Add(message);
+                        UpdateUnit(targetStats, message);
                     }
                 }
                 else if (abilityId == "EtherealWail")
@@ -353,7 +410,9 @@ namespace VirulentVentures
                     foreach (var hero in heroPositions)
                     {
                         hero.Morale = Mathf.Max(0, hero.Morale - 8);
-                        UpdateUnit(hero, $"{hero.Id}'s morale drops by 8!");
+                        string message = $"{hero.Id}'s morale drops by 8! <color=#FFFF00>[-8 Morale]</color>";
+                        allCombatLogs.Add(message);
+                        UpdateUnit(hero, message);
                     }
                 }
                 // Self-Damage
@@ -362,7 +421,9 @@ namespace VirulentVentures
                     int selfDamage = 8;
                     if (abilityId == "Entangle") selfDamage = 10;
                     stats.Health -= selfDamage;
-                    UpdateUnit(unit, $"{unit.Id} takes {selfDamage} self-damage!");
+                    string message = $"{unit.Id} takes {selfDamage} self-damage! <color=#FFFF00>[-{selfDamage} HP]</color>";
+                    allCombatLogs.Add(message);
+                    UpdateUnit(unit, message);
                     if (stats.Health <= 0)
                     {
                         eventBus.RaiseUnitDied(unit);
@@ -386,6 +447,7 @@ namespace VirulentVentures
             }
             UpdateUnit(unit);
         }
+
         private IEnumerator RunCombat()
         {
             if (isCombatActive)
@@ -458,6 +520,8 @@ namespace VirulentVentures
                     if (state == null || unit.Health <= 0 || unit.HasRetreated) continue;
                     if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && CheckRetreat(unit))
                     {
+                        string retreatMessage = $"{stats.Id} fled! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
+                        allCombatLogs.Add(retreatMessage);
                         ProcessRetreat(unit);
                         yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
                         continue;
@@ -489,12 +553,14 @@ namespace VirulentVentures
                 IncrementRound();
             }
         }
+
         private void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
         {
             units.Clear();
             heroPositions.Clear();
             monsterPositions.Clear();
             unitAttackStates.Clear();
+            allCombatLogs.Clear(); // Clear logs at combat start
             foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0 && !h.HasRetreated))
             {
                 var stats = hero.GetDisplayStats();
@@ -513,15 +579,21 @@ namespace VirulentVentures
             monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
             eventBus.RaiseCombatInitialized(units);
         }
+
         private void IncrementRound()
         {
             roundNumber++;
-            eventBus.RaiseLogMessage($"Round {roundNumber} begins!", Color.white);
+            string roundMessage = $"Round {roundNumber} begins!";
+            allCombatLogs.Add(roundMessage);
+            eventBus.RaiseLogMessage(roundMessage, Color.white);
         }
+
         private void LogMessage(string message, Color color)
         {
+            allCombatLogs.Add(message);
             eventBus.RaiseLogMessage(message, color);
         }
+
         private void UpdateUnit(ICombatUnit unit, string damageMessage = null)
         {
             if (unit == null) return;
@@ -534,6 +606,7 @@ namespace VirulentVentures
                 eventBus.RaiseUnitUpdated(unit, newStats);
                 if (damageMessage != null)
                 {
+                    allCombatLogs.Add(damageMessage);
                     eventBus.RaiseLogMessage(damageMessage, Color.white);
                     eventBus.RaiseUnitDamaged(unit, damageMessage);
                 }
@@ -550,10 +623,12 @@ namespace VirulentVentures
                 }
             }
         }
+
         private bool CheckRetreat(ICombatUnit unit)
         {
             return unit is CharacterStats stats && stats.Type == CharacterType.Hero && stats.Morale <= combatConfig.RetreatMoraleThreshold && !stats.HasRetreated;
         }
+
         private void ProcessRetreat(ICombatUnit unit)
         {
             if (unit == null || unit.HasRetreated) return;
@@ -561,7 +636,9 @@ namespace VirulentVentures
             {
                 stats.HasRetreated = true;
                 stats.Morale = Mathf.Min(stats.Morale + 20, stats.MaxMorale);
-                LogMessage($"{stats.Id} fled!", uiConfig.TextColor);
+                string retreatMessage = $"{stats.Id} fled! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
+                allCombatLogs.Add(retreatMessage);
+                LogMessage(retreatMessage, uiConfig.TextColor);
                 eventBus.RaiseUnitRetreated(unit);
                 int penalty = 10;
                 var teammates = units
@@ -571,11 +648,14 @@ namespace VirulentVentures
                 foreach (var teammate in teammates)
                 {
                     teammate.Morale = Mathf.Max(0, teammate.Morale - penalty);
-                    UpdateUnit(teammate, $"{teammate.Id}'s morale drops by {penalty} due to {stats.Id}'s retreat!");
+                    string teammateMessage = $"{teammate.Id}'s morale drops by {penalty} due to {stats.Id}'s retreat! <color=#FFFF00>[-{penalty} Morale]</color>";
+                    allCombatLogs.Add(teammateMessage);
+                    UpdateUnit(teammate, teammateMessage);
                 }
                 UpdateUnit(unit);
             }
         }
+
         private void EndCombat()
         {
             if (isEndingCombat) return;
@@ -602,19 +682,23 @@ namespace VirulentVentures
             }
             isEndingCombat = false;
         }
+
         private ICombatUnit GetRandomAliveTarget(List<ICombatUnit> targets)
         {
             var aliveTargets = targets.Where(t => t.Health > 0 && !t.HasRetreated).ToList();
             return aliveTargets.Count > 0 ? aliveTargets[Random.Range(0, aliveTargets.Count)] : null;
         }
+
         private bool NoActiveHeroes()
         {
             return heroPositions.Count == 0;
         }
+
         private bool NoActiveMonsters()
         {
             return monsterPositions.Count == 0;
         }
+
         private bool ValidateReferences()
         {
             if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null)
@@ -624,6 +708,7 @@ namespace VirulentVentures
             }
             return true;
         }
+
         public void SetCombatSpeed(float speed)
         {
             if (combatConfig != null)

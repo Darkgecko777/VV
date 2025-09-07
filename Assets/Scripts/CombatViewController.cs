@@ -95,6 +95,7 @@ namespace VirulentVentures
         private void HandleLogMessage(EventBusSO.LogData logData)
         {
             var label = new Label(logData.message);
+            label.enableRichText = true; // Enable rich text for colored formulas
             label.style.color = logData.color;
             logContent.Add(label);
             logMessages.Add(label);
