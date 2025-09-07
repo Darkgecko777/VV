@@ -32,7 +32,7 @@ namespace VirulentVentures
             unitAttackStates.Clear();
             isCombatActive = false;
             roundNumber = 0;
-            allCombatLogs.Clear(); // Clear logs at awake
+            allCombatLogs.Clear();
         }
 
         void Start()
@@ -116,11 +116,24 @@ namespace VirulentVentures
             AbilityData? ability = stats.Type == CharacterType.Hero
                 ? AbilityDatabase.GetHeroAbility(abilityId)
                 : AbilityDatabase.GetMonsterAbility(abilityId);
-            if (ability == null) yield break;
+            if (ability == null)
+            {
+                string message = $"{stats.Id} fails to select ability {abilityId}! <color=#FFFF00>[Invalid Ability]</color>";
+                allCombatLogs.Add(message);
+                eventBus.RaiseLogMessage(message, Color.white);
+                yield break;
+            }
             List<ICombatUnit> selectedTargets;
             if (ability.Value.IsMultiTarget && abilityId == "SludgeSlam")
             {
                 selectedTargets = targets.Where(t => t is CharacterStats cs && (cs.PartyPosition == 1 || cs.PartyPosition == 2) && t.Health > 0 && !t.HasRetreated).ToList();
+                // Fallback to single target if multi-target fails
+                if (selectedTargets.Count == 0)
+                {
+                    selectedTargets = targets.Where(t => t.Health > 0 && !t.HasRetreated).ToList();
+                    var target = GetRandomAliveTarget(selectedTargets);
+                    selectedTargets = target != null ? new List<ICombatUnit> { target } : new List<ICombatUnit>();
+                }
             }
             else if (!ability.Value.IsMelee)
             {
@@ -130,12 +143,15 @@ namespace VirulentVentures
             }
             else
             {
-                selectedTargets = targets.Take(2).Where(t => t.Health > 0 && !t.HasRetreated).ToList();
+                selectedTargets = targets.Where(t => t.Health > 0 && !t.HasRetreated).ToList();
                 var target = GetRandomAliveTarget(selectedTargets);
                 selectedTargets = target != null ? new List<ICombatUnit> { target } : new List<ICombatUnit>();
             }
             if (selectedTargets.Count == 0)
             {
+                string message = $"{stats.Id} finds no valid targets for {abilityId}! <color=#FFFF00>[No Targets]</color>";
+                allCombatLogs.Add(message);
+                eventBus.RaiseLogMessage(message, Color.white);
                 if (NoActiveHeroes() || NoActiveMonsters())
                 {
                     EndCombat();
