@@ -53,7 +53,14 @@ namespace VirulentVentures
         {
             public ICombatUnit attacker;
             public ICombatUnit target;
-            public string abilityId; // Added for ability-specific animations
+            public string abilityId;
+        }
+
+        [System.Serializable]
+        public struct InfectionData
+        {
+            public ICombatUnit unit;
+            public string virusId;
         }
 
         [System.Serializable]
@@ -81,6 +88,7 @@ namespace VirulentVentures
         public event Action<DamagePopupData> OnUnitDamaged;
         public event Action<ICombatUnit> OnUnitDied;
         public event Action<ICombatUnit> OnUnitRetreated;
+        public event Action<InfectionData> OnUnitInfected;
         public event Action OnHealParty;
         public event Action OnExpeditionEnded;
         public event Action OnPlayerProgressUpdated;
@@ -173,6 +181,11 @@ namespace VirulentVentures
         public void RaiseUnitRetreated(ICombatUnit unit)
         {
             OnUnitRetreated?.Invoke(unit);
+        }
+
+        public void RaiseUnitInfected(ICombatUnit unit, string virusId)
+        {
+            OnUnitInfected?.Invoke(new InfectionData { unit = unit, virusId = virusId });
         }
 
         public void RaiseHealParty()
