@@ -3,6 +3,8 @@ using UnityEngine;
 
 namespace VirulentVentures
 {
+    // Component managing expedition logic, handling node progression and scene transitions
+    // Attached to a GameObject in ExpeditionScene, using EventBusSO for communication
     public class ExpeditionSceneComponent : MonoBehaviour
     {
         [SerializeField] private EventBusSO eventBus;
@@ -11,7 +13,7 @@ namespace VirulentVentures
         [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EncounterData combatEncounterData;
-        [SerializeField] private ExpeditionUIComponent viewController;
+        [SerializeField] private ExpeditionUIComponent viewComponent;
 
         void Awake()
         {
@@ -77,11 +79,13 @@ namespace VirulentVentures
             }
 
             var currentNode = data.nodes[data.currentIndex];
+            Debug.Log($"HandleNodeUpdate: Processing node {data.currentIndex}, IsCombat: {currentNode.IsCombat}, Completed: {currentNode.Completed}");
             if (currentNode.IsCombat && !currentNode.Completed) // Only auto-transition if combat and not completed
             {
-                if (viewController != null)
+                Debug.Log("HandleNodeUpdate: Attempting combat scene transition");
+                if (viewComponent != null)
                 {
-                    viewController.FadeToCombat(() => ExpeditionManager.Instance.TransitionToCombatScene());
+                    viewComponent.FadeToCombat(() => ExpeditionManager.Instance.TransitionToCombatScene());
                 }
                 else
                 {
@@ -102,8 +106,9 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (eventBus == null || expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null || viewController == null)
+            if (eventBus == null || expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null || viewComponent == null)
             {
+                Debug.LogError($"ExpeditionSceneComponent: Missing references! EventBus: {eventBus != null}, ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, DefaultPositions: {defaultPositions != null}, CombatEncounterData: {combatEncounterData != null}, ViewComponent: {viewComponent != null}");
                 return false;
             }
             return true;
