@@ -22,6 +22,12 @@ namespace VirulentVentures
         private VisualElement logContent;
         private List<Label> logMessages = new List<Label>();
         private const int MAX_LOG_MESSAGES = 20;
+        private Label speedLabel;
+        private Button speedPlusButton;
+        private Button speedMinusButton;
+        private Button pauseButton;
+        private Button playButton;
+        private float speedIncrement = 0.5f;
 
         void Awake()
         {
@@ -50,6 +56,22 @@ namespace VirulentVentures
             {
                 Destroy(backgroundGameObject);
             }
+            if (speedPlusButton != null)
+            {
+                speedPlusButton.clicked -= IncreaseSpeed;
+            }
+            if (speedMinusButton != null)
+            {
+                speedMinusButton.clicked -= DecreaseSpeed;
+            }
+            if (pauseButton != null)
+            {
+                pauseButton.clicked -= PauseCombat;
+            }
+            if (playButton != null)
+            {
+                playButton.clicked -= PlayCombat;
+            }
         }
 
         private void SetupUI()
@@ -57,23 +79,90 @@ namespace VirulentVentures
             root = GetComponent<UIDocument>().rootVisualElement;
             if (root == null)
             {
+                Debug.LogError("CombatViewController: Root VisualElement not found.");
                 return;
             }
             var combatRoot = root.Q<VisualElement>("combat-root");
             if (combatRoot == null)
             {
+                Debug.LogError("CombatViewController: Combat root not found.");
                 return;
             }
             var bottomPanel = combatRoot.Q<VisualElement>("bottom-panel");
             if (bottomPanel == null)
             {
+                Debug.LogError("CombatViewController: Bottom panel not found.");
                 return;
             }
             logContent = bottomPanel.Q<VisualElement>("log-content");
             if (logContent == null)
             {
+                Debug.LogError("CombatViewController: Log content not found.");
                 return;
             }
+            var speedPanel = combatRoot.Q<VisualElement>("speed-control-panel");
+            if (speedPanel == null)
+            {
+                Debug.LogError("CombatViewController: Speed control panel not found.");
+                return;
+            }
+            speedLabel = speedPanel.Q<Label>("speed-label");
+            speedPlusButton = speedPanel.Q<Button>("speed-plus-button");
+            speedMinusButton = speedPanel.Q<Button>("speed-minus-button");
+            pauseButton = speedPanel.Q<Button>("pause-button");
+            playButton = speedPanel.Q<Button>("play-button");
+            if (speedLabel == null || speedPlusButton == null || speedMinusButton == null || pauseButton == null || playButton == null)
+            {
+                Debug.LogError("CombatViewController: Speed control UI elements not found.");
+                return;
+            }
+            speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
+            speedPlusButton.clicked += IncreaseSpeed;
+            speedMinusButton.clicked += DecreaseSpeed;
+            pauseButton.clicked += PauseCombat;
+            playButton.clicked += PlayCombat;
+            UpdateButtonStates();
+        }
+
+        private void IncreaseSpeed()
+        {
+            float newSpeed = combatConfig.CombatSpeed + speedIncrement;
+            Debug.Log($"Increasing speed: {combatConfig.CombatSpeed} -> {newSpeed}");
+            CombatSceneController.Instance.SetCombatSpeed(newSpeed);
+            speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
+            UpdateButtonStates();
+        }
+
+        private void DecreaseSpeed()
+        {
+            float newSpeed = combatConfig.CombatSpeed - speedIncrement;
+            Debug.Log($"Decreasing speed: {combatConfig.CombatSpeed} -> {newSpeed}");
+            CombatSceneController.Instance.SetCombatSpeed(newSpeed);
+            speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
+            UpdateButtonStates();
+        }
+
+        private void PauseCombat()
+        {
+            CombatSceneController.Instance.PauseCombat();
+            UpdateButtonStates();
+        }
+
+        private void PlayCombat()
+        {
+            CombatSceneController.Instance.PlayCombat();
+            UpdateButtonStates();
+        }
+
+        private void UpdateButtonStates()
+        {
+            bool isPaused = CombatSceneController.Instance.IsPaused;
+            pauseButton.SetEnabled(!isPaused);
+            playButton.SetEnabled(isPaused);
+            speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
+            // Use >= to allow button to be enabled at MinCombatSpeed
+            speedMinusButton.SetEnabled(combatConfig.CombatSpeed >= combatConfig.MinCombatSpeed);
+            Debug.Log($"CombatSpeed: {combatConfig.CombatSpeed}, MinCombatSpeed: {combatConfig.MinCombatSpeed}, MaxCombatSpeed: {combatConfig.MaxCombatSpeed}, MinusButton Enabled: {combatConfig.CombatSpeed >= combatConfig.MinCombatSpeed}");
         }
 
         private void SetupBackground()
@@ -82,6 +171,7 @@ namespace VirulentVentures
             var backgroundSprite = visualConfig.GetCombatBackground();
             if (backgroundSprite == null)
             {
+                Debug.LogError("CombatViewController: Background sprite not found.");
                 return;
             }
             backgroundGameObject = new GameObject("CombatBackground");

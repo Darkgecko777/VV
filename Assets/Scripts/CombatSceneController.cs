@@ -18,10 +18,12 @@ namespace VirulentVentures
         private List<CharacterStats> heroPositions = new List<CharacterStats>();
         private List<CharacterStats> monsterPositions = new List<CharacterStats>();
         private bool isCombatActive;
+        private bool isPaused;
         private int roundNumber;
         private List<UnitAttackState> unitAttackStates = new List<UnitAttackState>();
         private List<string> allCombatLogs = new List<string>();
         public static CombatSceneController Instance { get; private set; }
+        public bool IsPaused => isPaused;
 
         void Awake()
         {
@@ -31,6 +33,7 @@ namespace VirulentVentures
             monsterPositions.Clear();
             unitAttackStates.Clear();
             isCombatActive = false;
+            isPaused = false;
             roundNumber = 0;
             allCombatLogs.Clear();
         }
@@ -61,6 +64,16 @@ namespace VirulentVentures
         public static List<CharacterStats> GetMonsterUnits()
         {
             return Instance.monsterPositions;
+        }
+
+        public void PauseCombat()
+        {
+            isPaused = true;
+        }
+
+        public void PlayCombat()
+        {
+            isPaused = false;
         }
 
         private string SelectAbility(CharacterStats unit, PartyData partyData, List<ICombatUnit> targets)
@@ -120,7 +133,6 @@ namespace VirulentVentures
                 eventBus.RaiseLogMessage(message, Color.white);
                 yield break;
             }
-
             // Target selection
             List<ICombatUnit> selectedTargets = new List<ICombatUnit>();
             if (ability.Value.Tags.Contains("TargetEnemies"))
@@ -166,7 +178,6 @@ namespace VirulentVentures
             {
                 selectedTargets = new List<ICombatUnit> { stats };
             }
-
             if (selectedTargets.Count == 0)
             {
                 string message = $"{stats.Id} finds no valid targets for {abilityId}! <color=#FFFF00>[No Targets]</color>";
@@ -179,7 +190,6 @@ namespace VirulentVentures
                 }
                 yield break;
             }
-
             var state = unitAttackStates.Find(s => s.Unit == unit);
             int originalAttack = stats.Attack;
             int originalSpeed = stats.Speed;
@@ -190,7 +200,6 @@ namespace VirulentVentures
                 if (state.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
                 if (state.TempStats.TryGetValue("Evasion", out var evasionMod)) stats.Evasion += evasionMod.value;
             }
-
             foreach (var target in selectedTargets)
             {
                 var targetStats = target as CharacterStats;
@@ -202,10 +211,8 @@ namespace VirulentVentures
                     if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats.Defense += defMod.value;
                     if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) currentEvasion += evaMod.value;
                 }
-
                 eventBus.RaiseUnitAttacking(unit, target, abilityId);
                 yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-
                 // Evasion check
                 if (ability.Value.Tags.Contains("Dodgeable") && targetStats != null && !ability.Value.Tags.Contains("NoEvasionCheck"))
                 {
@@ -218,9 +225,8 @@ namespace VirulentVentures
                         continue;
                     }
                     allCombatLogs.Add($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>");
-                    eventBus.RaiseLogMessage($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>", Color.white);
+                    eventBus.RaiseLogMessage($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Check]</color>", Color.white);
                 }
-
                 // Damage calculation
                 int damage = 0;
                 string damageFormula = "";
@@ -252,7 +258,6 @@ namespace VirulentVentures
                         damageFormula = $"[{stats.Attack} ATK - {targetStats?.Defense ?? 0} DEF * 5%]";
                     }
                 }
-
                 // Apply damage and thorns
                 if (damage > 0 && targetStats != null)
                 {
@@ -261,7 +266,6 @@ namespace VirulentVentures
                     allCombatLogs.Add(damageMessage);
                     eventBus.RaiseLogMessage(damageMessage, Color.white);
                     UpdateUnit(target, damageMessage);
-
                     // Thorns check
                     if (targetState != null && targetState.TempStats.TryGetValue("ThornsFixed", out var thornsMod) && thornsMod.value > 0)
                     {
@@ -271,7 +275,6 @@ namespace VirulentVentures
                         allCombatLogs.Add(thornsMessage);
                         eventBus.RaiseLogMessage(thornsMessage, Color.white);
                         UpdateUnit(unit, thornsMessage);
-
                         if (targetState.TempStats.ContainsKey("ThornsInfection"))
                         {
                             float infectionChance = targetStats.Infectivity / 100f;
@@ -285,14 +288,12 @@ namespace VirulentVentures
                                 UpdateUnit(unit, infectionMessage);
                             }
                         }
-
                         if (stats.Health <= 0)
                         {
                             eventBus.RaiseUnitDied(unit);
                         }
                     }
                 }
-
                 // Apply ability effects
                 if (ability.Value.Tags.Contains("Heal") && targetStats != null)
                 {
@@ -303,7 +304,6 @@ namespace VirulentVentures
                     eventBus.RaiseLogMessage(healMessage, Color.white);
                     UpdateUnit(target);
                 }
-
                 if (ability.Value.Tags.Contains("Morale"))
                 {
                     int moraleChange = 0;
@@ -313,7 +313,6 @@ namespace VirulentVentures
                     else if (abilityId == "MireGrasp" || abilityId == "TrueStrike") moraleChange = -5;
                     else if (abilityId == "EtherealWail") moraleChange = -8;
                     else if (abilityId == "ShriekOfDespair") moraleChange = -10;
-
                     if (moraleChange != 0 && targetStats != null)
                     {
                         targetStats.Morale = Mathf.Clamp(targetStats.Morale + moraleChange, 0, targetStats.MaxMorale);
@@ -323,7 +322,6 @@ namespace VirulentVentures
                         UpdateUnit(target);
                     }
                 }
-
                 if (ability.Value.Tags.Contains("Buff") && state != null)
                 {
                     if (abilityId == "IronResolve")
@@ -371,7 +369,6 @@ namespace VirulentVentures
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
                 }
-
                 if (ability.Value.Tags.Contains("Debuff") && targetState != null && targetStats != null)
                 {
                     if (abilityId == "SniperShot")
@@ -397,7 +394,6 @@ namespace VirulentVentures
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
                 }
-
                 if (ability.Value.Tags.Contains("Infection") && stats.Type == CharacterType.Monster && targetStats != null)
                 {
                     float infectionChance = stats.Infectivity / 100f;
@@ -417,7 +413,6 @@ namespace VirulentVentures
                         eventBus.RaiseLogMessage(infectionMessage, Color.white);
                     }
                 }
-
                 if (ability.Value.Tags.Contains("InfectionResist") && targetStats != null && targetStats.IsInfected)
                 {
                     targetStats.IsInfected = false;
@@ -426,7 +421,6 @@ namespace VirulentVentures
                     eventBus.RaiseLogMessage(cureMessage, Color.white);
                     UpdateUnit(target);
                 }
-
                 if (ability.Value.Tags.Contains("SelfDamage") && targetStats != null)
                 {
                     var selfDamageTag = ability.Value.Tags.FirstOrDefault(t => t.StartsWith("SelfDamage"));
@@ -444,7 +438,6 @@ namespace VirulentVentures
                         }
                     }
                 }
-
                 if (ability.Value.Tags.Contains("SkipNextAttack") && state != null)
                 {
                     state.SkipNextAttack = true;
@@ -452,14 +445,12 @@ namespace VirulentVentures
                     allCombatLogs.Add(message);
                     eventBus.RaiseLogMessage(message, Color.white);
                 }
-
                 if (targetStats != null && target.Health <= 0)
                 {
                     eventBus.RaiseUnitDied(target);
                 }
                 if (targetStats != null) targetStats.Defense = originalDefense;
             }
-
             stats.Attack = originalAttack;
             stats.Speed = originalSpeed;
             stats.Evasion = originalEvasion;
@@ -493,6 +484,7 @@ namespace VirulentVentures
             IncrementRound();
             while (isCombatActive)
             {
+                yield return new WaitUntil(() => !isPaused);
                 var unitList = units.Select(u => u.unit).Where(u => u.Health > 0 && !u.HasRetreated).OrderByDescending(u => u.Speed).ToList();
                 if (unitList.Count == 0 || NoActiveHeroes() || NoActiveMonsters())
                 {

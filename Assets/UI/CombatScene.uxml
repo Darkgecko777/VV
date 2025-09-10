@@ -1,6 +1,13 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <Style src="CombatScene.uss" />
     <ui:VisualElement name="combat-root" class="combat-root">
+        <ui:VisualElement name="speed-control-panel" class="speed-control-panel">
+            <ui:Label name="speed-label" class="speed-label" text="Speed: 1.0x" />
+            <ui:Button name="speed-plus-button" class="speed-button" text="+" />
+            <ui:Button name="speed-minus-button" class="speed-button" text="-" />
+            <ui:Button name="pause-button" class="speed-button" text="Pause" />
+            <ui:Button name="play-button" class="speed-button" text="Play" />
+        </ui:VisualElement>
         <ui:VisualElement name="bottom-panel" class="bottom-panel">
             <ui:VisualElement name="left-panel" class="left-panel" />
             <ui:VisualElement name="combat-log" class="combat-log">

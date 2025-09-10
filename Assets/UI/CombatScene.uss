@@ -4,6 +4,47 @@
     height: 100%;
 }
 
+/* Speed control panel */
+.speed-control-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 150px;
+    height: 120px;
+    background-color: rgb(80, 80, 80); /* Matches unit-panel */
+    border-width: 2px;
+    border-color: rgb(50, 50, 50); /* Matches unit-panel */
+    flex-direction: column;
+    padding: 5px;
+}
+
+/* Speed label */
+.speed-label {
+    font-size: 14px;
+    color: rgb(255, 255, 255); /* Matches UIConfig.TextColor */
+    margin: 5px;
+    text-align: center;
+}
+
+/* Speed control buttons */
+.speed-button {
+    width: 80%;
+    max-width: 100px;
+    height: 20px;
+    margin: 2px auto;
+    background-color: rgb(60, 60, 60); /* Matches stat-container */
+    color: rgb(255, 255, 255); /* Matches UIConfig.TextColor */
+    font-size: 12px;
+    border-width: 1px;
+    border-color: rgb(255, 255, 255);
+    border-radius: 4px;
+}
+
+/* Button hover effect */
+.speed-button:hover {
+    background-color: rgb(100, 100, 100); /* Lighter grey on hover */
+}
+
 /* Bottom panel */
 .bottom-panel {
     position: absolute;
