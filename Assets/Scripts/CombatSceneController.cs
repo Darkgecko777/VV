@@ -198,7 +198,7 @@ namespace VirulentVentures
             {
                 if (state.TempStats.TryGetValue("Attack", out var attackMod)) stats.Attack += attackMod.value;
                 if (state.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
-                if (state.TempStats.TryGetValue("Evasion", out var evasionMod)) stats.Evasion += evasionMod.value;
+                if (state.TempStats.TryGetValue("Evasion", out var evaMod)) stats.Evasion += evaMod.value;
             }
             foreach (var target in selectedTargets)
             {
@@ -212,6 +212,7 @@ namespace VirulentVentures
                     if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) currentEvasion += evaMod.value;
                 }
                 eventBus.RaiseUnitAttacking(unit, target, abilityId);
+                yield return new WaitUntil(() => !isPaused);
                 yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
                 // Evasion check
                 if (ability.Value.Tags.Contains("Dodgeable") && targetStats != null && !ability.Value.Tags.Contains("NoEvasionCheck"))
@@ -536,6 +537,7 @@ namespace VirulentVentures
                         string retreatMessage = $"{stats.Id} fled! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
                         allCombatLogs.Add(retreatMessage);
                         ProcessRetreat(unit);
+                        yield return new WaitUntil(() => !isPaused);
                         yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
                         continue;
                     }

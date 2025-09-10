@@ -9,13 +9,13 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    width: 150px;
-    height: 120px;
+    width: 160px;
+    height: 160px; /* Increased from 150px to fully contain buttons */
     background-color: rgb(80, 80, 80); /* Matches unit-panel */
     border-width: 2px;
     border-color: rgb(50, 50, 50); /* Matches unit-panel */
     flex-direction: column;
-    padding: 5px;
+    padding: 8px;
 }
 
 /* Speed label */
@@ -23,7 +23,7 @@
     font-size: 14px;
     color: rgb(255, 255, 255); /* Matches UIConfig.TextColor */
     margin: 5px;
-    text-align: center;
+    unity-text-align: middle; /* Changed from text-align to fix Unity error */
 }
 
 /* Speed control buttons */
@@ -31,7 +31,7 @@
     width: 80%;
     max-width: 100px;
     height: 20px;
-    margin: 2px auto;
+    margin: 3px auto; /* Reduced from 4px to fit within larger panel */
     background-color: rgb(60, 60, 60); /* Matches stat-container */
     color: rgb(255, 255, 255); /* Matches UIConfig.TextColor */
     font-size: 12px;
