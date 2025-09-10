@@ -126,7 +126,6 @@ namespace VirulentVentures
         private void IncreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed + speedIncrement;
-            Debug.Log($"Increasing speed: {combatConfig.CombatSpeed} -> {newSpeed}");
             CombatSceneController.Instance.SetCombatSpeed(newSpeed);
             speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
             UpdateButtonStates();
@@ -135,7 +134,6 @@ namespace VirulentVentures
         private void DecreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed - speedIncrement;
-            Debug.Log($"Decreasing speed: {combatConfig.CombatSpeed} -> {newSpeed}");
             CombatSceneController.Instance.SetCombatSpeed(newSpeed);
             if (combatConfig.CombatSpeed == combatConfig.MinCombatSpeed)
             {
@@ -166,7 +164,6 @@ namespace VirulentVentures
             playButton.SetEnabled(isPaused);
             speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
             speedMinusButton.SetEnabled(combatConfig.CombatSpeed >= combatConfig.MinCombatSpeed);
-            Debug.Log($"CombatSpeed: {combatConfig.CombatSpeed}, MinCombatSpeed: {combatConfig.MinCombatSpeed}, MaxCombatSpeed: {combatConfig.MaxCombatSpeed}, MinusButton Enabled: {combatConfig.CombatSpeed >= combatConfig.MinCombatSpeed}");
         }
 
         private void SetupBackground()
@@ -196,12 +193,22 @@ namespace VirulentVentures
             var scrollView = logContent.parent as ScrollView;
             if (scrollView != null)
             {
-                // Only auto-scroll if the player is near the bottom
-                float scrollThreshold = 50f; // Pixels from bottom to trigger auto-scroll
-                if (scrollView.verticalScroller.value >= scrollView.verticalScroller.highValue - scrollThreshold)
+                // Defer scroll to ensure layout is updated
+                scrollView.schedule.Execute(() =>
                 {
-                    scrollView.scrollOffset = new Vector2(0, float.MaxValue);
-                }
+                    float scrollThreshold = 300f;
+                    float scrollPosition = scrollView.verticalScroller.value;
+                    float maxScroll = scrollView.verticalScroller.highValue;
+                    // Auto-scroll to bottom unless player has scrolled far up
+                    if (scrollPosition >= maxScroll - scrollThreshold || scrollPosition == 0)
+                    {
+                        scrollView.scrollOffset = new Vector2(0, maxScroll);
+                    }
+                }).ExecuteLater(20);
+            }
+            else
+            {
+                Debug.LogError("CombatViewController: ScrollView not found for log-content.");
             }
         }
 
@@ -306,8 +313,8 @@ namespace VirulentVentures
             unitPanels.Clear();
             unitStatLabels.Clear();
             infectedLabels.Clear();
-            logMessages.Clear(); // Clear UI log messages at combat start
-            logContent.Clear(); // Clear visual log content
+            logMessages.Clear();
+            logContent.Clear();
             var heroes = data.units.Where(u => u.stats.isHero).ToList();
             var infectedHeroCount = heroes.Count(h => h.stats.isInfected);
             var leftPanel = root.Q<VisualElement>("left-panel");

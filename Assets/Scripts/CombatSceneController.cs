@@ -133,6 +133,10 @@ namespace VirulentVentures
                 eventBus.RaiseLogMessage(message, Color.white);
                 yield break;
             }
+            // Log ability usage
+            string abilityMessage = $"{stats.Id} uses {abilityId}!";
+            allCombatLogs.Add(abilityMessage);
+            eventBus.RaiseLogMessage(abilityMessage, Color.white);
             // Target selection
             List<ICombatUnit> selectedTargets = new List<ICombatUnit>();
             if (ability.Value.Tags.Contains("TargetEnemies"))
@@ -226,7 +230,7 @@ namespace VirulentVentures
                         continue;
                     }
                     allCombatLogs.Add($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>");
-                    eventBus.RaiseLogMessage($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Check]</color>", Color.white);
+                    eventBus.RaiseLogMessage($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>", Color.white);
                 }
                 // Damage calculation
                 int damage = 0;
@@ -292,6 +296,9 @@ namespace VirulentVentures
                         if (stats.Health <= 0)
                         {
                             eventBus.RaiseUnitDied(unit);
+                            string deathMessage = $"{stats.Id} dies!";
+                            allCombatLogs.Add(deathMessage);
+                            eventBus.RaiseLogMessage(deathMessage, Color.red);
                         }
                     }
                 }
@@ -328,21 +335,21 @@ namespace VirulentVentures
                     if (abilityId == "IronResolve")
                     {
                         state.TempStats["Defense"] = (5, 1);
-                        string message = $"{stats.Id} bolsters defense! <color=#FFFF00>[+5 DEF]</color>";
+                        string message = $"{stats.Id} bolsters defense! <color=#FFFF00>[+5 DEF for 1 round]</color>";
                         allCombatLogs.Add(message);
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
                     else if (abilityId == "ChiStrike")
                     {
                         state.TempStats["Evasion"] = (5, 1);
-                        string message = $"{stats.Id} gains +5 Evasion! <color=#FFFF00>[+5 EVA]</color>";
+                        string message = $"{stats.Id} gains +5 Evasion! <color=#FFFF00>[+5 EVA for 1 round]</color>";
                         allCombatLogs.Add(message);
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
                     else if (abilityId == "InnerFocus")
                     {
                         state.TempStats["Speed"] = (3, 1);
-                        string message = $"{stats.Id} boosts speed! <color=#FFFF00>[+3 SPD]</color>";
+                        string message = $"{stats.Id} boosts speed! <color=#FFFF00>[+3 SPD for 1 round]</color>";
                         allCombatLogs.Add(message);
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
@@ -350,14 +357,14 @@ namespace VirulentVentures
                     {
                         targetState.TempStats["Speed"] = (3, 1);
                         targetState.TempStats["Evasion"] = (10, 1);
-                        string message = $"{targetStats?.Id} gains +3 Speed and +10 Evasion! <color=#FFFF00>[+3 SPD, +10 EVA]</color>";
+                        string message = $"{targetStats?.Id} gains +3 Speed and +10 Evasion! <color=#FFFF00>[+3 SPD, +10 EVA for 1 round]</color>";
                         allCombatLogs.Add(message);
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
                     else if (abilityId == "TrueStrike" || abilityId == "SpectralDrain" || abilityId == "EtherealWail")
                     {
                         state.TempStats["Evasion"] = (15, 1);
-                        string message = $"{stats.Id} gains +15 Evasion! <color=#FFFF00>[+15 EVA]</color>";
+                        string message = $"{stats.Id} gains +15 Evasion! <color=#FFFF00>[+15 EVA for 1 round]</color>";
                         allCombatLogs.Add(message);
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
@@ -376,21 +383,21 @@ namespace VirulentVentures
                     {
                         int evasionReduction = targetStats.Evasion / 4;
                         targetState.TempStats["Evasion"] = (-evasionReduction, 1);
-                        string message = $"{targetStats.Id}'s Evasion reduced by 25%! <color=#FFFF00>[-{evasionReduction} EVA]</color>";
+                        string message = $"{targetStats.Id}'s Evasion reduced by 25%! <color=#FFFF00>[-{evasionReduction} EVA for 1 round]</color>";
                         allCombatLogs.Add(message);
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
                     else if (abilityId == "MireGrasp")
                     {
                         targetState.TempStats["Speed"] = (-3, 1);
-                        string message = $"{targetStats.Id}'s Speed reduced by 3! <color=#FFFF00>[-3 SPD]</color>";
+                        string message = $"{targetStats.Id}'s Speed reduced by 3! <color=#FFFF00>[-3 SPD for 1 round]</color>";
                         allCombatLogs.Add(message);
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
                     else if (abilityId == "SpectralDrain")
                     {
                         targetState.TempStats["Defense"] = (-5, 1);
-                        string message = $"{targetStats.Id}'s Defense reduced by 5! <color=#FFFF00>[-5 DEF]</color>";
+                        string message = $"{targetStats.Id}'s Defense reduced by 5! <color=#FFFF00>[-5 DEF for 1 round]</color>";
                         allCombatLogs.Add(message);
                         eventBus.RaiseLogMessage(message, Color.white);
                     }
@@ -436,6 +443,9 @@ namespace VirulentVentures
                         if (stats.Health <= 0)
                         {
                             eventBus.RaiseUnitDied(unit);
+                            string deathMessage = $"{stats.Id} dies!";
+                            allCombatLogs.Add(deathMessage);
+                            eventBus.RaiseLogMessage(deathMessage, Color.red);
                         }
                     }
                 }
@@ -449,6 +459,9 @@ namespace VirulentVentures
                 if (targetStats != null && target.Health <= 0)
                 {
                     eventBus.RaiseUnitDied(target);
+                    string deathMessage = $"{targetStats.Id} dies!";
+                    allCombatLogs.Add(deathMessage);
+                    eventBus.RaiseLogMessage(deathMessage, Color.red);
                 }
                 if (targetStats != null) targetStats.Defense = originalDefense;
             }
@@ -460,6 +473,9 @@ namespace VirulentVentures
                 var cooldownTag = ability.Value.Tags.FirstOrDefault(t => t.StartsWith("Cooldown"));
                 int cooldown = cooldownTag != null ? int.Parse(cooldownTag.Split(':')[1]) : 1;
                 state.AbilityCooldowns[abilityId] = cooldown;
+                string cooldownMessage = $"{stats.Id}'s {abilityId} is on cooldown for {cooldown} round{(cooldown > 1 ? "s" : "")}!";
+                allCombatLogs.Add(cooldownMessage);
+                eventBus.RaiseLogMessage(cooldownMessage, Color.white);
             }
             UpdateUnit(unit);
         }
@@ -508,6 +524,9 @@ namespace VirulentVentures
                         if (state.AbilityCooldowns[abilityCd.Key] == 0)
                         {
                             state.AbilityCooldowns.Remove(abilityCd.Key);
+                            string cooldownEndMessage = $"{unit.Id}'s {abilityCd.Key} is off cooldown!";
+                            allCombatLogs.Add(cooldownEndMessage);
+                            eventBus.RaiseLogMessage(cooldownEndMessage, Color.white);
                         }
                     }
                     foreach (var tempStat in state.TempStats.ToList())
@@ -521,9 +540,27 @@ namespace VirulentVentures
                                 var baseData = stats.Type == CharacterType.Hero
                                     ? CharacterLibrary.GetHeroData(stats.Id)
                                     : CharacterLibrary.GetMonsterData(stats.Id);
-                                if (tempStat.Key == "Defense") stats.Defense = baseData.Defense;
-                                else if (tempStat.Key == "Speed") stats.Speed = baseData.Speed;
-                                else if (tempStat.Key == "Evasion") stats.Evasion = baseData.Evasion;
+                                if (tempStat.Key == "Defense")
+                                {
+                                    stats.Defense = baseData.Defense;
+                                    string message = $"{stats.Id}'s Defense buff expires! <color=#FFFF00>[Restored to {stats.Defense}]</color>";
+                                    allCombatLogs.Add(message);
+                                    eventBus.RaiseLogMessage(message, Color.white);
+                                }
+                                else if (tempStat.Key == "Speed")
+                                {
+                                    stats.Speed = baseData.Speed;
+                                    string message = $"{stats.Id}'s Speed buff expires! <color=#FFFF00>[Restored to {stats.Speed}]</color>";
+                                    allCombatLogs.Add(message);
+                                    eventBus.RaiseLogMessage(message, Color.white);
+                                }
+                                else if (tempStat.Key == "Evasion")
+                                {
+                                    stats.Evasion = baseData.Evasion;
+                                    string message = $"{stats.Id}'s Evasion buff expires! <color=#FFFF00>[Restored to {stats.Evasion}]</color>";
+                                    allCombatLogs.Add(message);
+                                    eventBus.RaiseLogMessage(message, Color.white);
+                                }
                             }
                         }
                     }
@@ -534,7 +571,7 @@ namespace VirulentVentures
                     if (state == null || unit.Health <= 0 || unit.HasRetreated) continue;
                     if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && CheckRetreat(unit))
                     {
-                        string retreatMessage = $"{stats.Id} fled! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
+                        string retreatMessage = $"{stats.Id} flees! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
                         allCombatLogs.Add(retreatMessage);
                         ProcessRetreat(unit);
                         yield return new WaitUntil(() => !isPaused);
@@ -576,12 +613,18 @@ namespace VirulentVentures
             monsterPositions.Clear();
             unitAttackStates.Clear();
             allCombatLogs.Clear();
+            string initMessage = "Combat begins!";
+            allCombatLogs.Add(initMessage);
+            eventBus.RaiseLogMessage(initMessage, Color.white);
             foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0 && !h.HasRetreated))
             {
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
                 heroPositions.Add(hero);
                 unitAttackStates.Add(new UnitAttackState { Unit = hero, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false, TempStats = new Dictionary<string, (int, int)>() });
+                string heroMessage = $"{hero.Id} enters combat with {hero.Health}/{hero.MaxHealth} HP, {hero.Morale}/{hero.MaxMorale} Morale.";
+                allCombatLogs.Add(heroMessage);
+                eventBus.RaiseLogMessage(heroMessage, Color.white);
             }
             foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0 && !m.HasRetreated))
             {
@@ -589,6 +632,9 @@ namespace VirulentVentures
                 units.Add((monster, null, stats));
                 monsterPositions.Add(monster);
                 unitAttackStates.Add(new UnitAttackState { Unit = monster, AttacksThisRound = 0, RoundCounter = 0, AbilityCooldowns = new Dictionary<string, int>(), SkipNextAttack = false, TempStats = new Dictionary<string, (int, int)>() });
+                string monsterMessage = $"{monster.Id} enters combat with {monster.Health}/{monster.MaxHealth} HP.";
+                allCombatLogs.Add(monsterMessage);
+                eventBus.RaiseLogMessage(monsterMessage, Color.white);
             }
             heroPositions = heroPositions.OrderBy(h => h.PartyPosition).ToList();
             monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
@@ -651,7 +697,7 @@ namespace VirulentVentures
             {
                 stats.HasRetreated = true;
                 stats.Morale = Mathf.Min(stats.Morale + 20, stats.MaxMorale);
-                string retreatMessage = $"{stats.Id} fled! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
+                string retreatMessage = $"{stats.Id} flees! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
                 allCombatLogs.Add(retreatMessage);
                 LogMessage(retreatMessage, uiConfig.TextColor);
                 eventBus.RaiseUnitRetreated(unit);
@@ -676,6 +722,9 @@ namespace VirulentVentures
             if (isEndingCombat) return;
             isEndingCombat = true;
             isCombatActive = false;
+            string endMessage = "Combat ends!";
+            allCombatLogs.Add(endMessage);
+            eventBus.RaiseLogMessage(endMessage, Color.white);
             eventBus.RaiseCombatEnded();
             expeditionManager.SaveProgress();
             bool partyDead = expeditionManager.GetExpedition().Party.CheckDeadStatus().Count == 0;
@@ -689,10 +738,16 @@ namespace VirulentVentures
             }
             if (partyDead)
             {
+                string defeatMessage = "Party defeated!";
+                allCombatLogs.Add(defeatMessage);
+                eventBus.RaiseLogMessage(defeatMessage, Color.red);
                 expeditionManager.EndExpedition();
             }
             else
             {
+                string victoryMessage = "Party victorious!";
+                allCombatLogs.Add(victoryMessage);
+                eventBus.RaiseLogMessage(victoryMessage, Color.green);
                 expeditionManager.TransitionToExpeditionScene();
             }
             isEndingCombat = false;
@@ -728,7 +783,14 @@ namespace VirulentVentures
         {
             if (combatConfig != null)
             {
+                float oldSpeed = combatConfig.CombatSpeed;
                 combatConfig.CombatSpeed = Mathf.Clamp(speed, combatConfig.MinCombatSpeed, combatConfig.MaxCombatSpeed);
+                if (oldSpeed != combatConfig.CombatSpeed)
+                {
+                    string speedMessage = $"Combat speed set to {combatConfig.CombatSpeed:F1}x!";
+                    allCombatLogs.Add(speedMessage);
+                    eventBus.RaiseLogMessage(speedMessage, Color.white);
+                }
             }
         }
     }
