@@ -21,7 +21,6 @@ namespace VirulentVentures
         private GameObject backgroundGameObject;
         private VisualElement logContent;
         private List<Label> logMessages = new List<Label>();
-        private const int MAX_LOG_MESSAGES = 20;
         private Label speedLabel;
         private Button speedPlusButton;
         private Button speedMinusButton;
@@ -138,6 +137,10 @@ namespace VirulentVentures
             float newSpeed = combatConfig.CombatSpeed - speedIncrement;
             Debug.Log($"Decreasing speed: {combatConfig.CombatSpeed} -> {newSpeed}");
             CombatSceneController.Instance.SetCombatSpeed(newSpeed);
+            if (combatConfig.CombatSpeed == combatConfig.MinCombatSpeed)
+            {
+                eventBus.RaiseLogMessage("Combat speed at minimum!", Color.white);
+            }
             speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
             UpdateButtonStates();
         }
@@ -145,12 +148,14 @@ namespace VirulentVentures
         private void PauseCombat()
         {
             CombatSceneController.Instance.PauseCombat();
+            eventBus.RaiseLogMessage("Combat paused", Color.white);
             UpdateButtonStates();
         }
 
         private void PlayCombat()
         {
             CombatSceneController.Instance.PlayCombat();
+            eventBus.RaiseLogMessage("Combat resumed", Color.white);
             UpdateButtonStates();
         }
 
@@ -160,7 +165,6 @@ namespace VirulentVentures
             pauseButton.SetEnabled(!isPaused);
             playButton.SetEnabled(isPaused);
             speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
-            // Use >= to allow button to be enabled at MinCombatSpeed
             speedMinusButton.SetEnabled(combatConfig.CombatSpeed >= combatConfig.MinCombatSpeed);
             Debug.Log($"CombatSpeed: {combatConfig.CombatSpeed}, MinCombatSpeed: {combatConfig.MinCombatSpeed}, MaxCombatSpeed: {combatConfig.MaxCombatSpeed}, MinusButton Enabled: {combatConfig.CombatSpeed >= combatConfig.MinCombatSpeed}");
         }
@@ -185,20 +189,19 @@ namespace VirulentVentures
         private void HandleLogMessage(EventBusSO.LogData logData)
         {
             var label = new Label(logData.message);
-            label.enableRichText = true; // Enable rich text for colored formulas
+            label.enableRichText = true;
             label.style.color = logData.color;
             logContent.Add(label);
             logMessages.Add(label);
-            if (logMessages.Count > MAX_LOG_MESSAGES)
-            {
-                var oldest = logMessages[0];
-                logContent.Remove(oldest);
-                logMessages.RemoveAt(0);
-            }
             var scrollView = logContent.parent as ScrollView;
             if (scrollView != null)
             {
-                scrollView.scrollOffset = new Vector2(0, float.MaxValue);
+                // Only auto-scroll if the player is near the bottom
+                float scrollThreshold = 50f; // Pixels from bottom to trigger auto-scroll
+                if (scrollView.verticalScroller.value >= scrollView.verticalScroller.highValue - scrollThreshold)
+                {
+                    scrollView.scrollOffset = new Vector2(0, float.MaxValue);
+                }
             }
         }
 
@@ -303,6 +306,8 @@ namespace VirulentVentures
             unitPanels.Clear();
             unitStatLabels.Clear();
             infectedLabels.Clear();
+            logMessages.Clear(); // Clear UI log messages at combat start
+            logContent.Clear(); // Clear visual log content
             var heroes = data.units.Where(u => u.stats.isHero).ToList();
             var infectedHeroCount = heroes.Count(h => h.stats.isInfected);
             var leftPanel = root.Q<VisualElement>("left-panel");
@@ -453,6 +458,7 @@ namespace VirulentVentures
 
         private IEnumerator DeactivateAfterJiggle(GameObject go)
         {
+            yield return new WaitUntil(() => !CombatSceneController.Instance.IsPaused);
             yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
             if (go != null)
             {
@@ -462,6 +468,7 @@ namespace VirulentVentures
 
         private IEnumerator DeactivateAfterFade(GameObject go)
         {
+            yield return new WaitUntil(() => !CombatSceneController.Instance.IsPaused);
             yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
             if (go != null)
             {
