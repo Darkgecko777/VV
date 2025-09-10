@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace VirulentVentures
 {
-    public class TempleViewController : MonoBehaviour
+    public class TempleUIComponent : MonoBehaviour
     {
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private UIConfig uiConfig;

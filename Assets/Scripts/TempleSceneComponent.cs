@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace VirulentVentures
 {
-    public class TemplePlanningController : MonoBehaviour
+    public class TempleSceneComponent : MonoBehaviour
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;

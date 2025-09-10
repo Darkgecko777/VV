@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace VirulentVentures
 {
-    public class ExpeditionSceneController : MonoBehaviour
+    public class ExpeditionSceneComponent : MonoBehaviour
     {
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private ExpeditionData expeditionData;
@@ -11,7 +11,7 @@ namespace VirulentVentures
         [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EncounterData combatEncounterData;
-        [SerializeField] private ExpeditionViewController viewController;
+        [SerializeField] private ExpeditionUIComponent viewController;
 
         void Awake()
         {

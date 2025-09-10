@@ -351,7 +351,7 @@ GameObject:
   - component: {fileID: 621176281}
   - component: {fileID: 621176280}
   m_Layer: 0
-  m_Name: CombatController
+  m_Name: CombatSceneComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -366,7 +366,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 621176279}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 93af4d52ee670164788cd616f7055d6b, type: 3}
+  m_Script: {fileID: 11500000, guid: 7cc73bf36d83ef74f881b8fed3f32b1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
@@ -401,7 +401,7 @@ GameObject:
   - component: {fileID: 1688374978}
   - component: {fileID: 1688374980}
   m_Layer: 0
-  m_Name: CombatVisualController
+  m_Name: CombatUIComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

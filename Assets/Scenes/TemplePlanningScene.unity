@@ -180,7 +180,7 @@ GameObject:
   - component: {fileID: 335239197}
   - component: {fileID: 335239196}
   m_Layer: 0
-  m_Name: TempleViewController
+  m_Name: TempleUIComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -238,7 +238,6 @@ MonoBehaviour:
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   availableViruses: []
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
-  planningController: {fileID: 0}
 --- !u!1 &363512853
 GameObject:
   m_ObjectHideFlags: 0
@@ -489,7 +488,7 @@ GameObject:
   - component: {fileID: 2139730225}
   - component: {fileID: 2139730224}
   m_Layer: 0
-  m_Name: TemplePlanningController
+  m_Name: TempleSceneComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

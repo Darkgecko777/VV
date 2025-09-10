@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace VirulentVentures
 {
-    public class ExpeditionViewController : MonoBehaviour
+    public class ExpeditionUIComponent : MonoBehaviour
     {
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private VisualConfig visualConfig;

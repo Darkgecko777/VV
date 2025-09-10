@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace VirulentVentures
 {
-    public class CombatSceneController : MonoBehaviour
+    public class CombatSceneComponent : MonoBehaviour
     {
         [SerializeField] private CombatConfig combatConfig;
         [SerializeField] private VisualConfig visualConfig;
@@ -22,7 +22,7 @@ namespace VirulentVentures
         private int roundNumber;
         private List<UnitAttackState> unitAttackStates = new List<UnitAttackState>();
         private List<string> allCombatLogs = new List<string>();
-        public static CombatSceneController Instance { get; private set; }
+        public static CombatSceneComponent Instance { get; private set; }
         public bool IsPaused => isPaused;
 
         void Awake()
