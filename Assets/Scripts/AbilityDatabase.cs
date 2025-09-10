@@ -10,9 +10,7 @@ namespace VirulentVentures
         public string AnimationTrigger { get; private set; }
         public System.Func<object, PartyData, string> Effect { get; private set; }
         public bool IsCommon { get; private set; }
-        public bool CanDodge { get; private set; }
-        public bool IsMelee { get; private set; }
-        public bool IsMultiTarget { get; private set; }
+        public List<string> Tags { get; private set; }
         public System.Func<CharacterStats, PartyData, List<ICombatUnit>, bool> UseCondition { get; private set; }
 
         public AbilityData(
@@ -20,18 +18,14 @@ namespace VirulentVentures
             string animationTrigger,
             System.Func<object, PartyData, string> effect,
             bool isCommon = false,
-            bool canDodge = false,
-            bool isMelee = false,
-            bool isMultiTarget = false,
+            List<string> tags = null,
             System.Func<CharacterStats, PartyData, List<ICombatUnit>, bool> useCondition = null)
         {
             Id = id;
             AnimationTrigger = animationTrigger;
             Effect = effect;
             IsCommon = isCommon;
-            CanDodge = canDodge;
-            IsMelee = isMelee;
-            IsMultiTarget = isMultiTarget;
+            Tags = tags ?? new List<string>();
             UseCondition = useCondition ?? ((user, party, targets) => false);
         }
     }
@@ -54,7 +48,7 @@ namespace VirulentVentures
                 animationTrigger: "BasicAttack",
                 effect: (target, partyData) => "",
                 isCommon: true,
-                isMelee: true,
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "StandardDefense", "Dodgeable" },
                 useCondition: (user, party, targets) =>
                 {
                     if (user.Id == "Healer")
@@ -69,7 +63,7 @@ namespace VirulentVentures
                 id: "ShieldBash",
                 animationTrigger: "ShieldBash",
                 effect: (target, partyData) => "",
-                isMelee: true,
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "StandardDefense", "Dodgeable" },
                 useCondition: (user, party, targets) =>
                     user.Health > user.MaxHealth * 0.5f && targets.Any(t => t.Attack > user.Defense)
             ));
@@ -78,6 +72,7 @@ namespace VirulentVentures
                 id: "IronResolve",
                 animationTrigger: "IronResolve",
                 effect: (target, partyData) => "",
+                tags: new List<string> { "TargetSelf", "Buff", "Morale", "NoDefenseCheck", "NoEvasionCheck", "SkipNextAttack" },
                 useCondition: (user, party, targets) =>
                     user.Morale < user.MaxMorale * 0.7f && user.Health > user.MaxHealth * 0.3f
             ));
@@ -86,7 +81,7 @@ namespace VirulentVentures
                 id: "ChiStrike",
                 animationTrigger: "ChiStrike",
                 effect: (target, partyData) => "",
-                isMelee: true,
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "PartialIgnoreDefense:0.025", "Dodgeable", "Buff" },
                 useCondition: (user, party, targets) =>
                     targets.Any(t => t is CharacterStats ts && ts.Defense > user.Attack / 2)
             ));
@@ -95,6 +90,7 @@ namespace VirulentVentures
                 id: "InnerFocus",
                 animationTrigger: "InnerFocus",
                 effect: (target, partyData) => "",
+                tags: new List<string> { "TargetSelf", "Buff", "Morale", "SelfDamage:5", "NoDefenseCheck", "NoEvasionCheck" },
                 useCondition: (user, party, targets) =>
                     user.Health < user.MaxHealth * 0.7f && user.Morale < user.MaxMorale * 0.6f
             ));
@@ -103,6 +99,7 @@ namespace VirulentVentures
                 id: "SniperShot",
                 animationTrigger: "SniperShot",
                 effect: (target, partyData) => "",
+                tags: new List<string> { "TargetEnemies", "Ranged", "Damage", "StandardDefense", "Dodgeable", "Debuff", "PriorityLowHealth" },
                 useCondition: (user, party, targets) =>
                     targets.Any(t => t.Health < t.MaxHealth * 0.3f)
             ));
@@ -111,6 +108,7 @@ namespace VirulentVentures
                 id: "HealerHeal",
                 animationTrigger: "HealerHeal",
                 effect: (target, partyData) => "",
+                tags: new List<string> { "TargetAllies", "Ranged", "Heal", "Morale", "InfectionResist", "NoDefenseCheck", "NoEvasionCheck" },
                 useCondition: (user, party, targets) =>
                     party.HeroStats.Any(h => h.Type == CharacterType.Hero && h.Health < h.MaxHealth * 0.75f)
             ));
@@ -123,15 +121,14 @@ namespace VirulentVentures
                 animationTrigger: "BasicAttack",
                 effect: (target, partyData) => "",
                 isCommon: true,
-                isMelee: true
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "StandardDefense", "Dodgeable" }
             ));
 
             monsterAbilities.Add("SludgeSlam", new AbilityData(
                 id: "SludgeSlam",
                 animationTrigger: "SludgeSlam",
                 effect: (target, partyData) => "",
-                isMelee: true,
-                isMultiTarget: true,
+                tags: new List<string> { "TargetEnemies", "AOE", "Melee", "Damage", "StandardDefense", "Dodgeable", "Infection" },
                 useCondition: (user, party, targets) =>
                     targets.Count(t => t is CharacterStats cs && (cs.PartyPosition == 1 || cs.PartyPosition == 2) && t.Health > 0 && !t.HasRetreated) >= 2
             ));
@@ -140,7 +137,7 @@ namespace VirulentVentures
                 id: "MireGrasp",
                 animationTrigger: "MireGrasp",
                 effect: (target, partyData) => "",
-                isMelee: true,
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "StandardDefense", "Dodgeable", "Debuff", "Morale" },
                 useCondition: (user, party, targets) =>
                     targets.Any(t => t.Speed > user.Speed)
             ));
@@ -149,6 +146,7 @@ namespace VirulentVentures
                 id: "ThornNeedle",
                 animationTrigger: "ThornNeedle",
                 effect: (target, partyData) => "",
+                tags: new List<string> { "TargetEnemies", "Ranged", "Damage", "IgnoreDefense", "FixedDamage:6", "Dodgeable" },
                 useCondition: (user, party, targets) =>
                     targets.Any(t => t is CharacterStats cs && (cs.PartyPosition == 3 || cs.PartyPosition == 4) && t.Health > 0 && !t.HasRetreated)
             ));
@@ -157,7 +155,7 @@ namespace VirulentVentures
                 id: "Entangle",
                 animationTrigger: "Entangle",
                 effect: (target, partyData) => "",
-                isMelee: true,
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "IgnoreDefense", "FixedDamage:8", "Dodgeable", "SelfDamage:10", "SkipNextAttack" },
                 useCondition: (user, party, targets) =>
                     targets.Any(t => t.Speed > user.Speed)
             ));
@@ -166,6 +164,7 @@ namespace VirulentVentures
                 id: "ShriekOfDespair",
                 animationTrigger: "ShriekOfDespair",
                 effect: (target, partyData) => "",
+                tags: new List<string> { "TargetEnemies", "AOE", "Ranged", "Morale", "NoDefenseCheck", "NoEvasionCheck" },
                 useCondition: (user, party, targets) =>
                     party.HeroStats.Any(h => h.Morale > h.MaxMorale * 0.6f)
             ));
@@ -174,6 +173,7 @@ namespace VirulentVentures
                 id: "FlocksVigor",
                 animationTrigger: "FlocksVigor",
                 effect: (target, partyData) => "",
+                tags: new List<string> { "TargetAllies", "AOE", "Ranged", "Buff", "NoDefenseCheck", "NoEvasionCheck" },
                 useCondition: (user, party, targets) =>
                     targets.Any(t => t is CharacterStats cs && cs.Type == CharacterType.Monster && t.Health < t.MaxHealth * 0.5f)
             ));
@@ -182,8 +182,7 @@ namespace VirulentVentures
                 id: "TrueStrike",
                 animationTrigger: "TrueStrike",
                 effect: (target, partyData) => "",
-                isMelee: true,
-                canDodge: false,
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "StandardDefense", "Undodgeable", "Morale", "Buff" },
                 useCondition: (user, party, targets) => true
             ));
 
@@ -191,8 +190,7 @@ namespace VirulentVentures
                 id: "SpectralDrain",
                 animationTrigger: "SpectralDrain",
                 effect: (target, partyData) => "",
-                isMelee: true,
-                canDodge: true,
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "StandardDefense", "Dodgeable", "Debuff", "Infection", "SelfDamage:8", "Buff" },
                 useCondition: (user, party, targets) =>
                     targets.Any(t => t is CharacterStats ts && ts.Defense > 5)
             ));
@@ -201,21 +199,22 @@ namespace VirulentVentures
                 id: "EtherealWail",
                 animationTrigger: "EtherealWail",
                 effect: (target, partyData) => "",
-                canDodge: true,
+                tags: new List<string> { "TargetEnemies", "AOE", "Ranged", "Morale", "Dodgeable", "NoDefenseCheck", "Buff" },
                 useCondition: (user, party, targets) =>
                     party.HeroStats.Any(h => h.Morale > h.MaxMorale * 0.5f)
             ));
+
+            monsterAbilities.Add("ViralSpikes", new AbilityData(
+                id: "ViralSpikes",
+                animationTrigger: "ViralSpikes",
+                effect: (target, partyData) => "",
+                tags: new List<string> { "TargetSelf", "Buff", "ThornsFixed:5", "ThornsInfection", "NoDefenseCheck", "NoEvasionCheck" },
+                useCondition: (user, party, targets) => user.Health < user.MaxHealth * 0.5f
+            ));
         }
 
-        public static AbilityData? GetHeroAbility(string id)
-        {
-            return heroAbilities.TryGetValue(id, out var ability) ? ability : null;
-        }
-
-        public static AbilityData? GetMonsterAbility(string id)
-        {
-            return monsterAbilities.TryGetValue(id, out var ability) ? ability : null;
-        }
+        public static AbilityData? GetHeroAbility(string id) => heroAbilities.TryGetValue(id, out var ability) ? ability : null;
+        public static AbilityData? GetMonsterAbility(string id) => monsterAbilities.TryGetValue(id, out var ability) ? ability : null;
 
         public static List<AbilityData> GetCommonAbilities()
         {

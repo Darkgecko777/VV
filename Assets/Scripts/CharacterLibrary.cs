@@ -158,7 +158,7 @@ namespace VirulentVentures
                     Speed = 3,
                     Evasion = 10,
                     Infectivity = 60,
-                    AbilityIds = new List<string> { "BasicAttack", "ThornNeedle", "Entangle" },
+                    AbilityIds = new List<string> { "BasicAttack", "ThornNeedle", "Entangle", "ViralSpikes" },
                     CanBeCultist = false,
                     PartyPosition = 2
                 }
