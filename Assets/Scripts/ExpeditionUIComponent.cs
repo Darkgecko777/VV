@@ -159,16 +159,15 @@ namespace VirulentVentures
             }
         }
 
-        public void FadeToCombat(System.Action onComplete = null)
+        public void FadeToCombat(System.Action onStartLoad = null)
         {
             if (fadeOverlay == null) return;
-            StartCoroutine(FadeRoutine(onComplete));
+            StartCoroutine(FadeRoutine(onStartLoad));
         }
 
-        private IEnumerator FadeRoutine(System.Action onComplete)
+        private IEnumerator FadeRoutine(System.Action onStartLoad)
         {
-            // Removed: ExpeditionManager.Instance.SetTransitioning(true);  // Let TransitionToCombatScene handle this
-
+            // Fade IN to black
             fadeOverlay.style.display = DisplayStyle.Flex;
             float elapsed = 0f;
             while (elapsed < fadeDuration)
@@ -177,16 +176,48 @@ namespace VirulentVentures
                 fadeOverlay.style.opacity = Mathf.Lerp(0, 1, elapsed / fadeDuration);
                 yield return null;
             }
-            fadeOverlay.style.opacity = 1;
+            fadeOverlay.style.opacity = 1f;
 
-            onComplete?.Invoke();  // Now this will proceed, starting the load with isTransitioning == false
+            // Start the async load RIGHT NOW (black screen hides any hitch)
+            onStartLoad?.Invoke();
 
-            // Optional polish: Add a brief hold or fade-out delay if the instant snap feels janky
-            // yield return new WaitForSeconds(0.1f);  // Tiny buffer before fade-out
+            // Get the op from manager (assume we expose a getter or pass it— for now, we'll simulate by waiting a frame and polling manager if needed.
+            // Better: Modify the callback to return/pass the op, but to keep simple, we'll use a public getter in Manager.
+            yield return null;  // Tiny buffer to let load start
 
-            fadeOverlay.style.opacity = 0;
+            // Wait for load progress (hook via completed for exactness, but progress for smooth fade-out)
+            // Assuming we add a public AsyncOperation CurrentAsyncOp {get; private set;} in Manager, set on start.
+            var asyncOp = ExpeditionManager.Instance.CurrentAsyncOp;  // You'd add this prop to Manager
+            if (asyncOp == null)
+            {
+                // Fallback: Just wait a fixed time or until transitioning false
+                while (ExpeditionManager.Instance.IsTransitioning)
+                {
+                    yield return null;
+                }
+            }
+            else
+            {
+                // Progress-based fade-out: Start fading out when 80% done (tune as needed)
+                while (asyncOp.progress < 0.8f)
+                {
+                    yield return null;
+                }
+                // Now fade OUT from black as load finishes
+                elapsed = 0f;
+                while (elapsed < fadeDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    // Lerp from 1 (black) to 0 (reveal), but clamp if load finishes early
+                    float targetOpacity = Mathf.Lerp(1, 0, elapsed / fadeDuration);
+                    fadeOverlay.style.opacity = Mathf.Max(targetOpacity, 1f - asyncOp.progress);  // Stay black until fully loaded
+                    yield return null;
+                }
+                fadeOverlay.style.opacity = 0f;
+            }
+
             fadeOverlay.style.display = DisplayStyle.None;
-            ExpeditionManager.Instance.SetTransitioning(false);  // Safe here—load is already async underway
+            // No SetTransitioning(false) here—let Manager's completed handle it
         }
 
         private void SubscribeToEventBus()

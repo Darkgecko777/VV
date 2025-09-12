@@ -82,17 +82,19 @@ namespace VirulentVentures
             }
 
             var currentNode = data.nodes[data.currentIndex];
-            Debug.Log($"ExpeditionSceneComponent: Processing node {data.currentIndex}, IsCombat: {currentNode.IsCombat}, Completed: {currentNode.Completed}");
             if (currentNode.IsCombat && !currentNode.Completed)
             {
-                Debug.Log("ExpeditionSceneComponent: Attempting combat scene transition");
+                // In the IsCombat && !Completed block:
                 if (viewComponent != null)
                 {
-                    viewComponent.FadeToCombat(() => ExpeditionManager.Instance.TransitionToCombatScene());
+                    viewComponent.FadeToCombat(() => {
+                        var asyncOp = ExpeditionManager.Instance.TransitionToCombatScene();
+                        // If op is null (already transitioning), bail—avoids doubles
+                    });
                 }
                 else
                 {
-                    ExpeditionManager.Instance.TransitionToCombatScene();
+                    ExpeditionManager.Instance.TransitionToCombatScene();  // Direct, no fade
                 }
             }
             else

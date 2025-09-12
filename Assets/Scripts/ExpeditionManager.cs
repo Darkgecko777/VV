@@ -39,6 +39,7 @@ namespace VirulentVentures
         public bool IsTransitioning => isTransitioning;
         public event Action OnCombatStarted;
         public event Action<List<NodeData>, int> OnSceneTransitionCompleted;
+        public AsyncOperation CurrentAsyncOp { get; private set; }
 
         void Awake()
         {
@@ -101,19 +102,23 @@ namespace VirulentVentures
             }
         }
 
-        public void TransitionToCombatScene()
+        public AsyncOperation TransitionToCombatScene()
         {
             if (isTransitioning)
             {
-                return;
+                return null;  // Bail early, no op returned
             }
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("CombatScene", LoadSceneMode.Single).completed += _ =>
+            var asyncOp = SceneManager.LoadSceneAsync("CombatScene", LoadSceneMode.Single);
+            CurrentAsyncOp = asyncOp;  // Set it
+            asyncOp.completed += _ =>
             {
+                CurrentAsyncOp = null;
                 isTransitioning = false;
                 OnCombatStarted?.Invoke();
                 OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
             };
+            return asyncOp;
         }
 
         public void TransitionToExpeditionScene()
