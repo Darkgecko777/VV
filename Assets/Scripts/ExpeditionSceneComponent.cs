@@ -119,7 +119,7 @@ namespace VirulentVentures
             {
                 expedition.CurrentNodeIndex++;
                 eventBus.RaiseNodeUpdated(expedition.NodeData, expedition.CurrentNodeIndex);
-                ExpeditionManager.Instance.SaveProgress();
+                SaveManager.Instance.SaveProgress();
             }
         }
 

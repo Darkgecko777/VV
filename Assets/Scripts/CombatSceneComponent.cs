@@ -700,7 +700,7 @@ namespace VirulentVentures
             allCombatLogs.Add(endMessage);
             eventBus.RaiseLogMessage(endMessage, Color.white);
             eventBus.RaiseCombatEnded();
-            expeditionManager.SaveProgress();
+            SaveManager.Instance.SaveProgress();
             bool partyDead = expeditionManager.GetExpedition().Party.CheckDeadStatus().Count == 0;
             if (!partyDead)
             {

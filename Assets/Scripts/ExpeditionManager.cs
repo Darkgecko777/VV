@@ -1,45 +1,25 @@
-using UnityEngine;
-using UnityEngine.SceneManagement;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace VirulentVentures
 {
-    [Serializable]
-    public class SaveDataWrapper
-    {
-        public string version;
-        public ExpeditionData expeditionData;
-        public PartyData partyData;
-        public PlayerProgress playerProgress;
-
-        public SaveDataWrapper(string version, ExpeditionData expeditionData, PartyData partyData, PlayerProgress playerProgress)
-        {
-            this.version = version;
-            this.expeditionData = expeditionData;
-            this.partyData = partyData;
-            this.playerProgress = playerProgress;
-        }
-    }
-
     public class ExpeditionManager : MonoBehaviour
     {
         [SerializeField] private ExpeditionData expeditionData;
-        [SerializeField] private PartyData partyData;
-        [SerializeField] private PlayerProgress playerProgress;
         [SerializeField] private EventBusSO eventBus;
-        [SerializeField] private bool clearDataOnStart = true;
 
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
-        private const string CURRENT_VERSION = "1.0";
+        private AsyncOperation currentAsyncOp;
 
         public static ExpeditionManager Instance => instance;
         public bool IsTransitioning => isTransitioning;
+        public AsyncOperation CurrentAsyncOp => currentAsyncOp;
+
         public event Action OnCombatStarted;
         public event Action<List<NodeData>, int> OnSceneTransitionCompleted;
-        public AsyncOperation CurrentAsyncOp { get; private set; }
 
         void Awake()
         {
@@ -53,122 +33,71 @@ namespace VirulentVentures
                 Destroy(gameObject);
                 return;
             }
-
-            if (clearDataOnStart)
-            {
-                PlayerPrefs.DeleteKey("ExpeditionSave");
-                PlayerPrefs.DeleteKey("PartySave");
-                PlayerPrefs.DeleteKey("PlayerProgressSave");
-                PlayerPrefs.Save();
-                expeditionData.Reset();
-                partyData.Reset();
-                playerProgress.Reset();
-                Debug.Log("ExpeditionManager: Cleared all save data for new session");
-            }
         }
 
         void Start()
         {
             if (!ValidateReferences()) return;
-
-            string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
-            if (!string.IsNullOrEmpty(expeditionSaveData))
-            {
-                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(expeditionSaveData);
-                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.expeditionData != null)
-                {
-                    expeditionData.SetNodes(wrapper.expeditionData.NodeData);
-                    expeditionData.CurrentNodeIndex = wrapper.expeditionData.CurrentNodeIndex;
-                    expeditionData.SetParty(wrapper.expeditionData.Party);
-                }
-            }
-            string partySaveData = PlayerPrefs.GetString("PartySave", "");
-            if (!string.IsNullOrEmpty(partySaveData))
-            {
-                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(partySaveData);
-                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.partyData != null)
-                {
-                    partyData = wrapper.partyData;
-                }
-            }
-            string progressSaveData = PlayerPrefs.GetString("PlayerProgressSave", "");
-            if (!string.IsNullOrEmpty(progressSaveData))
-            {
-                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(progressSaveData);
-                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.playerProgress != null)
-                {
-                    playerProgress = wrapper.playerProgress;
-                }
-            }
         }
 
         public AsyncOperation TransitionToCombatScene()
         {
-            if (isTransitioning)
-            {
-                return null;  // Bail early, no op returned
-            }
+            if (isTransitioning) return null;
+
             isTransitioning = true;
             var asyncOp = SceneManager.LoadSceneAsync("CombatScene", LoadSceneMode.Single);
-            CurrentAsyncOp = asyncOp;  // Set it
+            currentAsyncOp = asyncOp;
             asyncOp.completed += _ =>
             {
-                CurrentAsyncOp = null;
                 isTransitioning = false;
+                currentAsyncOp = null;
                 OnCombatStarted?.Invoke();
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+                OnSceneTransitionCompleted?.Invoke(expeditionData?.NodeData, expeditionData?.CurrentNodeIndex ?? 0);
             };
             return asyncOp;
         }
 
-        public void TransitionToExpeditionScene()
+        public AsyncOperation TransitionToExpeditionScene()
         {
-            if (isTransitioning)
-            {
-                return;
-            }
+            if (isTransitioning) return null;
+
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("ExpeditionScene", LoadSceneMode.Single).completed += _ =>
+            var asyncOp = SceneManager.LoadSceneAsync("ExpeditionScene", LoadSceneMode.Single);
+            currentAsyncOp = asyncOp;
+            asyncOp.completed += _ =>
             {
                 isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+                currentAsyncOp = null;
+                OnSceneTransitionCompleted?.Invoke(expeditionData?.NodeData, expeditionData?.CurrentNodeIndex ?? 0);
             };
+            return asyncOp;
+        }
+
+        public AsyncOperation TransitionToTemplePlanningScene()
+        {
+            if (isTransitioning) return null;
+
+            isTransitioning = true;
+            var asyncOp = SceneManager.LoadSceneAsync("TemplePlanningScene", LoadSceneMode.Single);
+            currentAsyncOp = asyncOp;
+            asyncOp.completed += _ =>
+            {
+                isTransitioning = false;
+                currentAsyncOp = null;
+                OnSceneTransitionCompleted?.Invoke(null, 0);
+            };
+            return asyncOp;
         }
 
         public void EndExpedition()
         {
-            expeditionData.Reset();
-            if (!clearDataOnStart)
-            {
-                playerProgress.Reset();
-            }
-            PlayerPrefs.DeleteKey("ExpeditionSave");
-            PlayerPrefs.DeleteKey("PlayerProgressSave");
-            PlayerPrefs.Save();
+            eventBus.RaiseExpeditionEnded();
             TransitionToTemplePlanningScene();
         }
 
-        public void SaveProgress()
+        public void OnContinueClicked()
         {
-            if (partyData != null && partyData.HeroStats != null)
-            {
-                partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
-            }
-            var expeditionWrapper = new SaveDataWrapper(CURRENT_VERSION, expeditionData, null, null);
-            string expeditionJson = JsonUtility.ToJson(expeditionWrapper);
-            PlayerPrefs.SetString("ExpeditionSave", expeditionJson);
-            var partyWrapper = new SaveDataWrapper(CURRENT_VERSION, null, partyData, null);
-            string partyJson = JsonUtility.ToJson(partyWrapper);
-            PlayerPrefs.SetString("PartySave", partyJson);
-            var progressWrapper = new SaveDataWrapper(CURRENT_VERSION, null, null, playerProgress);
-            string progressJson = JsonUtility.ToJson(progressWrapper);
-            PlayerPrefs.SetString("PlayerProgressSave", progressJson);
-            PlayerPrefs.Save();
-        }
-
-        public void SetTransitioning(bool state)
-        {
-            isTransitioning = state;
+            eventBus.RaiseContinueClicked();
         }
 
         public ExpeditionData GetExpedition()
@@ -178,57 +107,22 @@ namespace VirulentVentures
 
         public PlayerProgress GetPlayerProgress()
         {
-            return playerProgress;
+            return SaveManager.Instance?.GetPlayerProgress();
         }
 
-        public void PostLoad()
+        public void SetTransitioning(bool state)
         {
-            if (partyData == null) return;
-            if (partyData.HeroStats != null)
-            {
-                partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
-            }
-            foreach (var hero in partyData.HeroStats)
-            {
-                var data = CharacterLibrary.GetHeroData(hero.Id);
-                hero.Speed = data.Speed;
-            }
-            foreach (var node in expeditionData.NodeData)
-            {
-                foreach (var monster in node.Monsters)
-                {
-                    var data = CharacterLibrary.GetMonsterData(monster.Id);
-                }
-            }
+            isTransitioning = state;
         }
 
         private bool ValidateReferences()
         {
-            if (expeditionData == null || partyData == null || playerProgress == null || eventBus == null)
+            if (expeditionData == null || eventBus == null)
             {
-                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, PlayerProgress: {playerProgress != null}, EventBus: {eventBus != null}");
+                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, EventBus: {eventBus != null}");
                 return false;
             }
             return true;
-        }
-
-        public void TransitionToTemplePlanningScene()
-        {
-            if (isTransitioning)
-            {
-                return;
-            }
-            isTransitioning = true;
-            SceneManager.LoadSceneAsync("TemplePlanningScene", LoadSceneMode.Single).completed += _ =>
-            {
-                isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke(null, 0);
-            };
-        }
-
-        public void OnContinueClicked()
-        {
-            eventBus.RaiseContinueClicked();
         }
     }
 }
