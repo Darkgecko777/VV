@@ -14,7 +14,6 @@ namespace VirulentVentures
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private List<VirusData> availableViruses;
         [SerializeField] private PartyData partyData;
-
         private DropdownField virusDropdown;
         private DropdownField nodeDropdown;
         private Button generateButton;
@@ -35,7 +34,6 @@ namespace VirulentVentures
         private List<Button> tabButtons;
         private bool isInitialized;
         private VisualElement root;
-
         void Awake()
         {
             if (!ValidateReferences())
@@ -43,7 +41,6 @@ namespace VirulentVentures
                 isInitialized = false;
                 return;
             }
-
             root = uiDocument.rootVisualElement;
             virusDropdown = root.Q<DropdownField>("VirusDropdown");
             nodeDropdown = root.Q<DropdownField>("NodeDropdown");
@@ -61,7 +58,6 @@ namespace VirulentVentures
             expeditionTabButton = root.Q<Button>("ExpeditionTab");
             virusTabButton = root.Q<Button>("VirusTab");
             healTabButton = root.Q<Button>("HealTab");
-
             tabContents = new List<VisualElement>
             {
                 root.Q<VisualElement>("RecruitTabContent"),
@@ -70,12 +66,11 @@ namespace VirulentVentures
                 root.Q<VisualElement>("HealTabContent")
             };
             tabButtons = new List<Button> { recruitTabButton, expeditionTabButton, virusTabButton, healTabButton };
-
             if (virusDropdown == null || nodeDropdown == null || generateButton == null || launchButton == null || seedVirusButton == null || healButton == null || favourLabel == null ||
                 recruitPortraitContainer == null || expeditionPortraitContainer == null || healPortraitContainer == null || nodeContainer == null ||
                 tabContentContainer == null || recruitTabButton == null || expeditionTabButton == null || virusTabButton == null || healTabButton == null)
             {
-                Debug.LogError($"TempleViewController: Missing UI elements! VirusDropdown: {virusDropdown != null}, NodeDropdown: {nodeDropdown != null}, " +
+                Debug.LogError($"TempleUIComponent: Missing UI elements! VirusDropdown: {virusDropdown != null}, NodeDropdown: {nodeDropdown != null}, " +
                     $"GenerateButton: {generateButton != null}, LaunchButton: {launchButton != null}, SeedVirusButton: {seedVirusButton != null}, HealButton: {healButton != null}, FavourLabel: {favourLabel != null}, " +
                     $"RecruitPortraitContainer: {recruitPortraitContainer != null}, ExpeditionPortraitContainer: {expeditionPortraitContainer != null}, " +
                     $"HealPortraitContainer: {healPortraitContainer != null}, NodeContainer: {nodeContainer != null}, " +
@@ -84,11 +79,9 @@ namespace VirulentVentures
                 isInitialized = false;
                 return;
             }
-
             isInitialized = true;
             InitializeUI();
         }
-
         void Start()
         {
             if (isInitialized)
@@ -99,7 +92,6 @@ namespace VirulentVentures
                 UpdateFavourDisplay();
             }
         }
-
         void OnDestroy()
         {
             if (eventBus != null)
@@ -127,7 +119,6 @@ namespace VirulentVentures
             virusTabButton = null;
             healTabButton = null;
         }
-
         private void InitializeUI()
         {
             virusDropdown.choices.Clear();
@@ -138,12 +129,10 @@ namespace VirulentVentures
             virusDropdown.value = virusDropdown.choices.Count > 0 ? virusDropdown.choices[0] : null;
             virusDropdown.style.color = uiConfig.TextColor;
             virusDropdown.style.unityFont = uiConfig.PixelFont;
-
             nodeDropdown.choices.Clear();
             nodeDropdown.value = null;
             nodeDropdown.style.color = uiConfig.TextColor;
             nodeDropdown.style.unityFont = uiConfig.PixelFont;
-
             generateButton.style.color = uiConfig.TextColor;
             generateButton.style.unityFont = uiConfig.PixelFont;
             launchButton.style.color = uiConfig.TextColor;
@@ -154,16 +143,13 @@ namespace VirulentVentures
             healButton.style.unityFont = uiConfig.PixelFont;
             favourLabel.style.color = uiConfig.TextColor;
             favourLabel.style.unityFont = uiConfig.PixelFont;
-
             foreach (var button in tabButtons)
             {
                 button.style.color = uiConfig.TextColor;
                 button.style.unityFont = uiConfig.PixelFont;
             }
-
             generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
             healButton.SetEnabled(partyData.CanHealParty());
-
             generateButton.clicked += () => eventBus.RaiseExpeditionGenerated(null, null);
             launchButton.clicked += () => eventBus.RaiseLaunchExpedition();
             seedVirusButton.clicked += () =>
@@ -174,19 +160,16 @@ namespace VirulentVentures
                 }
                 else
                 {
-                    Debug.LogWarning("TempleViewController: Invalid dropdown selection for virus seeding!");
+                    Debug.LogWarning("TempleUIComponent: Invalid dropdown selection for virus seeding!");
                 }
             };
             healButton.clicked += () => eventBus.RaiseHealParty();
-
             recruitTabButton.clicked += () => SwitchTab(0);
             expeditionTabButton.clicked += () => SwitchTab(1);
             virusTabButton.clicked += () => SwitchTab(2);
             healTabButton.clicked += () => SwitchTab(3);
-
             launchButton.SetEnabled(false);
         }
-
         private void SwitchTab(int index)
         {
             for (int i = 0; i < tabContents.Count; i++)
@@ -199,7 +182,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         private void InitializeEmptyPortraits()
         {
             recruitPortraitContainer.Clear();
@@ -213,14 +195,12 @@ namespace VirulentVentures
                 recruitPortrait.AddToClassList("portrait");
                 recruitWrapper.Add(recruitPortrait);
                 recruitPortraitContainer.Add(recruitWrapper);
-
                 VisualElement expeditionWrapper = new VisualElement();
                 expeditionWrapper.AddToClassList("portrait-wrapper");
                 VisualElement expeditionPortrait = new VisualElement();
                 expeditionPortrait.AddToClassList("portrait");
                 expeditionWrapper.Add(expeditionPortrait);
                 expeditionPortraitContainer.Add(expeditionWrapper);
-
                 VisualElement healWrapper = new VisualElement();
                 healWrapper.AddToClassList("portrait-wrapper");
                 VisualElement healPortrait = new VisualElement();
@@ -229,98 +209,124 @@ namespace VirulentVentures
                 healPortraitContainer.Add(healWrapper);
             }
         }
-
         private void UpdatePartyVisuals(PartyData partyData)
         {
             if (!isInitialized || partyData == null || recruitPortraitContainer == null || expeditionPortraitContainer == null || healPortraitContainer == null)
             {
-                Debug.LogWarning("TempleViewController: PartyData or portrait containers are null, skipping update.");
+                Debug.LogWarning("TempleUIComponent: PartyData or portrait containers are null, skipping update.");
                 return;
             }
-
             recruitPortraitContainer.Clear();
             expeditionPortraitContainer.Clear();
             healPortraitContainer.Clear();
-            var heroes = partyData.GetHeroes().OrderByDescending(h => h.PartyPosition).ToList();
 
+            var heroes = partyData.GetHeroes()?.OrderByDescending(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList() ?? new List<CharacterStats>();
             bool hasActiveParty = partyData.HeroStats != null && partyData.HeroStats.Count > 0;
+            if (!hasActiveParty)
+            {
+                Debug.Log("TempleUIComponent: No active party (HeroStats null or empty), showing default portraits.");
+            }
 
             for (int i = 0; i < 4; i++)
             {
                 VisualElement recruitWrapper = new VisualElement();
                 recruitWrapper.AddToClassList("portrait-wrapper");
-                VisualElement recruitPortrait = new VisualElement();
+                Image recruitPortrait = new Image(); // Use Image instead of VisualElement
                 recruitPortrait.AddToClassList("portrait");
-                recruitWrapper.Add(recruitPortrait);
-
+                recruitPortrait.style.width = 100;
+                recruitPortrait.style.height = 100;
                 VisualElement expeditionWrapper = new VisualElement();
                 expeditionWrapper.AddToClassList("portrait-wrapper");
-                VisualElement expeditionPortrait = new VisualElement();
+                Image expeditionPortrait = new Image();
                 expeditionPortrait.AddToClassList("portrait");
-                expeditionWrapper.Add(expeditionPortrait);
-
+                expeditionPortrait.style.width = 100;
+                expeditionPortrait.style.height = 100;
                 VisualElement healWrapper = new VisualElement();
                 healWrapper.AddToClassList("portrait-wrapper");
-                VisualElement healPortrait = new VisualElement();
+                Image healPortrait = new Image();
                 healPortrait.AddToClassList("portrait");
-                healWrapper.Add(healPortrait);
+                healPortrait.style.width = 100;
+                healPortrait.style.height = 100;
 
-                if (hasActiveParty && i < heroes.Count && heroes[i] != null && !heroes[i].HasRetreated && heroes[i].Health > 0)
+                VisualElement recruitHealthBar = new VisualElement();
+                recruitHealthBar.AddToClassList("health-bar");
+                recruitHealthBar.name = "HealthBar";
+                VisualElement recruitMoraleBar = new VisualElement();
+                recruitMoraleBar.AddToClassList("morale-bar");
+                recruitMoraleBar.name = "MoraleBar";
+                VisualElement recruitBarsContainer = new VisualElement();
+                recruitBarsContainer.AddToClassList("bars-container");
+                recruitBarsContainer.Add(recruitHealthBar);
+                recruitBarsContainer.Add(recruitMoraleBar);
+                recruitWrapper.Add(recruitPortrait); // Add portrait first
+                recruitWrapper.Add(recruitBarsContainer); // Then bars
+
+                VisualElement expeditionHealthBar = new VisualElement();
+                expeditionHealthBar.AddToClassList("health-bar");
+                expeditionHealthBar.name = "HealthBar";
+                VisualElement expeditionMoraleBar = new VisualElement();
+                expeditionMoraleBar.AddToClassList("morale-bar");
+                expeditionMoraleBar.name = "MoraleBar";
+                VisualElement expeditionBarsContainer = new VisualElement();
+                expeditionBarsContainer.AddToClassList("bars-container");
+                expeditionBarsContainer.Add(expeditionHealthBar);
+                expeditionBarsContainer.Add(expeditionMoraleBar);
+                expeditionWrapper.Add(expeditionPortrait);
+                expeditionWrapper.Add(expeditionBarsContainer);
+
+                VisualElement healHealthBar = new VisualElement();
+                healHealthBar.AddToClassList("health-bar");
+                healHealthBar.name = "HealthBar";
+                VisualElement healMoraleBar = new VisualElement();
+                healMoraleBar.AddToClassList("morale-bar");
+                healMoraleBar.name = "MoraleBar";
+                VisualElement healBarsContainer = new VisualElement();
+                healBarsContainer.AddToClassList("bars-container");
+                healBarsContainer.Add(healHealthBar);
+                healBarsContainer.Add(healMoraleBar);
+                healWrapper.Add(healPortrait);
+                healWrapper.Add(healBarsContainer);
+
+                if (hasActiveParty && i < heroes.Count && heroes[i] != null)
                 {
                     string characterID = heroes[i].Id;
+                    Debug.Log($"TempleUIComponent: Processing hero {i + 1}, ID: '{characterID}'");
                     if (string.IsNullOrEmpty(characterID))
                     {
-                        Debug.LogWarning($"TempleViewController: Hero {i + 1} has null/empty Id, skipping sprite.");
+                        Debug.LogWarning($"TempleUIComponent: Hero {i + 1} has null/empty Id, using fallback.");
+                        recruitPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                        expeditionPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                        healPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                        recruitPortrait.tooltip = "Empty Slot (Invalid ID)";
+                        expeditionPortrait.tooltip = "Empty Slot (Invalid ID)";
+                        healPortrait.tooltip = "Empty Slot (Invalid ID)";
                     }
                     else
                     {
                         Sprite sprite = visualConfig.GetPortrait(characterID);
                         if (sprite != null)
                         {
-                            recruitPortrait.style.backgroundImage = new StyleBackground(sprite);
-                            expeditionPortrait.style.backgroundImage = new StyleBackground(sprite);
-                            healPortrait.style.backgroundImage = new StyleBackground(sprite);
+                            Debug.Log($"TempleUIComponent: Applying sprite '{sprite.name}' (Texture: {sprite.texture != null}) for '{characterID}' to portrait.");
+                            recruitPortrait.image = sprite.texture; // Use Image.texture for UI Toolkit
+                            expeditionPortrait.image = sprite.texture;
+                            healPortrait.image = sprite.texture;
+                            recruitPortrait.style.display = DisplayStyle.None; // Force refresh
+                            recruitPortrait.style.display = DisplayStyle.Flex;
+                            expeditionPortrait.style.display = DisplayStyle.None;
+                            expeditionPortrait.style.display = DisplayStyle.Flex;
+                            healPortrait.style.display = DisplayStyle.None;
+                            healPortrait.style.display = DisplayStyle.Flex;
                             string tooltip = $"Health: {heroes[i].Health}/{heroes[i].MaxHealth}, Morale: {heroes[i].Morale}/{heroes[i].MaxMorale}";
+                            if (heroes[i].Health <= 0)
+                            {
+                                recruitPortrait.AddToClassList("portrait-dead");
+                                expeditionPortrait.AddToClassList("portrait-dead");
+                                healPortrait.AddToClassList("portrait-dead");
+                                tooltip = $"Dead: {heroes[i].Id}";
+                            }
                             recruitPortrait.tooltip = tooltip;
                             expeditionPortrait.tooltip = tooltip;
                             healPortrait.tooltip = tooltip;
-
-                            VisualElement recruitHealthBar = new VisualElement();
-                            recruitHealthBar.AddToClassList("health-bar");
-                            recruitHealthBar.name = "HealthBar";
-                            VisualElement recruitMoraleBar = new VisualElement();
-                            recruitMoraleBar.AddToClassList("morale-bar");
-                            recruitMoraleBar.name = "MoraleBar";
-                            VisualElement recruitBarsContainer = new VisualElement();
-                            recruitBarsContainer.AddToClassList("bars-container");
-                            recruitBarsContainer.Add(recruitHealthBar);
-                            recruitBarsContainer.Add(recruitMoraleBar);
-                            recruitWrapper.Add(recruitBarsContainer);
-
-                            VisualElement expeditionHealthBar = new VisualElement();
-                            expeditionHealthBar.AddToClassList("health-bar");
-                            expeditionHealthBar.name = "HealthBar";
-                            VisualElement expeditionMoraleBar = new VisualElement();
-                            expeditionMoraleBar.AddToClassList("morale-bar");
-                            expeditionMoraleBar.name = "MoraleBar";
-                            VisualElement expeditionBarsContainer = new VisualElement();
-                            expeditionBarsContainer.AddToClassList("bars-container");
-                            expeditionBarsContainer.Add(expeditionHealthBar);
-                            expeditionBarsContainer.Add(expeditionMoraleBar);
-                            expeditionWrapper.Add(expeditionBarsContainer);
-
-                            VisualElement healHealthBar = new VisualElement();
-                            healHealthBar.AddToClassList("health-bar");
-                            healHealthBar.name = "HealthBar";
-                            VisualElement healMoraleBar = new VisualElement();
-                            healMoraleBar.AddToClassList("morale-bar");
-                            healMoraleBar.name = "MoraleBar";
-                            VisualElement healBarsContainer = new VisualElement();
-                            healBarsContainer.AddToClassList("bars-container");
-                            healBarsContainer.Add(healHealthBar);
-                            healBarsContainer.Add(healMoraleBar);
-                            healWrapper.Add(healBarsContainer);
-
                             float healthPercent = heroes[i].MaxHealth > 0 ? (float)heroes[i].Health / heroes[i].MaxHealth : 0f;
                             float moralePercent = heroes[i].MaxMorale > 0 ? (float)heroes[i].Morale / heroes[i].MaxMorale : 0f;
                             recruitHealthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
@@ -332,40 +338,56 @@ namespace VirulentVentures
                         }
                         else
                         {
-                            Debug.LogWarning($"TempleViewController: No sprite found for '{characterID}' in VisualConfig.");
+                            Debug.LogWarning($"TempleUIComponent: No sprite found for '{characterID}' in VisualConfig, using fallback.");
+                            recruitPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                            expeditionPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                            healPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                            recruitPortrait.tooltip = $"No Sprite: {characterID}";
+                            expeditionPortrait.tooltip = $"No Sprite: {characterID}";
+                            healPortrait.tooltip = $"No Sprite: {characterID}";
                         }
                     }
                 }
-
+                else
+                {
+                    recruitPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                    expeditionPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                    healPortrait.style.backgroundColor = new StyleColor(Color.gray);
+                    recruitPortrait.tooltip = "Empty Slot";
+                    expeditionPortrait.tooltip = "Empty Slot";
+                    healPortrait.tooltip = "Empty Slot";
+                    recruitHealthBar.style.width = new StyleLength(Length.Percent(0));
+                    recruitMoraleBar.style.width = new StyleLength(Length.Percent(0));
+                    expeditionHealthBar.style.width = new StyleLength(Length.Percent(0));
+                    expeditionMoraleBar.style.width = new StyleLength(Length.Percent(0));
+                    healHealthBar.style.width = new StyleLength(Length.Percent(0));
+                    healMoraleBar.style.width = new StyleLength(Length.Percent(0));
+                }
                 recruitPortraitContainer.Add(recruitWrapper);
                 expeditionPortraitContainer.Add(expeditionWrapper);
                 healPortraitContainer.Add(healWrapper);
             }
-
-            generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
+            generateButton.SetEnabled(!hasActiveParty);
             healButton.SetEnabled(partyData.CanHealParty());
             UpdateFavourDisplay();
         }
-
         private void UpdateFavourDisplay()
         {
             var playerProgress = ExpeditionManager.Instance.GetPlayerProgress();
             favourLabel.text = $"Favour: {playerProgress.Favour}";
         }
-
         private void HandleExpeditionEnded()
         {
-            Debug.Log($"TempleViewController: HandleExpeditionEnded called, HeroStats count: {(partyData.HeroStats == null ? 0 : partyData.HeroStats.Count)}");
+            Debug.Log($"TempleUIComponent: HandleExpeditionEnded called, HeroStats count: {(partyData.HeroStats == null ? 0 : partyData.HeroStats.Count)}");
             generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
             healButton.SetEnabled(partyData.CanHealParty());
             UpdateFavourDisplay();
+            UpdatePartyVisuals(partyData);
         }
-
         private void HandlePlayerProgressUpdated()
         {
             UpdateFavourDisplay();
         }
-
         private void SubscribeToEventBus()
         {
             eventBus.OnExpeditionUpdated += UpdateNodeVisuals;
@@ -374,7 +396,6 @@ namespace VirulentVentures
             eventBus.OnExpeditionEnded += HandleExpeditionEnded;
             eventBus.OnPlayerProgressUpdated += HandlePlayerProgressUpdated;
         }
-
         private void UnsubscribeFromEventBus()
         {
             eventBus.OnExpeditionUpdated -= UpdateNodeVisuals;
@@ -383,15 +404,13 @@ namespace VirulentVentures
             eventBus.OnExpeditionEnded -= HandleExpeditionEnded;
             eventBus.OnPlayerProgressUpdated -= HandlePlayerProgressUpdated;
         }
-
         private void UpdateNodeVisuals(EventBusSO.ExpeditionGeneratedData data)
         {
             if (!isInitialized || data.expeditionData == null || nodeContainer == null)
             {
-                Debug.LogWarning("TempleViewController: ExpeditionData or nodeContainer is null, skipping node update.");
+                Debug.LogWarning("TempleUIComponent: ExpeditionData or nodeContainer is null, skipping node update.");
                 return;
             }
-
             nodeDropdown.choices.Clear();
             var nodes = data.expeditionData.NodeData;
             for (int i = 0; i < nodes.Count; i++)
@@ -401,7 +420,6 @@ namespace VirulentVentures
             nodeDropdown.value = nodeDropdown.choices.Count > 0 ? nodeDropdown.choices[0] : null;
             nodeDropdown.style.color = uiConfig.TextColor;
             nodeDropdown.style.unityFont = uiConfig.PixelFont;
-
             nodeContainer.Clear();
             for (int i = 0; i < nodes.Count; i++)
             {
@@ -410,26 +428,20 @@ namespace VirulentVentures
                 nodeBox.AddToClassList(nodes[i].IsCombat ? "node-combat" : "node-noncombat");
                 Color nodeColor = visualConfig.GetNodeColor(nodes[i].NodeType);
                 nodeBox.style.backgroundColor = new StyleColor(nodeColor);
-
                 Label nodeLabel = new Label($"Node {i + 1}");
                 nodeLabel.AddToClassList("node-label");
                 nodeBox.Add(nodeLabel);
-
                 if (nodes[i].SeededViruses.Count > 0)
                 {
                     nodeBox.tooltip = $"Seeded: {string.Join(", ", nodes[i].SeededViruses.ConvertAll(v => v.VirusID))}";
                 }
-
                 nodeContainer.Add(nodeBox);
             }
-
             launchButton.SetEnabled(data.expeditionData.IsValid());
         }
-
         private void UpdateVirusNode(EventBusSO.VirusSeededData data)
         {
             if (!isInitialized || nodeContainer == null) return;
-
             var nodes = nodeContainer.Children().ToList();
             if (data.nodeIndex >= 0 && data.nodeIndex < nodes.Count())
             {
@@ -441,12 +453,11 @@ namespace VirulentVentures
                 }
             }
         }
-
         private bool ValidateReferences()
         {
             if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || availableViruses == null || partyData == null)
             {
-                Debug.LogError($"TempleViewController: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, " +
+                Debug.LogError($"TempleUIComponent: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, " +
                     $"VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, AvailableViruses: {availableViruses != null}, " +
                     $"PartyData: {partyData != null}");
                 return false;

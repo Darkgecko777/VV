@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 namespace VirulentVentures
 {
-    // Component managing expedition logic, handling node progression and scene transitions
-    // Attached to a GameObject in ExpeditionScene, using EventBusSO for communication
     public class ExpeditionSceneComponent : MonoBehaviour
     {
         [SerializeField] private EventBusSO eventBus;
@@ -25,6 +24,8 @@ namespace VirulentVentures
             eventBus.OnNodeUpdated += HandleNodeUpdate;
             eventBus.OnSceneTransitionCompleted += HandleNodeUpdate;
             eventBus.OnContinueClicked += HandleContinueClicked;
+            eventBus.OnUnitDied += HandleUnitDied;
+            eventBus.OnCombatEnded += HandleCombatEnded;
 
             var expedition = ExpeditionManager.Instance.GetExpedition();
             if (!expedition.IsValid())
@@ -41,6 +42,8 @@ namespace VirulentVentures
                 eventBus.OnNodeUpdated -= HandleNodeUpdate;
                 eventBus.OnSceneTransitionCompleted -= HandleNodeUpdate;
                 eventBus.OnContinueClicked -= HandleContinueClicked;
+                eventBus.OnUnitDied -= HandleUnitDied;
+                eventBus.OnCombatEnded -= HandleCombatEnded;
             }
         }
 
@@ -49,7 +52,7 @@ namespace VirulentVentures
             partyData.Reset();
             partyData.HeroIds = fallbackHeroIds;
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
-            partyData.AllowCultist = false; // Prototype
+            partyData.AllowCultist = false;
 
             var nodes = new List<NodeData>();
             var nonCombatGenerator = gameObject.AddComponent<NonCombatNodeGenerator>();
@@ -74,15 +77,15 @@ namespace VirulentVentures
         {
             if (data.nodes == null || data.currentIndex < 0 || data.currentIndex >= data.nodes.Count)
             {
-                Debug.LogError("HandleNodeUpdate: Invalid node data or index!");
+                Debug.LogError("ExpeditionSceneComponent: Invalid node data or index!");
                 return;
             }
 
             var currentNode = data.nodes[data.currentIndex];
-            Debug.Log($"HandleNodeUpdate: Processing node {data.currentIndex}, IsCombat: {currentNode.IsCombat}, Completed: {currentNode.Completed}");
-            if (currentNode.IsCombat && !currentNode.Completed) // Only auto-transition if combat and not completed
+            Debug.Log($"ExpeditionSceneComponent: Processing node {data.currentIndex}, IsCombat: {currentNode.IsCombat}, Completed: {currentNode.Completed}");
+            if (currentNode.IsCombat && !currentNode.Completed)
             {
-                Debug.Log("HandleNodeUpdate: Attempting combat scene transition");
+                Debug.Log("ExpeditionSceneComponent: Attempting combat scene transition");
                 if (viewComponent != null)
                 {
                     viewComponent.FadeToCombat(() => ExpeditionManager.Instance.TransitionToCombatScene());
@@ -96,12 +99,48 @@ namespace VirulentVentures
             {
                 eventBus.RaiseLogMessage(currentNode.Completed ? "Combat Won!" : currentNode.FlavourText, Color.white);
                 eventBus.RaisePartyUpdated(partyData);
+                CheckExpeditionFailure();
             }
         }
 
         private void HandleContinueClicked()
         {
-            ExpeditionManager.Instance.OnContinueClicked();
+            var expedition = ExpeditionManager.Instance.GetExpedition();
+            if (expedition == null || expedition.NodeData == null) return;
+
+            if (partyData.HeroStats.All(h => h.HasRetreated || h.Health <= 0) || expedition.CurrentNodeIndex >= expedition.NodeData.Count - 1)
+            {
+                Debug.Log("ExpeditionSceneComponent: Expedition failed or completed, transitioning to Temple");
+                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
+            }
+            else
+            {
+                expedition.CurrentNodeIndex++;
+                eventBus.RaiseNodeUpdated(expedition.NodeData, expedition.CurrentNodeIndex);
+                ExpeditionManager.Instance.SaveProgress();
+            }
+        }
+
+        private void HandleUnitDied(ICombatUnit unit)
+        {
+            if (unit is CharacterStats stats && stats.Type == CharacterType.Hero)
+            {
+                CheckExpeditionFailure();
+            }
+        }
+
+        private void HandleCombatEnded()
+        {
+            CheckExpeditionFailure();
+        }
+
+        private void CheckExpeditionFailure()
+        {
+            if (partyData.HeroStats.All(h => h.HasRetreated || h.Health <= 0))
+            {
+                Debug.Log("ExpeditionSceneComponent: All heroes dead or retreated, transitioning to Temple");
+                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
+            }
         }
 
         private bool ValidateReferences()

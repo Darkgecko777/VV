@@ -167,7 +167,8 @@ namespace VirulentVentures
 
         private IEnumerator FadeRoutine(System.Action onComplete)
         {
-            ExpeditionManager.Instance.SetTransitioning(true);
+            // Removed: ExpeditionManager.Instance.SetTransitioning(true);  // Let TransitionToCombatScene handle this
+
             fadeOverlay.style.display = DisplayStyle.Flex;
             float elapsed = 0f;
             while (elapsed < fadeDuration)
@@ -177,10 +178,15 @@ namespace VirulentVentures
                 yield return null;
             }
             fadeOverlay.style.opacity = 1;
-            onComplete?.Invoke();
+
+            onComplete?.Invoke();  // Now this will proceed, starting the load with isTransitioning == false
+
+            // Optional polish: Add a brief hold or fade-out delay if the instant snap feels janky
+            // yield return new WaitForSeconds(0.1f);  // Tiny buffer before fade-out
+
             fadeOverlay.style.opacity = 0;
             fadeOverlay.style.display = DisplayStyle.None;
-            ExpeditionManager.Instance.SetTransitioning(false);
+            ExpeditionManager.Instance.SetTransitioning(false);  // Safe here—load is already async underway
         }
 
         private void SubscribeToEventBus()

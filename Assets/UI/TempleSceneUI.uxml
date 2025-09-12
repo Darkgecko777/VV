@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/UI/TemplePlanningSceneUI.uss" />
+    <Style src="project://database/Assets/UI/TempleSceneUI.uss" />
     <ui:VisualElement name="TempleUI_Root" style="width: 1920px; height: 1080px;">
         <ui:VisualElement name="TabBar" class="tab-bar" style="position: absolute; top: 10px; left: 50px; width: 1820px; height: 50px; flex-direction: row;">
             <ui:Button name="RecruitTab" text="Recruit" class="tab-button" />

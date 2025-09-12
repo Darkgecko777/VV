@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
 namespace VirulentVentures
 {
     public class CombatSceneComponent : MonoBehaviour
@@ -24,7 +23,6 @@ namespace VirulentVentures
         private List<string> allCombatLogs = new List<string>();
         public static CombatSceneComponent Instance { get; private set; }
         public bool IsPaused => isPaused;
-
         void Awake()
         {
             Instance = this;
@@ -37,45 +35,38 @@ namespace VirulentVentures
             roundNumber = 0;
             allCombatLogs.Clear();
         }
-
         void Start()
         {
             expeditionManager = ExpeditionManager.Instance;
             if (expeditionManager == null)
             {
-                Debug.LogError("CombatSceneController: ExpeditionManager not found.");
+                Debug.LogError("CombatSceneComponent: ExpeditionManager not found.");
                 return;
             }
             if (!ValidateReferences()) return;
             eventBus.OnCombatEnded += EndCombat;
             StartCoroutine(RunCombat());
         }
-
         void OnDestroy()
         {
             eventBus.OnCombatEnded -= EndCombat;
         }
-
         public static UnitAttackState GetUnitAttackState(ICombatUnit unit)
         {
             return Instance.unitAttackStates.Find(s => s.Unit == unit);
         }
-
         public static List<CharacterStats> GetMonsterUnits()
         {
             return Instance.monsterPositions;
         }
-
         public void PauseCombat()
         {
             isPaused = true;
         }
-
         public void PlayCombat()
         {
             isPaused = false;
         }
-
         private string SelectAbility(CharacterStats unit, PartyData partyData, List<ICombatUnit> targets)
         {
             var data = unit.Type == CharacterType.Hero
@@ -99,7 +90,6 @@ namespace VirulentVentures
             }
             return "BasicAttack";
         }
-
         private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
         {
             if (unit is not CharacterStats stats) return false;
@@ -118,7 +108,6 @@ namespace VirulentVentures
                 return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
             return false;
         }
-
         private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> unitList)
         {
             if (unit is not CharacterStats stats) yield break;
@@ -133,11 +122,9 @@ namespace VirulentVentures
                 eventBus.RaiseLogMessage(message, Color.white);
                 yield break;
             }
-            // Log ability usage
             string abilityMessage = $"{stats.Id} uses {abilityId}!";
             allCombatLogs.Add(abilityMessage);
             eventBus.RaiseLogMessage(abilityMessage, Color.white);
-            // Target selection
             List<ICombatUnit> selectedTargets = new List<ICombatUnit>();
             if (ability.Value.Tags.Contains("TargetEnemies"))
             {
@@ -218,7 +205,6 @@ namespace VirulentVentures
                 eventBus.RaiseUnitAttacking(unit, target, abilityId);
                 yield return new WaitUntil(() => !isPaused);
                 yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-                // Evasion check
                 if (ability.Value.Tags.Contains("Dodgeable") && targetStats != null && !ability.Value.Tags.Contains("NoEvasionCheck"))
                 {
                     float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
@@ -232,7 +218,6 @@ namespace VirulentVentures
                     allCombatLogs.Add($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>");
                     eventBus.RaiseLogMessage($"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>", Color.white);
                 }
-                // Damage calculation
                 int damage = 0;
                 string damageFormula = "";
                 if (ability.Value.Tags.Contains("Damage"))
@@ -263,7 +248,6 @@ namespace VirulentVentures
                         damageFormula = $"[{stats.Attack} ATK - {targetStats?.Defense ?? 0} DEF * 5%]";
                     }
                 }
-                // Apply damage and thorns
                 if (damage > 0 && targetStats != null)
                 {
                     targetStats.Health -= damage;
@@ -271,7 +255,6 @@ namespace VirulentVentures
                     allCombatLogs.Add(damageMessage);
                     eventBus.RaiseLogMessage(damageMessage, Color.white);
                     UpdateUnit(target, damageMessage);
-                    // Thorns check
                     if (targetState != null && targetState.TempStats.TryGetValue("ThornsFixed", out var thornsMod) && thornsMod.value > 0)
                     {
                         int thornsDamage = thornsMod.value;
@@ -302,7 +285,6 @@ namespace VirulentVentures
                         }
                     }
                 }
-                // Apply ability effects
                 if (ability.Value.Tags.Contains("Heal") && targetStats != null)
                 {
                     int oldHealth = targetStats.Health;
@@ -479,7 +461,6 @@ namespace VirulentVentures
             }
             UpdateUnit(unit);
         }
-
         private IEnumerator RunCombat()
         {
             if (isCombatActive) yield break;
@@ -605,7 +586,6 @@ namespace VirulentVentures
                 IncrementRound();
             }
         }
-
         private void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
         {
             units.Clear();
@@ -616,7 +596,7 @@ namespace VirulentVentures
             string initMessage = "Combat begins!";
             allCombatLogs.Add(initMessage);
             eventBus.RaiseLogMessage(initMessage, Color.white);
-            foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0 && !h.HasRetreated))
+            foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0))
             {
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
@@ -640,7 +620,6 @@ namespace VirulentVentures
             monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
             eventBus.RaiseCombatInitialized(units);
         }
-
         private void IncrementRound()
         {
             roundNumber++;
@@ -648,13 +627,11 @@ namespace VirulentVentures
             allCombatLogs.Add(roundMessage);
             eventBus.RaiseLogMessage(roundMessage, Color.white);
         }
-
         private void LogMessage(string message, Color color)
         {
             allCombatLogs.Add(message);
             eventBus.RaiseLogMessage(message, color);
         }
-
         private void UpdateUnit(ICombatUnit unit, string damageMessage = null)
         {
             if (unit == null) return;
@@ -684,12 +661,10 @@ namespace VirulentVentures
                 }
             }
         }
-
         private bool CheckRetreat(ICombatUnit unit)
         {
             return unit is CharacterStats stats && stats.Type == CharacterType.Hero && stats.Morale <= combatConfig.RetreatMoraleThreshold && !stats.HasRetreated;
         }
-
         private void ProcessRetreat(ICombatUnit unit)
         {
             if (unit == null || unit.HasRetreated) return;
@@ -716,7 +691,6 @@ namespace VirulentVentures
                 UpdateUnit(unit);
             }
         }
-
         private void EndCombat()
         {
             if (isEndingCombat) return;
@@ -735,50 +709,42 @@ namespace VirulentVentures
                 {
                     expedition.NodeData[expedition.CurrentNodeIndex].Completed = true;
                 }
-            }
-            if (partyDead)
-            {
-                string defeatMessage = "Party defeated!";
-                allCombatLogs.Add(defeatMessage);
-                eventBus.RaiseLogMessage(defeatMessage, Color.red);
-                expeditionManager.EndExpedition();
-            }
-            else
-            {
                 string victoryMessage = "Party victorious!";
                 allCombatLogs.Add(victoryMessage);
                 eventBus.RaiseLogMessage(victoryMessage, Color.green);
                 expeditionManager.TransitionToExpeditionScene();
             }
+            else
+            {
+                string defeatMessage = "Party defeated!";
+                allCombatLogs.Add(defeatMessage);
+                eventBus.RaiseLogMessage(defeatMessage, Color.red);
+                expeditionManager.TransitionToExpeditionScene();
+            }
             isEndingCombat = false;
         }
-
         private ICombatUnit GetRandomAliveTarget(List<ICombatUnit> targets)
         {
             var aliveTargets = targets.Where(t => t.Health > 0 && !t.HasRetreated).ToList();
             return aliveTargets.Count > 0 ? aliveTargets[Random.Range(0, aliveTargets.Count)] : null;
         }
-
         private bool NoActiveHeroes()
         {
             return heroPositions.Count == 0;
         }
-
         private bool NoActiveMonsters()
         {
             return monsterPositions.Count == 0;
         }
-
         private bool ValidateReferences()
         {
             if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null)
             {
-                Debug.LogError("CombatSceneController: Missing required reference(s). Please assign in the Inspector.");
+                Debug.LogError("CombatSceneComponent: Missing required reference(s). Please assign in the Inspector.");
                 return false;
             }
             return true;
         }
-
         public void SetCombatSpeed(float speed)
         {
             if (combatConfig != null)

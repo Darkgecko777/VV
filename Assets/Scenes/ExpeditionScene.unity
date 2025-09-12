@@ -363,7 +363,7 @@ MonoBehaviour:
   - TreasureHunter
   defaultPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
   combatEncounterData: {fileID: 11400000, guid: cb2f1c90e6f1dd54ea59e6686e020c98, type: 2}
-  viewController: {fileID: 1297501102}
+  viewComponent: {fileID: 1297501102}
 --- !u!4 &2116178931
 Transform:
   m_ObjectHideFlags: 0

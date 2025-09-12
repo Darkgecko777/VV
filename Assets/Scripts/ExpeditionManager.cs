@@ -99,38 +99,14 @@ namespace VirulentVentures
                     playerProgress = wrapper.playerProgress;
                 }
             }
-            PostLoad();
-        }
-
-        public void OnContinueClicked()
-        {
-            var expedition = GetExpedition();
-            if (expedition.CurrentNodeIndex < expedition.NodeData.Count - 1)
-            {
-                expedition.CurrentNodeIndex++;
-                var newNode = expedition.NodeData[expedition.CurrentNodeIndex];
-                eventBus.RaiseNodeUpdated(expedition.NodeData, expedition.CurrentNodeIndex);
-            }
-            else
-            {
-                EndExpedition();
-            }
-        }
-
-        public void TransitionToExpeditionScene()
-        {
-            if (isTransitioning) return;
-            isTransitioning = true;
-            SceneManager.LoadSceneAsync("ExpeditionScene", LoadSceneMode.Single).completed += _ =>
-            {
-                isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            };
         }
 
         public void TransitionToCombatScene()
         {
-            if (isTransitioning) return;
+            if (isTransitioning)
+            {
+                return;
+            }
             isTransitioning = true;
             SceneManager.LoadSceneAsync("CombatScene", LoadSceneMode.Single).completed += _ =>
             {
@@ -140,16 +116,28 @@ namespace VirulentVentures
             };
         }
 
+        public void TransitionToExpeditionScene()
+        {
+            if (isTransitioning)
+            {
+                return;
+            }
+            isTransitioning = true;
+            SceneManager.LoadSceneAsync("ExpeditionScene", LoadSceneMode.Single).completed += _ =>
+            {
+                isTransitioning = false;
+                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+            };
+        }
+
         public void EndExpedition()
         {
             expeditionData.Reset();
-            partyData.Reset();
             if (!clearDataOnStart)
             {
                 playerProgress.Reset();
             }
             PlayerPrefs.DeleteKey("ExpeditionSave");
-            PlayerPrefs.DeleteKey("PartySave");
             PlayerPrefs.DeleteKey("PlayerProgressSave");
             PlayerPrefs.Save();
             TransitionToTemplePlanningScene();
@@ -219,7 +207,7 @@ namespace VirulentVentures
             return true;
         }
 
-        private void TransitionToTemplePlanningScene()
+        public void TransitionToTemplePlanningScene()
         {
             if (isTransitioning)
             {
@@ -231,6 +219,11 @@ namespace VirulentVentures
                 isTransitioning = false;
                 OnSceneTransitionCompleted?.Invoke(null, 0);
             };
+        }
+
+        public void OnContinueClicked()
+        {
+            eventBus.RaiseContinueClicked();
         }
     }
 }
