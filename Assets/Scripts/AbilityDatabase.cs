@@ -164,7 +164,7 @@ namespace VirulentVentures
                 id: "ShriekOfDespair",
                 animationTrigger: "ShriekOfDespair",
                 effect: (target, partyData) => "",
-                tags: new List<string> { "TargetEnemies", "AOE", "Ranged", "Morale", "NoDefenseCheck", "NoEvasionCheck" },
+                tags: new List<string> { "TargetEnemies", "Ranged", "Morale", "NoDefenseCheck", "NoEvasionCheck" },
                 useCondition: (user, party, targets) =>
                     party.HeroStats.Any(h => h.Morale > h.MaxMorale * 0.6f)
             ));
