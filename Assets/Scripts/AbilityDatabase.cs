@@ -108,7 +108,7 @@ namespace VirulentVentures
                 id: "HealerHeal",
                 animationTrigger: "HealerHeal",
                 effect: (target, partyData) => "",
-                tags: new List<string> { "TargetAllies", "Ranged", "Heal", "Morale", "InfectionResist", "NoDefenseCheck", "NoEvasionCheck" },
+                tags: new List<string> { "TargetAllies", "Ranged", "Heal", "Morale", "NoDefenseCheck", "NoEvasionCheck" },
                 useCondition: (user, party, targets) =>
                     party.HeroStats.Any(h => h.Type == CharacterType.Hero && h.Health < h.MaxHealth * 0.75f)
             ));
@@ -128,7 +128,7 @@ namespace VirulentVentures
                 id: "SludgeSlam",
                 animationTrigger: "SludgeSlam",
                 effect: (target, partyData) => "",
-                tags: new List<string> { "TargetEnemies", "AOE", "Melee", "Damage", "StandardDefense", "Dodgeable", "Infection" },
+                tags: new List<string> { "TargetEnemies", "AOE", "Melee", "Damage", "FixedDamage:10", "Dodgeable", "Infection" },
                 useCondition: (user, party, targets) =>
                     targets.Count(t => t is CharacterStats cs && (cs.PartyPosition == 1 || cs.PartyPosition == 2) && t.Health > 0 && !t.HasRetreated) >= 2
             ));
@@ -190,7 +190,7 @@ namespace VirulentVentures
                 id: "SpectralDrain",
                 animationTrigger: "SpectralDrain",
                 effect: (target, partyData) => "",
-                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "StandardDefense", "Dodgeable", "Debuff", "Infection", "SelfDamage:8", "Buff" },
+                tags: new List<string> { "TargetEnemies", "Melee", "Damage", "StandardDefense", "Dodgeable", "Debuff", "Infection", "SelfDamage:5", "Buff" },
                 useCondition: (user, party, targets) =>
                     targets.Any(t => t is CharacterStats ts && ts.Defense > 5)
             ));
