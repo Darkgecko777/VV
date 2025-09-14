@@ -8,37 +8,18 @@ using System.Linq;
 
 namespace VirulentVentures
 {
-    [Serializable]
-    public class SaveDataWrapper
-    {
-        public string version;
-        public ExpeditionData expeditionData;
-        public PartyData partyData;
-        public PlayerProgress playerProgress;
-
-        public SaveDataWrapper(string version, ExpeditionData expeditionData, PartyData partyData, PlayerProgress playerProgress)
-        {
-            this.version = version;
-            this.expeditionData = expeditionData;
-            this.partyData = partyData;
-            this.playerProgress = playerProgress;
-        }
-    }
-
     public class ExpeditionManager : MonoBehaviour
     {
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
         [SerializeField] private PlayerProgress playerProgress;
         [SerializeField] private EventBusSO eventBus;
-        [SerializeField] private UIDocument transitionUIDocument; // Persistent fade overlay
-        [SerializeField] private bool clearDataOnStart = true;
+        [SerializeField] private UIDocument transitionUIDocument;
 
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
-        private const string CURRENT_VERSION = "1.0";
         private VisualElement fadeOverlay;
-        private const float FADE_DURATION = 1f; // Matches USS transition
+        private const float FADE_DURATION = 1f;
 
         public static ExpeditionManager Instance => instance;
         public bool IsTransitioning => isTransitioning;
@@ -68,54 +49,16 @@ namespace VirulentVentures
             }
             else
             {
-                fadeOverlay.style.opacity = new UnityEngine.UIElements.StyleFloat(0f); // Explicit float to resolve ambiguity
-                fadeOverlay.pickingMode = PickingMode.Ignore; // Ignore pointer events to prevent blocking underlying UI
+                fadeOverlay.style.opacity = new UnityEngine.UIElements.StyleFloat(0f);
+                fadeOverlay.pickingMode = PickingMode.Ignore;
             }
 
-            if (clearDataOnStart)
-            {
-                PlayerPrefs.DeleteKey("ExpeditionSave");
-                PlayerPrefs.DeleteKey("PartySave");
-                PlayerPrefs.DeleteKey("PlayerProgressSave");
-                PlayerPrefs.Save();
-                expeditionData.Reset();
-                partyData.Reset();
-                playerProgress.Reset();
-                Debug.Log("ExpeditionManager: Cleared all save data for new session");
-            }
+            SaveManager.Instance.ClearProgressOnStart(expeditionData, partyData, playerProgress);
         }
 
         void Start()
         {
-            string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
-            if (!string.IsNullOrEmpty(expeditionSaveData))
-            {
-                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(expeditionSaveData);
-                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.expeditionData != null)
-                {
-                    expeditionData.SetNodes(wrapper.expeditionData.NodeData);
-                    expeditionData.CurrentNodeIndex = wrapper.expeditionData.CurrentNodeIndex;
-                    expeditionData.SetParty(wrapper.expeditionData.Party);
-                }
-            }
-            string partySaveData = PlayerPrefs.GetString("PartySave", "");
-            if (!string.IsNullOrEmpty(partySaveData))
-            {
-                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(partySaveData);
-                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.partyData != null)
-                {
-                    partyData = wrapper.partyData;
-                }
-            }
-            string progressSaveData = PlayerPrefs.GetString("PlayerProgressSave", "");
-            if (!string.IsNullOrEmpty(progressSaveData))
-            {
-                var wrapper = JsonUtility.FromJson<SaveDataWrapper>(progressSaveData);
-                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.playerProgress != null)
-                {
-                    playerProgress = wrapper.playerProgress;
-                }
-            }
+            SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
         }
 
         public AsyncOperation TransitionToCombatScene()
@@ -164,59 +107,34 @@ namespace VirulentVentures
 
         private IEnumerator FadeAndLoad(string sceneName, Action onComplete)
         {
-            // Optional: Block input during fade if needed (uncomment below)
-            // if (fadeOverlay != null) fadeOverlay.pickingMode = PickingMode.Position;
-
-            // Fade out (to black)
             fadeOverlay.AddToClassList("fade-out");
             yield return new WaitForSeconds(FADE_DURATION);
 
-            // Start async load
             CurrentAsyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
             yield return CurrentAsyncOp;
 
-            // Fade in (to transparent)
             fadeOverlay.RemoveFromClassList("fade-out");
             fadeOverlay.AddToClassList("fade-in");
             isTransitioning = false;
             CurrentAsyncOp = null;
 
-            // Optional: Restore ignoring after fade (uncomment if blocking during transition)
-            // if (fadeOverlay != null) fadeOverlay.pickingMode = PickingMode.Ignore;
-
-            // Trigger completion callback
             onComplete?.Invoke();
         }
 
         public void EndExpedition()
         {
             expeditionData.Reset();
-            if (!clearDataOnStart)
+            if (!SaveManager.Instance.ClearDataOnStart)
             {
                 playerProgress.Reset();
             }
-            PlayerPrefs.DeleteKey("ExpeditionSave");
-            PlayerPrefs.DeleteKey("PlayerProgressSave");
-            PlayerPrefs.Save();
+            SaveManager.Instance.ClearProgress();
             TransitionToTemplePlanningScene();
         }
 
         public void SaveProgress()
         {
-            if (partyData != null && partyData.HeroStats != null)
-            {
-                partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
-            }
-            var expeditionWrapper = new SaveDataWrapper(CURRENT_VERSION, expeditionData, null, null);
-            string expeditionJson = JsonUtility.ToJson(expeditionWrapper);
-            PlayerPrefs.SetString("ExpeditionSave", expeditionJson);
-            var partyWrapper = new SaveDataWrapper(CURRENT_VERSION, null, partyData, null);
-            string partyJson = JsonUtility.ToJson(partyWrapper);
-            PlayerPrefs.SetString("PartySave", partyJson);
-            var progressWrapper = new SaveDataWrapper(CURRENT_VERSION, null, null, playerProgress);
-            string progressJson = JsonUtility.ToJson(progressWrapper);
-            PlayerPrefs.SetString("PlayerProgressSave", progressJson);
-            PlayerPrefs.Save();
+            SaveManager.Instance.SaveProgress(expeditionData, partyData, playerProgress);
         }
 
         public void SetTransitioning(bool state)
