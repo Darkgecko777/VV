@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -29,11 +31,14 @@ namespace VirulentVentures
         [SerializeField] private PartyData partyData;
         [SerializeField] private PlayerProgress playerProgress;
         [SerializeField] private EventBusSO eventBus;
+        [SerializeField] private UIDocument transitionUIDocument; // Persistent fade overlay
         [SerializeField] private bool clearDataOnStart = true;
 
         private bool isTransitioning = false;
         private static ExpeditionManager instance;
         private const string CURRENT_VERSION = "1.0";
+        private VisualElement fadeOverlay;
+        private const float FADE_DURATION = 1f; // Matches USS transition
 
         public static ExpeditionManager Instance => instance;
         public bool IsTransitioning => isTransitioning;
@@ -54,6 +59,19 @@ namespace VirulentVentures
                 return;
             }
 
+            if (!ValidateReferences()) return;
+
+            fadeOverlay = transitionUIDocument?.rootVisualElement.Q<VisualElement>("fade-overlay");
+            if (fadeOverlay == null)
+            {
+                Debug.LogError("ExpeditionManager: Missing fade-overlay VisualElement in transitionUIDocument!");
+            }
+            else
+            {
+                fadeOverlay.style.opacity = new UnityEngine.UIElements.StyleFloat(0f); // Explicit float to resolve ambiguity
+                fadeOverlay.pickingMode = PickingMode.Ignore; // Ignore pointer events to prevent blocking underlying UI
+            }
+
             if (clearDataOnStart)
             {
                 PlayerPrefs.DeleteKey("ExpeditionSave");
@@ -69,8 +87,6 @@ namespace VirulentVentures
 
         void Start()
         {
-            if (!ValidateReferences()) return;
-
             string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
             if (!string.IsNullOrEmpty(expeditionSaveData))
             {
@@ -104,35 +120,72 @@ namespace VirulentVentures
 
         public AsyncOperation TransitionToCombatScene()
         {
-            if (isTransitioning)
+            if (isTransitioning || fadeOverlay == null)
             {
-                return null;  // Bail early, no op returned
+                Debug.LogWarning("ExpeditionManager: Transition blocked (already transitioning or no fade overlay)");
+                return null;
             }
             isTransitioning = true;
-            var asyncOp = SceneManager.LoadSceneAsync("CombatScene", LoadSceneMode.Single);
-            CurrentAsyncOp = asyncOp;  // Set it
-            asyncOp.completed += _ =>
+            StartCoroutine(FadeAndLoad("CombatScene", () =>
             {
-                CurrentAsyncOp = null;
-                isTransitioning = false;
                 OnCombatStarted?.Invoke();
                 OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            };
-            return asyncOp;
+            }));
+            return CurrentAsyncOp;
         }
 
         public void TransitionToExpeditionScene()
         {
-            if (isTransitioning)
+            if (isTransitioning || fadeOverlay == null)
             {
+                Debug.LogWarning("ExpeditionManager: Transition blocked (already transitioning or no fade overlay)");
                 return;
             }
             isTransitioning = true;
-            SceneManager.LoadSceneAsync("ExpeditionScene", LoadSceneMode.Single).completed += _ =>
+            StartCoroutine(FadeAndLoad("ExpeditionScene", () =>
             {
-                isTransitioning = false;
                 OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
-            };
+            }));
+        }
+
+        public void TransitionToTemplePlanningScene()
+        {
+            if (isTransitioning || fadeOverlay == null)
+            {
+                Debug.LogWarning("ExpeditionManager: Transition blocked (already transitioning or no fade overlay)");
+                return;
+            }
+            isTransitioning = true;
+            StartCoroutine(FadeAndLoad("TemplePlanningScene", () =>
+            {
+                OnSceneTransitionCompleted?.Invoke(null, 0);
+            }));
+        }
+
+        private IEnumerator FadeAndLoad(string sceneName, Action onComplete)
+        {
+            // Optional: Block input during fade if needed (uncomment below)
+            // if (fadeOverlay != null) fadeOverlay.pickingMode = PickingMode.Position;
+
+            // Fade out (to black)
+            fadeOverlay.AddToClassList("fade-out");
+            yield return new WaitForSeconds(FADE_DURATION);
+
+            // Start async load
+            CurrentAsyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+            yield return CurrentAsyncOp;
+
+            // Fade in (to transparent)
+            fadeOverlay.RemoveFromClassList("fade-out");
+            fadeOverlay.AddToClassList("fade-in");
+            isTransitioning = false;
+            CurrentAsyncOp = null;
+
+            // Optional: Restore ignoring after fade (uncomment if blocking during transition)
+            // if (fadeOverlay != null) fadeOverlay.pickingMode = PickingMode.Ignore;
+
+            // Trigger completion callback
+            onComplete?.Invoke();
         }
 
         public void EndExpedition()
@@ -202,33 +255,19 @@ namespace VirulentVentures
             }
         }
 
-        private bool ValidateReferences()
-        {
-            if (expeditionData == null || partyData == null || playerProgress == null || eventBus == null)
-            {
-                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, PlayerProgress: {playerProgress != null}, EventBus: {eventBus != null}");
-                return false;
-            }
-            return true;
-        }
-
-        public void TransitionToTemplePlanningScene()
-        {
-            if (isTransitioning)
-            {
-                return;
-            }
-            isTransitioning = true;
-            SceneManager.LoadSceneAsync("TemplePlanningScene", LoadSceneMode.Single).completed += _ =>
-            {
-                isTransitioning = false;
-                OnSceneTransitionCompleted?.Invoke(null, 0);
-            };
-        }
-
         public void OnContinueClicked()
         {
             eventBus.RaiseContinueClicked();
+        }
+
+        private bool ValidateReferences()
+        {
+            if (expeditionData == null || partyData == null || playerProgress == null || eventBus == null || transitionUIDocument == null)
+            {
+                Debug.LogError($"ExpeditionManager: Missing references! ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, PlayerProgress: {playerProgress != null}, EventBus: {eventBus != null}, TransitionUIDocument: {transitionUIDocument != null}");
+                return false;
+            }
+            return true;
         }
     }
 }

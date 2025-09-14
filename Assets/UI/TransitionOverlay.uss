@@ -1,0 +1,17 @@
+#fade-overlay {
+    transition-property: opacity;
+    transition-duration: 1s;
+    transition-timing-function: ease-in-out;
+    opacity: 0;
+    background-color: rgba(0, 10, 5, 0); /* Dark with green miasma tint */
+}
+
+#fade-overlay.fade-out {
+    opacity: 1;
+    background-color: rgba(0, 10, 5, 0.9); /* Near-opaque with miasma tint */
+}
+
+#fade-overlay.fade-in {
+    opacity: 0;
+    background-color: rgba(0, 10, 5, 0);
+}
