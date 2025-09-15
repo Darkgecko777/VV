@@ -55,7 +55,7 @@ namespace VirulentVentures
                     Morale = 100,
                     MaxMorale = 100,
                     Infectivity = 40,
-                    AbilityIds = new List<string> { "BasicAttack", "ShieldBash", "IronResolve" },
+                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
                     CanBeCultist = true,
                     PartyPosition = 1
                 }
@@ -73,7 +73,7 @@ namespace VirulentVentures
                     Morale = 100,
                     MaxMorale = 100,
                     Infectivity = 50,
-                    AbilityIds = new List<string> { "BasicAttack", "HealerHeal" },
+                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
                     CanBeCultist = false,
                     PartyPosition = 4
                 }
@@ -91,7 +91,7 @@ namespace VirulentVentures
                     Morale = 100,
                     MaxMorale = 100,
                     Infectivity = 40,
-                    AbilityIds = new List<string> { "BasicAttack", "SniperShot" },
+                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
                     CanBeCultist = true,
                     PartyPosition = 3
                 }
@@ -109,7 +109,7 @@ namespace VirulentVentures
                     Morale = 100,
                     MaxMorale = 100,
                     Infectivity = 70,
-                    AbilityIds = new List<string> { "BasicAttack", "ChiStrike", "InnerFocus" },
+                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
                     CanBeCultist = false,
                     PartyPosition = 2
                 }
@@ -128,7 +128,7 @@ namespace VirulentVentures
                     Speed = 4,
                     Evasion = 0,
                     Infectivity = 80,
-                    AbilityIds = new List<string> { "BasicAttack", "SludgeSlam", "MireGrasp" },
+                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
                     CanBeCultist = false,
                     PartyPosition = 1
                 }
@@ -143,7 +143,7 @@ namespace VirulentVentures
                     Speed = 6,
                     Evasion = 50,
                     Infectivity = 50,
-                    AbilityIds = new List<string> { "TrueStrike", "SpectralDrain", "EtherealWail" },
+                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
                     CanBeCultist = false,
                     PartyPosition = 4
                 }
@@ -158,7 +158,7 @@ namespace VirulentVentures
                     Speed = 3,
                     Evasion = 10,
                     Infectivity = 60,
-                    AbilityIds = new List<string> { "BasicAttack", "ThornNeedle", "Entangle", "ViralSpikes" },
+                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
                     CanBeCultist = false,
                     PartyPosition = 2
                 }
@@ -173,7 +173,7 @@ namespace VirulentVentures
                     Speed = 5,
                     Evasion = 30,
                     Infectivity = 55,
-                    AbilityIds = new List<string> { "BasicAttack", "ShriekOfDespair", "FlocksVigor" },
+                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
                     CanBeCultist = false,
                     PartyPosition = 3
                 }
