@@ -79,7 +79,7 @@ namespace VirulentVentures
                 }
                 if (positionMap.ContainsKey(partyPosition))
                 {
-                    var stats = new CharacterStats(heroId, positionMap[partyPosition], CharacterType.Hero);
+                    var stats = new CharacterStats(data, positionMap[partyPosition]);
                     HeroStats.Add(stats);
                     positionMap.Remove(partyPosition);
                 }

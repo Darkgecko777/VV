@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7dda89d5d09580849bca5ad7d2bec4a3, type: 3}
   m_Name: Scout
   m_EditorClassIdentifier: 
-  id: 
+  id: Scout
   type: 0
   health: 75
   maxHealth: 75

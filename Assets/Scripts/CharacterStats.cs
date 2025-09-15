@@ -19,25 +19,43 @@ namespace VirulentVentures
         public bool HasRetreated { get; set; } = false;
         public bool IsInfected { get; set; } = false;
         public int PartyPosition { get; set; }
+        public ScriptableObject[] Abilities { get; set; } // Future-proof for AbilitySO
         public bool IsHero => Type == CharacterType.Hero;
 
-        public CharacterStats(string id, Vector3 position, CharacterType type)
+        public CharacterStats(CharacterSO data, Vector3 position)
         {
-            Id = id;
-            Type = type;
-            var data = type == CharacterType.Hero
-                ? CharacterLibrary.GetHeroData(id)
-                : CharacterLibrary.GetMonsterData(id);
-            Health = type == CharacterType.Hero ? data.Health : data.MaxHealth;
+            if (data == null)
+            {
+                Debug.LogError("CharacterStats: Null CharacterSO provided, using default values.");
+                Id = "Default";
+                Type = CharacterType.Hero;
+                Health = 50;
+                MaxHealth = 50;
+                Attack = 10;
+                Defense = 5;
+                Speed = 3;
+                Evasion = 10;
+                Morale = 100;
+                MaxMorale = 100;
+                Infectivity = 20;
+                PartyPosition = 1;
+                Abilities = new ScriptableObject[0];
+                return;
+            }
+
+            Id = data.Id;
+            Type = data.Type;
+            Health = Type == CharacterType.Hero ? data.Health : data.MaxHealth;
             MaxHealth = data.MaxHealth;
             Attack = data.Attack;
             Defense = data.Defense;
             Speed = data.Speed;
             Evasion = data.Evasion;
-            Morale = type == CharacterType.Hero ? data.Morale : 0;
-            MaxMorale = type == CharacterType.Hero ? data.MaxMorale : 0;
+            Morale = Type == CharacterType.Hero ? data.Morale : 0;
+            MaxMorale = Type == CharacterType.Hero ? data.MaxMorale : 0;
             Infectivity = data.Infectivity;
             PartyPosition = data.PartyPosition;
+            Abilities = data.Abilities ?? new ScriptableObject[0];
         }
 
         public struct DisplayStats

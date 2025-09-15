@@ -12,7 +12,7 @@ namespace VirulentVentures
         [SerializeField] private List<string> relics = new List<string>();
         [SerializeField] private List<string> artifacts = new List<string>();
         [SerializeField] private int favour = 0;
-        [SerializeField] private int totalFavourEarned = 0; // Tracks lifetime favour for meta-progression
+        [SerializeField] private int totalFavourEarned = 0;
 
         public List<string> UnlockedHeroes => unlockedHeroes;
         public int TempleRank => templeRank;
@@ -31,7 +31,6 @@ namespace VirulentVentures
             }
             favour += amount;
             totalFavourEarned += amount;
-            // Check for temple rank upgrade (every 100 total favour)
             int newRank = 1 + (totalFavourEarned / 100);
             if (newRank > templeRank)
             {
@@ -65,6 +64,28 @@ namespace VirulentVentures
                 unlockedHeroes.Add(heroId);
                 Debug.Log($"PlayerProgress: Unlocked hero {heroId}");
             }
+        }
+
+        public void CopyFrom(PlayerProgress other)
+        {
+            if (other == null)
+            {
+                Debug.LogWarning("PlayerProgress: Cannot copy from null PlayerProgress, resetting.");
+                Reset();
+                return;
+            }
+            unlockedHeroes.Clear();
+            unlockedHeroes.AddRange(other.unlockedHeroes);
+            templeRank = other.templeRank;
+            virusTokens.Clear();
+            virusTokens.AddRange(other.virusTokens);
+            relics.Clear();
+            relics.AddRange(other.relics);
+            artifacts.Clear();
+            artifacts.AddRange(other.artifacts);
+            favour = other.favour;
+            totalFavourEarned = other.totalFavourEarned;
+            Debug.Log("PlayerProgress: Copied data from another PlayerProgress instance.");
         }
 
         public void Reset()

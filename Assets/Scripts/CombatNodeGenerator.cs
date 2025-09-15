@@ -43,7 +43,6 @@ namespace VirulentVentures
                 Debug.LogError($"CombatNodeGenerator: Missing references! EncounterData: {encounterData != null}, EncounterData.Positions: {encounterData?.Positions != null}, MonsterPool: {monsterPool != null && monsterPool.Count > 0}");
                 return false;
             }
-            // Verify monsterPool contains valid IDs
             var validMonsterIds = CharacterLibrary.GetMonsterIds();
             if (!monsterPool.Any(id => validMonsterIds.Contains(id)))
             {
@@ -75,7 +74,6 @@ namespace VirulentVentures
                 monsters = encounterData.SpawnMonsters();
             }
 
-            // Sort monsters by PartyPosition (lowest to highest), randomizing ties for same monster ID
             monsters = monsters
                 .GroupBy(m => m.PartyPosition)
                 .OrderBy(g => g.Key)

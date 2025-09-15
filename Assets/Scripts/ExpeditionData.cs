@@ -16,7 +16,7 @@ namespace VirulentVentures
 
         public bool IsValid()
         {
-            return nodeData != null && nodeData.Count > 0 && party != null && party.HeroStats.Count > 0;
+            return nodeData != null && nodeData.Count > 0 && party != null && party.HeroStats != null && party.HeroStats.Count > 0;
         }
 
         public void SetNodes(List<NodeData> nodes)
@@ -35,7 +35,7 @@ namespace VirulentVentures
 
         public void Reset()
         {
-            nodeData.Clear();
+            nodeData = new List<NodeData>();
             currentNodeIndex = 0;
             party = null;
         }

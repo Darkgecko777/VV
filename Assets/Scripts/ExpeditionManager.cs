@@ -49,16 +49,32 @@ namespace VirulentVentures
             }
             else
             {
-                fadeOverlay.style.opacity = new UnityEngine.UIElements.StyleFloat(0f);
+                fadeOverlay.style.opacity = new StyleFloat(0f);
                 fadeOverlay.pickingMode = PickingMode.Ignore;
             }
-
-            SaveManager.Instance.ClearProgressOnStart(expeditionData, partyData, playerProgress);
         }
 
         void Start()
         {
-            SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
+            if (SaveManager.Instance != null)
+            {
+                Debug.Log($"ExpeditionManager: Before ClearProgressOnStart - expeditionData.Party: {(expeditionData?.Party != null)}");
+                SaveManager.Instance.ClearProgressOnStart(expeditionData, partyData, playerProgress);
+                Debug.Log($"ExpeditionManager: After ClearProgressOnStart - expeditionData.Party: {(expeditionData?.Party != null)}");
+                SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
+                Debug.Log($"ExpeditionManager: After LoadProgress - expeditionData.Party: {(expeditionData?.Party != null)}, expeditionData.Party.HeroStats: {(expeditionData?.Party?.HeroStats != null)}");
+                // Fallback: Ensure expeditionData.Party is set
+                if (expeditionData.Party == null && partyData != null)
+                {
+                    expeditionData.SetParty(partyData);
+                    Debug.Log("ExpeditionManager: Set expeditionData.Party to partyData as fallback.");
+                }
+                PostLoad();
+            }
+            else
+            {
+                Debug.LogError("ExpeditionManager: SaveManager.Instance is null in Start, cannot clear/load progress.");
+            }
         }
 
         public AsyncOperation TransitionToCombatScene()
@@ -72,7 +88,7 @@ namespace VirulentVentures
             StartCoroutine(FadeAndLoad("CombatScene", () =>
             {
                 OnCombatStarted?.Invoke();
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+                OnSceneTransitionCompleted?.Invoke(expeditionData?.NodeData, expeditionData?.CurrentNodeIndex ?? 0);
             }));
             return CurrentAsyncOp;
         }
@@ -87,22 +103,23 @@ namespace VirulentVentures
             isTransitioning = true;
             StartCoroutine(FadeAndLoad("ExpeditionScene", () =>
             {
-                OnSceneTransitionCompleted?.Invoke(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+                OnSceneTransitionCompleted?.Invoke(expeditionData?.NodeData, expeditionData?.CurrentNodeIndex ?? 0);
             }));
         }
 
-        public void TransitionToTemplePlanningScene()
+        public AsyncOperation TransitionToTemplePlanningScene()
         {
             if (isTransitioning || fadeOverlay == null)
             {
                 Debug.LogWarning("ExpeditionManager: Transition blocked (already transitioning or no fade overlay)");
-                return;
+                return null;
             }
             isTransitioning = true;
             StartCoroutine(FadeAndLoad("TemplePlanningScene", () =>
             {
                 OnSceneTransitionCompleted?.Invoke(null, 0);
             }));
+            return CurrentAsyncOp;
         }
 
         private IEnumerator FadeAndLoad(string sceneName, Action onComplete)
@@ -123,18 +140,35 @@ namespace VirulentVentures
 
         public void EndExpedition()
         {
-            expeditionData.Reset();
-            if (!SaveManager.Instance.ClearDataOnStart)
+            if (expeditionData != null)
             {
-                playerProgress.Reset();
+                expeditionData.Reset();
             }
-            SaveManager.Instance.ClearProgress();
+            if (SaveManager.Instance != null && !SaveManager.Instance.ClearDataOnStart)
+            {
+                playerProgress?.Reset();
+            }
+            if (SaveManager.Instance != null)
+            {
+                SaveManager.Instance.ClearProgress();
+            }
+            else
+            {
+                Debug.LogError("ExpeditionManager: SaveManager.Instance is null, cannot clear progress.");
+            }
             TransitionToTemplePlanningScene();
         }
 
         public void SaveProgress()
         {
-            SaveManager.Instance.SaveProgress(expeditionData, partyData, playerProgress);
+            if (SaveManager.Instance != null)
+            {
+                SaveManager.Instance.SaveProgress(expeditionData, partyData, playerProgress);
+            }
+            else
+            {
+                Debug.LogError("ExpeditionManager: SaveManager.Instance is null, cannot save progress.");
+            }
         }
 
         public void SetTransitioning(bool state)
@@ -154,28 +188,59 @@ namespace VirulentVentures
 
         public void PostLoad()
         {
-            if (partyData == null) return;
-            if (partyData.HeroStats != null)
+            if (expeditionData == null || expeditionData.NodeData == null || expeditionData.Party == null || expeditionData.Party.HeroStats == null)
+            {
+                Debug.LogWarning("ExpeditionManager: Invalid expedition data in PostLoad, skipping. ExpeditionData: " +
+                    (expeditionData != null) + ", NodeData: " + (expeditionData?.NodeData != null) +
+                    ", Party: " + (expeditionData?.Party != null) + ", HeroStats: " +
+                    (expeditionData?.Party?.HeroStats != null));
+                // Attempt to recover HeroStats
+                if (expeditionData?.Party != null && expeditionData.Party.HeroStats == null)
+                {
+                    expeditionData.Party.HeroStats = new List<CharacterStats>();
+                    Debug.Log("ExpeditionManager: Initialized expeditionData.Party.HeroStats as empty list.");
+                }
+                return;
+            }
+
+            if (partyData != null && partyData.HeroStats != null)
             {
                 partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
+                foreach (var hero in partyData.HeroStats)
+                {
+                    var data = CharacterLibrary.GetHeroData(hero.Id);
+                    if (data != null)
+                    {
+                        hero.Speed = data.Speed;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"ExpeditionManager: CharacterSO for hero {hero.Id} not found in PostLoad.");
+                    }
+                }
             }
-            foreach (var hero in partyData.HeroStats)
+            else
             {
-                var data = CharacterLibrary.GetHeroData(hero.Id);
-                hero.Speed = data.Speed;
+                Debug.LogWarning("ExpeditionManager: partyData or partyData.HeroStats is null in PostLoad.");
             }
+
             foreach (var node in expeditionData.NodeData)
             {
+                if (node == null || node.Monsters == null) continue;
                 foreach (var monster in node.Monsters)
                 {
                     var data = CharacterLibrary.GetMonsterData(monster.Id);
+                    if (data == null)
+                    {
+                        Debug.LogWarning($"ExpeditionManager: CharacterSO for monster {monster.Id} not found in PostLoad.");
+                    }
                 }
             }
         }
 
         public void OnContinueClicked()
         {
-            eventBus.RaiseContinueClicked();
+            eventBus?.RaiseContinueClicked();
         }
 
         private bool ValidateReferences()

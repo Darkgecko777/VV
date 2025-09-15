@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Wraith
   m_EditorClassIdentifier: 
   id: Wraith
-  type: 0
+  type: 1
   health: 50
   maxHealth: 50
   attack: 10

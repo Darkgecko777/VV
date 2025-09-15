@@ -48,19 +48,28 @@ namespace VirulentVentures
             if (clearDataOnStart)
             {
                 ClearProgress();
-                expeditionData.Reset();
-                partyData.Reset();
-                playerProgress.Reset();
+                if (expeditionData != null) expeditionData.Reset();
+                if (partyData != null) partyData.Reset();
+                if (playerProgress != null) playerProgress.Reset();
                 Debug.Log("SaveManager: Cleared all save data for new session");
             }
         }
 
         public void SaveProgress(ExpeditionData expeditionData, PartyData partyData, PlayerProgress playerProgress)
         {
-            if (partyData != null && partyData.HeroStats != null)
+            if (expeditionData == null || partyData == null || playerProgress == null)
+            {
+                Debug.LogWarning("SaveManager: Cannot save progress, missing references. ExpeditionData: " +
+                    (expeditionData != null) + ", PartyData: " + (partyData != null) +
+                    ", PlayerProgress: " + (playerProgress != null));
+                return;
+            }
+
+            if (partyData.HeroStats != null)
             {
                 partyData.HeroStats = partyData.HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
             }
+
             var expeditionWrapper = new SaveDataWrapper(CURRENT_VERSION, expeditionData, null, null);
             PlayerPrefs.SetString("ExpeditionSave", JsonUtility.ToJson(expeditionWrapper));
             var partyWrapper = new SaveDataWrapper(CURRENT_VERSION, null, partyData, null);
@@ -72,6 +81,14 @@ namespace VirulentVentures
 
         public void LoadProgress(ExpeditionData expeditionData, PartyData partyData, PlayerProgress playerProgress)
         {
+            if (expeditionData == null || partyData == null || playerProgress == null)
+            {
+                Debug.LogWarning("SaveManager: Cannot load progress, missing references. ExpeditionData: " +
+                    (expeditionData != null) + ", PartyData: " + (partyData != null) +
+                    ", PlayerProgress: " + (playerProgress != null));
+                return;
+            }
+
             string expeditionSaveData = PlayerPrefs.GetString("ExpeditionSave", "");
             if (!string.IsNullOrEmpty(expeditionSaveData))
             {
@@ -82,24 +99,55 @@ namespace VirulentVentures
                     expeditionData.CurrentNodeIndex = wrapper.expeditionData.CurrentNodeIndex;
                     expeditionData.SetParty(wrapper.expeditionData.Party);
                 }
+                else
+                {
+                    Debug.LogWarning("SaveManager: Invalid or outdated ExpeditionSave data, skipping.");
+                    expeditionData.Reset();
+                }
             }
+            else
+            {
+                expeditionData.Reset();
+            }
+
             string partySaveData = PlayerPrefs.GetString("PartySave", "");
             if (!string.IsNullOrEmpty(partySaveData))
             {
                 var wrapper = JsonUtility.FromJson<SaveDataWrapper>(partySaveData);
-                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.partyData != null)
+                if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.partyData != null && wrapper.partyData.HeroStats != null)
                 {
                     partyData.HeroStats = wrapper.partyData.HeroStats;
+                    partyData.HeroIds = wrapper.partyData.HeroIds;
+                    partyData.AllowCultist = wrapper.partyData.AllowCultist;
+                }
+                else
+                {
+                    Debug.LogWarning("SaveManager: Invalid or outdated PartySave data, resetting party.");
+                    partyData.Reset();
                 }
             }
+            else
+            {
+                partyData.Reset();
+            }
+
             string progressSaveData = PlayerPrefs.GetString("PlayerProgressSave", "");
             if (!string.IsNullOrEmpty(progressSaveData))
             {
                 var wrapper = JsonUtility.FromJson<SaveDataWrapper>(progressSaveData);
                 if (wrapper != null && wrapper.version == CURRENT_VERSION && wrapper.playerProgress != null)
                 {
-                    playerProgress = wrapper.playerProgress;
+                    playerProgress.CopyFrom(wrapper.playerProgress);
                 }
+                else
+                {
+                    Debug.LogWarning("SaveManager: Invalid or outdated PlayerProgressSave data, resetting progress.");
+                    playerProgress.Reset();
+                }
+            }
+            else
+            {
+                playerProgress.Reset();
             }
         }
 

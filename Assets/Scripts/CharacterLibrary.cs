@@ -5,231 +5,97 @@ namespace VirulentVentures
 {
     public static class CharacterLibrary
     {
-        public struct CharacterData
-        {
-            public string Id;
-            public int Health;
-            public int MaxHealth;
-            public int Attack;
-            public int Defense;
-            public int Speed;
-            public int Evasion;
-            public int Morale;
-            public int MaxMorale;
-            public int Infectivity;
-            public List<string> AbilityIds;
-            public bool CanBeCultist;
-            public int PartyPosition;
+        private static Dictionary<string, CharacterSO> heroCache;
+        private static Dictionary<string, CharacterSO> monsterCache;
 
-            public CharacterStats.DisplayStats GetDisplayStats(bool isHero)
+        static CharacterLibrary()
+        {
+            heroCache = new Dictionary<string, CharacterSO>();
+            monsterCache = new Dictionary<string, CharacterSO>();
+            var allCharacters = Resources.LoadAll<CharacterSO>("Characters");
+            foreach (var character in allCharacters)
             {
-                return new CharacterStats.DisplayStats(
-                    name: Id,
-                    health: isHero ? Health : MaxHealth,
-                    maxHealth: MaxHealth,
-                    attack: Attack,
-                    defense: Defense,
-                    speed: Mathf.Clamp(Speed, 1, 8),
-                    evasion: Mathf.Clamp(Evasion, 0, 100),
-                    morale: isHero ? Morale : 0,
-                    maxMorale: isHero ? MaxMorale : 0,
-                    infectivity: Infectivity,
-                    isHero: isHero,
-                    isInfected: false
-                );
+                if (character == null) continue;
+                if (character.Type == CharacterType.Hero)
+                {
+                    heroCache[character.Id] = character;
+                }
+                else
+                {
+                    monsterCache[character.Id] = character;
+                }
             }
+            if (heroCache.Count == 0) Debug.LogWarning("CharacterLibrary: No hero CharacterSOs found in Resources/Characters.");
+            if (monsterCache.Count == 0) Debug.LogWarning("CharacterLibrary: No monster CharacterSOs found in Resources/Characters.");
         }
 
-        private static readonly Dictionary<string, CharacterData> HeroData = new Dictionary<string, CharacterData>
+        public static CharacterSO GetHeroData(string id)
         {
-            {
-                "Fighter", new CharacterData
-                {
-                    Id = "Fighter",
-                    Health = 80,
-                    MaxHealth = 100,
-                    Attack = 18,
-                    Defense = 8,
-                    Speed = 3,
-                    Evasion = 0,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    Infectivity = 40,
-                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
-                    CanBeCultist = true,
-                    PartyPosition = 1
-                }
-            },
-            {
-                "Healer", new CharacterData
-                {
-                    Id = "Healer",
-                    Health = 60,
-                    MaxHealth = 60,
-                    Attack = 8,
-                    Defense = 3,
-                    Speed = 4,
-                    Evasion = 15,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    Infectivity = 50,
-                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
-                    CanBeCultist = false,
-                    PartyPosition = 4
-                }
-            },
-            {
-                "Scout", new CharacterData
-                {
-                    Id = "Scout",
-                    Health = 65,
-                    MaxHealth = 75,
-                    Attack = 18,
-                    Defense = 2,
-                    Speed = 5,
-                    Evasion = 25,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    Infectivity = 40,
-                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
-                    CanBeCultist = true,
-                    PartyPosition = 3
-                }
-            },
-            {
-                "Monk", new CharacterData
-                {
-                    Id = "Monk",
-                    Health = 75,
-                    MaxHealth = 90,
-                    Attack = 20,
-                    Defense = 4,
-                    Speed = 5,
-                    Evasion = 35,
-                    Morale = 100,
-                    MaxMorale = 100,
-                    Infectivity = 70,
-                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
-                    CanBeCultist = false,
-                    PartyPosition = 2
-                }
-            }
-        };
-
-        private static readonly Dictionary<string, CharacterData> MonsterData = new Dictionary<string, CharacterData>
-        {
-            {
-                "Bog Fiend", new CharacterData
-                {
-                    Id = "Bog Fiend",
-                    MaxHealth = 80,
-                    Attack = 15,
-                    Defense = 7,
-                    Speed = 4,
-                    Evasion = 0,
-                    Infectivity = 80,
-                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
-                    CanBeCultist = false,
-                    PartyPosition = 1
-                }
-            },
-            {
-                "Wraith", new CharacterData
-                {
-                    Id = "Wraith",
-                    MaxHealth = 50,
-                    Attack = 10,
-                    Defense = 4,
-                    Speed = 6,
-                    Evasion = 50,
-                    Infectivity = 50,
-                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
-                    CanBeCultist = false,
-                    PartyPosition = 4
-                }
-            },
-            {
-                "Mire Shambler", new CharacterData
-                {
-                    Id = "Mire Shambler",
-                    MaxHealth = 75,
-                    Attack = 12,
-                    Defense = 13,
-                    Speed = 3,
-                    Evasion = 10,
-                    Infectivity = 60,
-                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
-                    CanBeCultist = false,
-                    PartyPosition = 2
-                }
-            },
-            {
-                "Umbral Corvax", new CharacterData
-                {
-                    Id = "Umbral Corvax",
-                    MaxHealth = 60,
-                    Attack = 22,
-                    Defense = 8,
-                    Speed = 5,
-                    Evasion = 30,
-                    Infectivity = 55,
-                    AbilityIds = new List<string> { "BasicAttack" }, // Stripped to BasicAttack only
-                    CanBeCultist = false,
-                    PartyPosition = 3
-                }
-            }
-        };
-
-        public static CharacterData GetHeroData(string id)
-        {
-            if (HeroData.TryGetValue(id, out var data))
+            if (heroCache.TryGetValue(id, out var data))
             {
                 return data;
             }
             Debug.LogWarning($"CharacterLibrary: Hero ID {id} not found, returning default");
-            return new CharacterData
-            {
-                Id = id,
-                Health = 50,
-                MaxHealth = 50,
-                Attack = 10,
-                Defense = 5,
-                Speed = 3,
-                Evasion = 10,
-                Morale = 100,
-                MaxMorale = 100,
-                Infectivity = 20,
-                AbilityIds = new List<string> { "BasicAttack" },
-                CanBeCultist = false,
-                PartyPosition = 1
-            };
+            var defaultSO = ScriptableObject.CreateInstance<CharacterSO>();
+            defaultSO.name = "DefaultHero";
+            // Set default stats to prevent null refs
+            defaultSO.SetDefaultStats(id, CharacterType.Hero, 50, 50, 10, 5, 3, 10, 100, 100, 20, false, 1, new ScriptableObject[0]);
+            return defaultSO;
         }
 
-        public static CharacterData GetMonsterData(string id)
+        public static CharacterSO GetMonsterData(string id)
         {
-            if (MonsterData.TryGetValue(id, out var data))
+            if (monsterCache.TryGetValue(id, out var data))
             {
                 return data;
             }
             Debug.LogWarning($"CharacterLibrary: Monster ID {id} not found, returning default");
-            return new CharacterData
-            {
-                Id = id,
-                MaxHealth = 50,
-                Attack = 10,
-                Defense = 5,
-                Speed = 3,
-                Evasion = 10,
-                Infectivity = 0,
-                AbilityIds = new List<string> { "BasicAttack" },
-                CanBeCultist = false,
-                PartyPosition = 0
-            };
+            var defaultSO = ScriptableObject.CreateInstance<CharacterSO>();
+            defaultSO.name = "DefaultMonster";
+            defaultSO.SetDefaultStats(id, CharacterType.Monster, 0, 50, 10, 5, 3, 10, 0, 0, 0, false, 0, new ScriptableObject[0]);
+            return defaultSO;
         }
 
         public static List<string> GetMonsterIds()
         {
-            return new List<string>(MonsterData.Keys);
+            return new List<string>(monsterCache.Keys);
+        }
+    }
+
+    // Extension to set default stats via reflection (since fields are private)
+    public static class CharacterSOExtensions
+    {
+        public static void SetDefaultStats(this CharacterSO so, string id, CharacterType type, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool canBeCultist, int partyPosition, ScriptableObject[] abilities)
+        {
+            var idField = typeof(CharacterSO).GetField("id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var typeField = typeof(CharacterSO).GetField("type", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var healthField = typeof(CharacterSO).GetField("health", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var maxHealthField = typeof(CharacterSO).GetField("maxHealth", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var attackField = typeof(CharacterSO).GetField("attack", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var defenseField = typeof(CharacterSO).GetField("defense", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var speedField = typeof(CharacterSO).GetField("speed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var evasionField = typeof(CharacterSO).GetField("evasion", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var moraleField = typeof(CharacterSO).GetField("morale", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var maxMoraleField = typeof(CharacterSO).GetField("maxMorale", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var infectivityField = typeof(CharacterSO).GetField("infectivity", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var canBeCultistField = typeof(CharacterSO).GetField("canBeCultist", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var partyPositionField = typeof(CharacterSO).GetField("partyPosition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var abilitiesField = typeof(CharacterSO).GetField("abilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            idField.SetValue(so, id);
+            typeField.SetValue(so, type);
+            healthField.SetValue(so, health);
+            maxHealthField.SetValue(so, maxHealth);
+            attackField.SetValue(so, attack);
+            defenseField.SetValue(so, defense);
+            speedField.SetValue(so, speed);
+            evasionField.SetValue(so, evasion);
+            moraleField.SetValue(so, morale);
+            maxMoraleField.SetValue(so, maxMorale);
+            infectivityField.SetValue(so, infectivity);
+            canBeCultistField.SetValue(so, canBeCultist);
+            partyPositionField.SetValue(so, partyPosition);
+            abilitiesField.SetValue(so, abilities);
         }
     }
 }
