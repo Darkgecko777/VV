@@ -58,16 +58,12 @@ namespace VirulentVentures
         {
             if (SaveManager.Instance != null)
             {
-                Debug.Log($"ExpeditionManager: Before ClearProgressOnStart - expeditionData.Party: {(expeditionData?.Party != null)}");
                 SaveManager.Instance.ClearProgressOnStart(expeditionData, partyData, playerProgress);
-                Debug.Log($"ExpeditionManager: After ClearProgressOnStart - expeditionData.Party: {(expeditionData?.Party != null)}");
                 SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
-                Debug.Log($"ExpeditionManager: After LoadProgress - expeditionData.Party: {(expeditionData?.Party != null)}, expeditionData.Party.HeroStats: {(expeditionData?.Party?.HeroStats != null)}");
                 // Fallback: Ensure expeditionData.Party is set
                 if (expeditionData.Party == null && partyData != null)
                 {
                     expeditionData.SetParty(partyData);
-                    Debug.Log("ExpeditionManager: Set expeditionData.Party to partyData as fallback.");
                 }
                 PostLoad();
             }

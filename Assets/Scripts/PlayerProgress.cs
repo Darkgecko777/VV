@@ -35,9 +35,7 @@ namespace VirulentVentures
             if (newRank > templeRank)
             {
                 templeRank = newRank;
-                Debug.Log($"PlayerProgress: Temple rank increased to {templeRank}");
             }
-            Debug.Log($"PlayerProgress: Added {amount} favour, total: {favour}, lifetime: {totalFavourEarned}");
         }
 
         public bool SpendFavour(int amount)
@@ -50,7 +48,6 @@ namespace VirulentVentures
             if (favour >= amount)
             {
                 favour -= amount;
-                Debug.Log($"PlayerProgress: Spent {amount} favour, remaining: {favour}");
                 return true;
             }
             Debug.LogWarning($"PlayerProgress: Insufficient favour to spend {amount}, current: {favour}");
@@ -62,7 +59,6 @@ namespace VirulentVentures
             if (!unlockedHeroes.Contains(heroId))
             {
                 unlockedHeroes.Add(heroId);
-                Debug.Log($"PlayerProgress: Unlocked hero {heroId}");
             }
         }
 
@@ -85,7 +81,6 @@ namespace VirulentVentures
             artifacts.AddRange(other.artifacts);
             favour = other.favour;
             totalFavourEarned = other.totalFavourEarned;
-            Debug.Log("PlayerProgress: Copied data from another PlayerProgress instance.");
         }
 
         public void Reset()
@@ -98,7 +93,6 @@ namespace VirulentVentures
             artifacts.Clear();
             favour = 0;
             totalFavourEarned = 0;
-            Debug.Log("PlayerProgress: Reset to demo defaults");
         }
     }
 }

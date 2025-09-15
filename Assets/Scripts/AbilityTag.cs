@@ -1,36 +1,87 @@
 using UnityEngine;
+using System;
 
 namespace VirulentVentures
 {
-    [System.Serializable]
-    public enum AbilityTag
+    [Flags]
+    public enum EffectType
     {
-        TargetEnemies,
-        TargetAllies,
-        TargetSelf,
+        None = 0,
+        Damage = 1 << 0,
+        Heal = 1 << 1,
+        Buff = 1 << 2,
+        Debuff = 1 << 3,
+        Morale = 1 << 4,
+        Infection = 1 << 5
+    }
+
+    public enum TargetType
+    {
+        Self,
+        Enemies,
+        Allies,
+        AOE
+    }
+
+    public enum RangeType
+    {
         Melee,
         Ranged,
-        Damage,
-        Heal,
-        Buff,
-        Debuff,
-        Infection,
-        Morale,
-        StandardDefense,
-        IgnoreDefense,
-        PartialIgnoreDefense,
-        NoDefenseCheck,
+        None
+    }
+
+    public enum DefenseCheck
+    {
+        Standard,
+        Ignore,
+        Partial,
+        None
+    }
+
+    public enum EvasionCheck
+    {
         Dodgeable,
         Undodgeable,
-        Cooldown,
-        NoEvasionCheck,
-        AOE,
-        FixedDamage,
-        SelfDamage,
-        SkipNextAttack,
-        ThornsFixed,
-        ThornsInfection,
-        PriorityLowHealth,
-        Common
+        None
+    }
+
+    public enum Comparison
+    {
+        Greater,
+        Lesser,
+        Equal
+    }
+
+    public enum Stat
+    {
+        Health,
+        Morale,
+        Speed,
+        Attack,
+        Defense
+    }
+
+    public enum ConditionTarget
+    {
+        User,
+        Ally,
+        Enemy
+    }
+
+    public enum CostType
+    {
+        None,
+        Health,
+        Morale
+    }
+
+    [Serializable]
+    public struct AbilityCondition
+    {
+        public Comparison Comparison;
+        public Stat Stat;
+        public float Threshold;
+        public bool IsPercentage;
+        public ConditionTarget Target;
     }
 }

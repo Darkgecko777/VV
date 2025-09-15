@@ -290,7 +290,6 @@ namespace VirulentVentures
                 if (hasActiveParty && i < heroes.Count && heroes[i] != null)
                 {
                     string characterID = heroes[i].Id;
-                    Debug.Log($"TempleUIComponent: Processing hero {i + 1}, ID: '{characterID}'");
                     if (string.IsNullOrEmpty(characterID))
                     {
                         Debug.LogWarning($"TempleUIComponent: Hero {i + 1} has null/empty Id, using fallback.");
@@ -306,7 +305,6 @@ namespace VirulentVentures
                         Sprite sprite = visualConfig.GetPortrait(characterID);
                         if (sprite != null)
                         {
-                            Debug.Log($"TempleUIComponent: Applying sprite '{sprite.name}' (Texture: {sprite.texture != null}) for '{characterID}' to portrait.");
                             recruitPortrait.image = sprite.texture; // Use Image.texture for UI Toolkit
                             expeditionPortrait.image = sprite.texture;
                             healPortrait.image = sprite.texture;

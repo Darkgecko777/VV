@@ -51,7 +51,6 @@ namespace VirulentVentures
                 if (expeditionData != null) expeditionData.Reset();
                 if (partyData != null) partyData.Reset();
                 if (playerProgress != null) playerProgress.Reset();
-                Debug.Log("SaveManager: Cleared all save data for new session");
             }
         }
 
