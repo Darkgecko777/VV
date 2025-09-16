@@ -17,6 +17,7 @@ namespace VirulentVentures
         bool HasRetreated { get; set; }
         bool IsHero { get; }
         int PartyPosition { get; }
+        int Rank { get; } // Added Rank getter for consistency
         CharacterStats.DisplayStats GetDisplayStats();
     }
 }

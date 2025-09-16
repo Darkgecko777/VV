@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f3f4502e65a4a8499f567392527fad2, type: 3}
   m_Name: ShieldBash
   m_EditorClassIdentifier: 
-  id: 
-  targetType: 0
+  id: Shield Bash
+  targetType: 1
   rangeType: 0
-  effectTypes: 0
+  effectTypes: 1
   defenseCheck: 0
   partialDefenseMultiplier: 0
   evasionCheck: 0
@@ -26,8 +26,8 @@ MonoBehaviour:
   skipNextAttack: 0
   priorityLowHealth: 0
   healMultiplier: 0
-  cooldown: 0
-  priority: 0
+  cooldown: 2
+  priority: 1
   costType: 0
   costAmount: 0
   conditions: []

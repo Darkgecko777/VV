@@ -16,7 +16,7 @@ namespace VirulentVentures
         private VisualElement root;
         private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
         private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
-        private Dictionary<ICombatUnit, (Label atk, Label def, Label spd, Label eva, Label morale)> unitStatLabels = new Dictionary<ICombatUnit, (Label, Label, Label, Label, Label)>();
+        private Dictionary<ICombatUnit, (Label atk, Label def, Label spd, Label eva, Label morale, Label rank)> unitStatLabels = new Dictionary<ICombatUnit, (Label, Label, Label, Label, Label, Label)>();
         private Dictionary<ICombatUnit, Label> infectedLabels = new Dictionary<ICombatUnit, Label>();
         private GameObject backgroundGameObject;
         private VisualElement logContent;
@@ -78,31 +78,31 @@ namespace VirulentVentures
             root = GetComponent<UIDocument>().rootVisualElement;
             if (root == null)
             {
-                Debug.LogError("CombatViewController: Root VisualElement not found.");
+                Debug.LogError("CombatUIComponent: Root VisualElement not found.");
                 return;
             }
             var combatRoot = root.Q<VisualElement>("combat-root");
             if (combatRoot == null)
             {
-                Debug.LogError("CombatViewController: Combat root not found.");
+                Debug.LogError("CombatUIComponent: Combat root not found.");
                 return;
             }
             var bottomPanel = combatRoot.Q<VisualElement>("bottom-panel");
             if (bottomPanel == null)
             {
-                Debug.LogError("CombatViewController: Bottom panel not found.");
+                Debug.LogError("CombatUIComponent: Bottom panel not found.");
                 return;
             }
             logContent = bottomPanel.Q<VisualElement>("log-content");
             if (logContent == null)
             {
-                Debug.LogError("CombatViewController: Log content not found.");
+                Debug.LogError("CombatUIComponent: Log content not found.");
                 return;
             }
             var speedPanel = combatRoot.Q<VisualElement>("speed-control-panel");
             if (speedPanel == null)
             {
-                Debug.LogError("CombatViewController: Speed control panel not found.");
+                Debug.LogError("CombatUIComponent: Speed control panel not found.");
                 return;
             }
             speedLabel = speedPanel.Q<Label>("speed-label");
@@ -112,7 +112,7 @@ namespace VirulentVentures
             playButton = speedPanel.Q<Button>("play-button");
             if (speedLabel == null || speedPlusButton == null || speedMinusButton == null || pauseButton == null || playButton == null)
             {
-                Debug.LogError("CombatViewController: Speed control UI elements not found.");
+                Debug.LogError("CombatUIComponent: Speed control UI elements not found.");
                 return;
             }
             speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
@@ -137,7 +137,7 @@ namespace VirulentVentures
             CombatSceneComponent.Instance.SetCombatSpeed(newSpeed);
             if (combatConfig.CombatSpeed == combatConfig.MinCombatSpeed)
             {
-                eventBus.RaiseLogMessage("Combat speed at minimum!", Color.white);
+                eventBus.RaiseLogMessage("Combat speed at minimum!", uiConfig.TextColor);
             }
             speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
             UpdateButtonStates();
@@ -146,14 +146,14 @@ namespace VirulentVentures
         private void PauseCombat()
         {
             CombatSceneComponent.Instance.PauseCombat();
-            eventBus.RaiseLogMessage("Combat paused", Color.white);
+            eventBus.RaiseLogMessage("Combat paused", uiConfig.TextColor);
             UpdateButtonStates();
         }
 
         private void PlayCombat()
         {
             CombatSceneComponent.Instance.PlayCombat();
-            eventBus.RaiseLogMessage("Combat resumed", Color.white);
+            eventBus.RaiseLogMessage("Combat resumed", uiConfig.TextColor);
             UpdateButtonStates();
         }
 
@@ -172,7 +172,7 @@ namespace VirulentVentures
             var backgroundSprite = visualConfig.GetCombatBackground();
             if (backgroundSprite == null)
             {
-                Debug.LogError("CombatViewController: Background sprite not found.");
+                Debug.LogError("CombatUIComponent: Background sprite not found.");
                 return;
             }
             backgroundGameObject = new GameObject("CombatBackground");
@@ -188,18 +188,28 @@ namespace VirulentVentures
             var label = new Label(logData.message);
             label.enableRichText = true;
             label.style.color = logData.color;
+            if (logData.message.Contains("[Taunt]") || logData.message.Contains("[Thorns]"))
+            {
+                label.style.color = new Color(1f, 1f, 0f); // Yellow #FFFF00
+            }
+            else if (logData.message.Contains("[Heal"))
+            {
+                label.style.color = new Color(0f, 1f, 0f); // Green #00FF00
+            }
+            else if (logData.message.Contains("[Debuff"))
+            {
+                label.style.color = new Color(1f, 0f, 0f); // Red #FF0000
+            }
             logContent.Add(label);
             logMessages.Add(label);
             var scrollView = logContent.parent as ScrollView;
             if (scrollView != null)
             {
-                // Defer scroll to ensure layout is updated
                 scrollView.schedule.Execute(() =>
                 {
                     float scrollThreshold = 300f;
                     float scrollPosition = scrollView.verticalScroller.value;
                     float maxScroll = scrollView.verticalScroller.highValue;
-                    // Auto-scroll to bottom unless player has scrolled far up
                     if (scrollPosition >= maxScroll - scrollThreshold || scrollPosition == 0)
                     {
                         scrollView.scrollOffset = new Vector2(0, maxScroll);
@@ -208,7 +218,7 @@ namespace VirulentVentures
             }
             else
             {
-                Debug.LogError("CombatViewController: ScrollView not found for log-content.");
+                Debug.LogError("CombatUIComponent: ScrollView not found for log-content.");
             }
         }
 
@@ -231,11 +241,9 @@ namespace VirulentVentures
             var panel = new VisualElement();
             panel.AddToClassList("unit-panel");
             panel.style.height = Length.Percent(heightPercent);
-
             var nameLabel = new Label(stats.name);
             nameLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             panel.Add(nameLabel);
-
             if (isHero && stats.isInfected)
             {
                 var infectedLabel = new Label("Infected");
@@ -243,7 +251,6 @@ namespace VirulentVentures
                 panel.Add(infectedLabel);
                 infectedLabels[unit] = infectedLabel;
             }
-
             var healthBar = new VisualElement();
             healthBar.AddToClassList("health-bar");
             var healthFill = new VisualElement();
@@ -254,7 +261,6 @@ namespace VirulentVentures
             healthBar.Add(healthLabel);
             UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
             panel.Add(healthBar);
-
             VisualElement moraleBar = null;
             VisualElement moraleFill = null;
             Label moraleLabel = null;
@@ -271,39 +277,34 @@ namespace VirulentVentures
                 UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale);
                 panel.Add(moraleBar);
             }
-
+            var rankLabel = new Label($"RANK: {stats.rank}");
+            rankLabel.AddToClassList("rank-label");
+            panel.Add(rankLabel);
             var statGrid = new VisualElement();
             statGrid.AddToClassList("stat-grid");
-
             var atkContainer = new VisualElement();
             atkContainer.AddToClassList("stat-container");
             var atkLabel = new Label($"A: {stats.attack}");
             atkContainer.Add(atkLabel);
             statGrid.Add(atkContainer);
-
             var defContainer = new VisualElement();
             defContainer.AddToClassList("stat-container");
             var defLabel = new Label($"D: {stats.defense}");
             defContainer.Add(defLabel);
             statGrid.Add(defContainer);
-
             var spdContainer = new VisualElement();
             spdContainer.AddToClassList("stat-container");
             var spdLabel = new Label($"S: {stats.speed}");
             spdContainer.Add(spdLabel);
             statGrid.Add(spdContainer);
-
             var evaContainer = new VisualElement();
             evaContainer.AddToClassList("stat-container");
             var evaLabel = new Label($"E: {stats.evasion}");
             atkContainer.Add(evaLabel);
             statGrid.Add(evaContainer);
-
             panel.Add(statGrid);
-
             unitPanels[unit] = panel;
-            unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel);
-
+            unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel, rankLabel);
             return panel;
         }
 
@@ -398,6 +399,7 @@ namespace VirulentVentures
                     statLabels.def.text = $"D: {data.displayStats.defense}";
                     statLabels.spd.text = $"S: {data.displayStats.speed}";
                     statLabels.eva.text = $"E: {data.displayStats.evasion}";
+                    statLabels.rank.text = $"RANK: {data.displayStats.rank}";
                     if (data.displayStats.isHero && statLabels.morale != null)
                     {
                         statLabels.morale.text = $"Morale: {data.displayStats.morale}/{data.displayStats.maxMorale}";
@@ -416,6 +418,10 @@ namespace VirulentVentures
                     bool isHero = data.attacker is CharacterStats charStats && charStats.Type == CharacterType.Hero;
                     animator.TiltForward(isHero, combatConfig.CombatSpeed);
                 }
+            }
+            if (unitPanels.TryGetValue(data.attacker, out VisualElement panel) && (data.abilityId.Contains("Taunt") || data.abilityId.Contains("Thorns")))
+            {
+                StartCoroutine(FlashPanel(panel, new Color(1f, 1f, 0f), 0.5f));
             }
         }
 
@@ -500,10 +506,18 @@ namespace VirulentVentures
         {
             if (visualConfig == null || uiConfig == null || eventBus == null || characterPositions == null || combatConfig == null)
             {
-                Debug.LogError("CombatViewController: Missing required reference(s). Please assign in the Inspector.");
+                Debug.LogError("CombatUIComponent: Missing required reference(s). Please assign in the Inspector.");
                 return false;
             }
             return true;
+        }
+
+        private IEnumerator FlashPanel(VisualElement panel, Color flashColor, float duration)
+        {
+            var originalColor = panel.style.backgroundColor;
+            panel.style.backgroundColor = flashColor;
+            yield return new WaitForSeconds(duration / combatConfig.CombatSpeed);
+            panel.style.backgroundColor = originalColor;
         }
     }
 }

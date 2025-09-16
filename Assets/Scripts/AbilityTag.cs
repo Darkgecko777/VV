@@ -12,7 +12,9 @@ namespace VirulentVentures
         Buff = 1 << 2,
         Debuff = 1 << 3,
         Morale = 1 << 4,
-        Infection = 1 << 5
+        Infection = 1 << 5,
+        Taunt = 1 << 6, // Added for Taunt effect
+        Thorns = 1 << 7 // Added for Thorns effect
     }
 
     public enum TargetType
@@ -58,7 +60,8 @@ namespace VirulentVentures
         Morale,
         Speed,
         Attack,
-        Defense
+        Defense,
+        Rank // Added previously in CombatSceneComponent.cs
     }
 
     public enum ConditionTarget

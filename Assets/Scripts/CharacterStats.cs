@@ -19,8 +19,9 @@ namespace VirulentVentures
         public bool HasRetreated { get; set; } = false;
         public bool IsInfected { get; set; } = false;
         public int PartyPosition { get; set; }
-        public ScriptableObject[] Abilities { get; set; } // Future-proof for AbilitySO
+        public ScriptableObject[] Abilities { get; set; }
         public bool IsHero => Type == CharacterType.Hero;
+        public int Rank { get; set; } // Added Rank property
 
         public CharacterStats(CharacterSO data, Vector3 position)
         {
@@ -40,6 +41,7 @@ namespace VirulentVentures
                 Infectivity = 20;
                 PartyPosition = 1;
                 Abilities = new ScriptableObject[0];
+                Rank = 1; // Default Rank for null data
                 return;
             }
 
@@ -56,6 +58,7 @@ namespace VirulentVentures
             Infectivity = data.Infectivity;
             PartyPosition = data.PartyPosition;
             Abilities = data.Abilities ?? new ScriptableObject[0];
+            Rank = data.Rank; // Set Rank from CharacterSO
         }
 
         public struct DisplayStats
@@ -72,8 +75,9 @@ namespace VirulentVentures
             public int infectivity;
             public bool isHero;
             public bool isInfected;
+            public int rank; // Added rank field
 
-            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected)
+            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected, int rank)
             {
                 this.name = name;
                 this.health = health;
@@ -87,6 +91,7 @@ namespace VirulentVentures
                 this.infectivity = infectivity;
                 this.isHero = isHero;
                 this.isInfected = isInfected;
+                this.rank = rank;
             }
         }
 
@@ -104,7 +109,8 @@ namespace VirulentVentures
                 maxMorale: MaxMorale,
                 infectivity: Infectivity,
                 isHero: IsHero,
-                isInfected: IsInfected
+                isInfected: IsInfected,
+                rank: Rank // Added rank
             );
         }
     }

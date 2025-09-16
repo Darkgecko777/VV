@@ -19,7 +19,8 @@ namespace VirulentVentures
         [SerializeField] private int infectivity;
         [SerializeField] private bool canBeCultist;
         [SerializeField] private int partyPosition;
-        [SerializeField] private ScriptableObject[] abilities; // AbilitySO[] for future; empty for now
+        [SerializeField] private AbilitySO[] abilities; // Changed to AbilitySO[] for Rank 1
+        [SerializeField] private int rank = 1; // Added rank field, default 1
 
         public string Id => id;
         public CharacterType Type => type;
@@ -34,7 +35,8 @@ namespace VirulentVentures
         public int Infectivity => infectivity;
         public bool CanBeCultist => canBeCultist;
         public int PartyPosition => partyPosition;
-        public ScriptableObject[] Abilities => abilities;
+        public AbilitySO[] Abilities => abilities;
+        public int Rank => rank; // Added Rank getter
 
         public CharacterStats.DisplayStats GetDisplayStats(bool isHero)
         {
@@ -50,7 +52,8 @@ namespace VirulentVentures
                 maxMorale: isHero ? maxMorale : 0,
                 infectivity: infectivity,
                 isHero: isHero,
-                isInfected: false
+                isInfected: false,
+                rank: rank // Added rank
             );
         }
 
@@ -63,6 +66,10 @@ namespace VirulentVentures
             if (type == CharacterType.Hero && (health <= 0 || maxMorale <= 0))
             {
                 Debug.LogWarning($"CharacterSO {id}: Hero must have positive Health and MaxMorale.");
+            }
+            if (rank < 1 || rank > 3)
+            {
+                Debug.LogWarning($"CharacterSO {id}: Invalid Rank {rank}. Must be 1-3.");
             }
         }
     }

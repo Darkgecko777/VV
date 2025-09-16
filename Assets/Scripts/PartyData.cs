@@ -28,22 +28,22 @@ namespace VirulentVentures
 
         public List<CharacterStats> GetHeroes()
         {
-            return HeroStats.Where(h => h.Type == CharacterType.Hero).ToList();
+            return HeroStats?.Where(h => h.Type == CharacterType.Hero).ToList() ?? new List<CharacterStats>();
         }
 
         public List<CharacterStats> CheckDeadStatus()
         {
-            return HeroStats.FindAll(h => h.Type == CharacterType.Hero && h.Health > 0);
+            return HeroStats?.FindAll(h => h.Type == CharacterType.Hero && h.Health > 0) ?? new List<CharacterStats>();
         }
 
         public CharacterStats FindLowestHealthAlly()
         {
-            return HeroStats.Find(h => h.Type == CharacterType.Hero && h.Health > 0 && h.Health == HeroStats.Where(hs => hs.Type == CharacterType.Hero).Min(hs => hs.Health));
+            return HeroStats?.Find(h => h.Type == CharacterType.Hero && h.Health > 0 && h.Health == HeroStats.Where(hs => hs.Type == CharacterType.Hero).Min(hs => hs.Health));
         }
 
         public CharacterStats[] FindAllies()
         {
-            return HeroStats.Where(h => h.Type == CharacterType.Hero).ToArray();
+            return HeroStats?.Where(h => h.Type == CharacterType.Hero).ToArray() ?? new CharacterStats[0];
         }
 
         public bool CanHealParty()
@@ -59,7 +59,8 @@ namespace VirulentVentures
 
         public void GenerateHeroStats(Vector3[] positions)
         {
-            HeroStats = new List<CharacterStats>();
+            HeroStats = HeroStats ?? new List<CharacterStats>(); // Ensure initialization
+            HeroStats.Clear(); // Clear existing stats to avoid duplicates
             var positionMap = new Dictionary<int, Vector3>
             {
                 { 1, positions[0] },
@@ -80,6 +81,11 @@ namespace VirulentVentures
                 if (positionMap.ContainsKey(partyPosition))
                 {
                     var stats = new CharacterStats(data, positionMap[partyPosition]);
+                    if (stats.Rank < 1 || stats.Rank > 3)
+                    {
+                        Debug.LogWarning($"PartyData: Invalid Rank {stats.Rank} for {heroId}, setting to 1.");
+                        stats.Rank = 1;
+                    }
                     HeroStats.Add(stats);
                     positionMap.Remove(partyPosition);
                 }
@@ -94,7 +100,7 @@ namespace VirulentVentures
 
         public CharacterStats GetHeroByPosition(int position)
         {
-            return HeroStats.Find(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition == position);
+            return HeroStats?.Find(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition == position);
         }
     }
 }

@@ -6,6 +6,15 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "AbilitySO", menuName = "VirulentVentures/AbilitySO")]
     public class AbilitySO : ScriptableObject
     {
+        [System.Serializable]
+        public struct AbilityEffect
+        {
+            public EffectType type;
+            public Stat stat;
+            public int value;
+            public int duration;
+        }
+
         [SerializeField] private string id;
         [SerializeField] private TargetType targetType;
         [SerializeField] private RangeType rangeType;
@@ -25,6 +34,7 @@ namespace VirulentVentures
         [SerializeField] private CostType costType;
         [SerializeField] private int costAmount;
         [SerializeField] private List<AbilityCondition> conditions;
+        [SerializeField] private List<AbilityEffect> effects; // Added for multiple effects
 
         public string Id => id;
         public TargetType TargetType => targetType;
@@ -45,6 +55,7 @@ namespace VirulentVentures
         public CostType CostType => costType;
         public int CostAmount => costAmount;
         public List<AbilityCondition> Conditions => conditions;
+        public List<AbilityEffect> Effects => effects; // Added getter
 
         private void OnValidate()
         {
@@ -73,6 +84,21 @@ namespace VirulentVentures
                 if (condition.IsPercentage && (condition.Threshold < 0 || condition.Threshold > 1))
                 {
                     Debug.LogWarning($"AbilitySO {id}: Percentage Threshold must be 0-1.");
+                }
+            }
+            foreach (var effect in effects)
+            {
+                if (effect.duration < 0)
+                {
+                    Debug.LogWarning($"AbilitySO {id}: Effect {effect.type} duration must be >= 0.");
+                }
+                if ((effect.type == EffectType.Taunt || effect.type == EffectType.Thorns) && effect.duration <= 0)
+                {
+                    Debug.LogWarning($"AbilitySO {id}: Effect {effect.type} requires positive duration.");
+                }
+                if (effect.type != EffectType.None && effect.value == 0 && effect.type != EffectType.Infection)
+                {
+                    Debug.LogWarning($"AbilitySO {id}: Effect {effect.type} should have non-zero value (except Infection).");
                 }
             }
         }
