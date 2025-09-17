@@ -7,77 +7,85 @@ namespace VirulentVentures
     public class AbilitySO : ScriptableObject
     {
         [System.Serializable]
-        public struct AbilityEffect
+        public struct Attack
         {
-            public EffectType type;
-            public Stat stat;
-            public int value;
-            public int duration;
+            public int NumberOfTargets; // Clamped: 2 for Melee, 4 for Ranged
+            public bool Enemy; // True for enemies, false for allies/self
+            public bool Melee; // True for frontline (PartyPosition 1-2), false for Ranged (1-4)
+            public DefenseCheck Defense; // Full, Partial, or No defense calculation
+            public bool Dodgeable; // True if target.Evasion applies
+            public float PartialDefenseMultiplier; // Multiplier for Partial defense (e.g., 0.025)
+        }
+
+        [System.Serializable]
+        public struct Effect
+        {
+            public int NumberOfTargets; // Clamped: 2 for Melee, 4 for Ranged
+            public bool Enemy; // True for enemies, false for allies/self
+            public bool Melee; // True for frontline (PartyPosition 1-2), false for Ranged (1-4)
+            public string[] Tags; // Effect IDs (e.g., "TrueStrike:10", "VirusSpread") for CombatEffectsComponent
         }
 
         [SerializeField] private string id;
-        [SerializeField] private TargetType targetType;
-        [SerializeField] private RangeType rangeType;
-        [SerializeField] private EffectType effectTypes;
-        [SerializeField] private DefenseCheck defenseCheck;
-        [SerializeField] private float partialDefenseMultiplier;
-        [SerializeField] private EvasionCheck evasionCheck;
-        [SerializeField] private int fixedDamage;
-        [SerializeField] private int selfDamage;
-        [SerializeField] private int thornsFixed;
-        [SerializeField] private bool thornsInfection;
-        [SerializeField] private bool skipNextAttack;
-        [SerializeField] private bool priorityLowHealth;
-        [SerializeField] private float healMultiplier;
-        [SerializeField] private int cooldown;
-        [SerializeField] private int priority;
-        [SerializeField] private CostType costType;
-        [SerializeField] private int costAmount;
-        [SerializeField] private List<AbilityCondition> conditions;
-        [SerializeField] private List<AbilityEffect> effects; // Added for multiple effects
+        [SerializeField] private int priority; // Lower value = higher priority
+        [SerializeField] private int cooldown; // Actions before reuse
+        [SerializeField] private int rank; // Required hero rank (1-3), 0 for monsters
+        [SerializeField] private List<AbilityCondition> conditions; // Existing struct: Target, Stat, Comparison, Threshold, IsPercentage
+        [SerializeField] private List<Attack> attacks; // Array of attack actions
+        [SerializeField] private List<Effect> effects; // Array of effect actions
+        [SerializeField] private int costAmount; // Amount for costType
 
         public string Id => id;
-        public TargetType TargetType => targetType;
-        public RangeType RangeType => rangeType;
-        public EffectType EffectTypes => effectTypes;
-        public DefenseCheck DefenseCheck => defenseCheck;
-        public float PartialDefenseMultiplier => partialDefenseMultiplier;
-        public EvasionCheck EvasionCheck => evasionCheck;
-        public int FixedDamage => fixedDamage;
-        public int SelfDamage => selfDamage;
-        public int ThornsFixed => thornsFixed;
-        public bool ThornsInfection => thornsInfection;
-        public bool SkipNextAttack => skipNextAttack;
-        public bool PriorityLowHealth => priorityLowHealth;
-        public float HealMultiplier => healMultiplier;
-        public int Cooldown => cooldown;
         public int Priority => priority;
-        public CostType CostType => costType;
-        public int CostAmount => costAmount;
+        public int Cooldown => cooldown;
+        public int Rank => rank;
         public List<AbilityCondition> Conditions => conditions;
-        public List<AbilityEffect> Effects => effects; // Added getter
+        public List<Attack> Attacks => attacks;
+        public List<Effect> Effects => effects;
+        public int CostAmount => costAmount;
 
         private void OnValidate()
         {
             if (string.IsNullOrEmpty(id))
             {
-                Debug.LogWarning($"AbilitySO {name}: ID is empty. This will appear in combat logs.");
-            }
-            if (defenseCheck == DefenseCheck.Partial && partialDefenseMultiplier <= 0)
-            {
-                Debug.LogWarning($"AbilitySO {id}: Partial DefenseCheck requires positive multiplier.");
-            }
-            if ((effectTypes & EffectType.Heal) != 0 && targetType == TargetType.Enemies)
-            {
-                Debug.LogWarning($"AbilitySO {id}: Heal effect cannot target Enemies.");
+                Debug.LogWarning($"AbilitySO {name}: ID is empty.");
             }
             if (priority < 1)
             {
                 Debug.LogWarning($"AbilitySO {id}: Priority must be >= 1.");
+                priority = 1;
             }
             if (cooldown < 0)
             {
                 Debug.LogWarning($"AbilitySO {id}: Cooldown must be >= 0.");
+                cooldown = 0;
+            }
+            if (rank < 0 || rank > 3)
+            {
+                Debug.LogWarning($"AbilitySO {id}: Rank must be 0-3 (0 for monsters, 1-3 for heroes).");
+                rank = Mathf.Clamp(rank, 0, 3);
+            }
+            foreach (var attack in attacks)
+            {
+                if (attack.NumberOfTargets < 1)
+                {
+                    Debug.LogWarning($"AbilitySO {id}: Attack NumberOfTargets must be >= 1.");
+                }
+                if (attack.Defense == DefenseCheck.Partial && attack.PartialDefenseMultiplier <= 0)
+                {
+                    Debug.LogWarning($"AbilitySO {id}: Partial Defense requires positive PartialDefenseMultiplier.");
+                }
+            }
+            foreach (var effect in effects)
+            {
+                if (effect.NumberOfTargets < 1)
+                {
+                    Debug.LogWarning($"AbilitySO {id}: Effect NumberOfTargets must be >= 1.");
+                }
+                if (effect.Tags == null || effect.Tags.Length == 0)
+                {
+                    Debug.LogWarning($"AbilitySO {id}: Effect Tags array is empty.");
+                }
             }
             foreach (var condition in conditions)
             {
@@ -86,20 +94,10 @@ namespace VirulentVentures
                     Debug.LogWarning($"AbilitySO {id}: Percentage Threshold must be 0-1.");
                 }
             }
-            foreach (var effect in effects)
+            if (costAmount < 0)
             {
-                if (effect.duration < 0)
-                {
-                    Debug.LogWarning($"AbilitySO {id}: Effect {effect.type} duration must be >= 0.");
-                }
-                if ((effect.type == EffectType.Taunt || effect.type == EffectType.Thorns) && effect.duration <= 0)
-                {
-                    Debug.LogWarning($"AbilitySO {id}: Effect {effect.type} requires positive duration.");
-                }
-                if (effect.type != EffectType.None && effect.value == 0 && effect.type != EffectType.Infection)
-                {
-                    Debug.LogWarning($"AbilitySO {id}: Effect {effect.type} should have non-zero value (except Infection).");
-                }
+                Debug.LogWarning($"AbilitySO {id}: CostAmount must be >= 0.");
+                costAmount = 0;
             }
         }
     }

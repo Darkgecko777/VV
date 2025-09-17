@@ -27,6 +27,7 @@ namespace VirulentVentures
         private Button pauseButton;
         private Button playButton;
         private float speedIncrement = 0.5f;
+        private bool isPaused; // Local pause state
 
         void Awake()
         {
@@ -39,6 +40,9 @@ namespace VirulentVentures
             eventBus.OnUnitUpdated += HandleUnitUpdated;
             eventBus.OnUnitDied += HandleUnitDied;
             eventBus.OnUnitRetreated += HandleUnitRetreated;
+            eventBus.OnCombatPaused += HandleCombatPaused;
+            eventBus.OnCombatPlayed += HandleCombatPlayed;
+            eventBus.OnCombatSpeedChanged += HandleCombatSpeedChanged;
             SetupBackground();
         }
 
@@ -51,6 +55,9 @@ namespace VirulentVentures
             eventBus.OnUnitUpdated -= HandleUnitUpdated;
             eventBus.OnUnitDied -= HandleUnitDied;
             eventBus.OnUnitRetreated -= HandleUnitRetreated;
+            eventBus.OnCombatPaused -= HandleCombatPaused;
+            eventBus.OnCombatPlayed -= HandleCombatPlayed;
+            eventBus.OnCombatSpeedChanged -= HandleCombatSpeedChanged;
             if (backgroundGameObject != null)
             {
                 Destroy(backgroundGameObject);
@@ -126,44 +133,51 @@ namespace VirulentVentures
         private void IncreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed + speedIncrement;
-            CombatSceneComponent.Instance.SetCombatSpeed(newSpeed);
-            speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
-            UpdateButtonStates();
+            eventBus.RaiseCombatSpeedChanged(newSpeed); // Trigger event instead of direct call
         }
 
         private void DecreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed - speedIncrement;
-            CombatSceneComponent.Instance.SetCombatSpeed(newSpeed);
-            if (combatConfig.CombatSpeed == combatConfig.MinCombatSpeed)
-            {
-                eventBus.RaiseLogMessage("Combat speed at minimum!", uiConfig.TextColor);
-            }
-            speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
-            UpdateButtonStates();
+            eventBus.RaiseCombatSpeedChanged(newSpeed); // Trigger event instead of direct call
         }
 
         private void PauseCombat()
         {
-            CombatSceneComponent.Instance.PauseCombat();
-            eventBus.RaiseLogMessage("Combat paused", uiConfig.TextColor);
-            UpdateButtonStates();
+            eventBus.RaiseCombatPaused(); // Trigger event instead of direct call
         }
 
         private void PlayCombat()
         {
-            CombatSceneComponent.Instance.PlayCombat();
+            eventBus.RaiseCombatPlayed(); // Trigger event instead of direct call
+        }
+
+        private void HandleCombatPaused()
+        {
+            isPaused = true;
+            eventBus.RaiseLogMessage("Combat paused", uiConfig.TextColor);
+            UpdateButtonStates();
+        }
+
+        private void HandleCombatPlayed()
+        {
+            isPaused = false;
             eventBus.RaiseLogMessage("Combat resumed", uiConfig.TextColor);
+            UpdateButtonStates();
+        }
+
+        private void HandleCombatSpeedChanged(EventBusSO.CombatSpeedData data)
+        {
+            speedLabel.text = $"Speed: {data.speed:F1}x";
             UpdateButtonStates();
         }
 
         private void UpdateButtonStates()
         {
-            bool isPaused = CombatSceneComponent.Instance.IsPaused;
             pauseButton.SetEnabled(!isPaused);
             playButton.SetEnabled(isPaused);
             speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
-            speedMinusButton.SetEnabled(combatConfig.CombatSpeed >= combatConfig.MinCombatSpeed);
+            speedMinusButton.SetEnabled(combatConfig.CombatSpeed > combatConfig.MinCombatSpeed); // Use > for clarity
         }
 
         private void SetupBackground()
@@ -471,7 +485,7 @@ namespace VirulentVentures
 
         private IEnumerator DeactivateAfterJiggle(GameObject go)
         {
-            yield return new WaitUntil(() => !CombatSceneComponent.Instance.IsPaused);
+            yield return new WaitUntil(() => !isPaused);
             yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
             if (go != null)
             {
@@ -481,7 +495,7 @@ namespace VirulentVentures
 
         private IEnumerator DeactivateAfterFade(GameObject go)
         {
-            yield return new WaitUntil(() => !CombatSceneComponent.Instance.IsPaused);
+            yield return new WaitUntil(() => !isPaused);
             yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
             if (go != null)
             {

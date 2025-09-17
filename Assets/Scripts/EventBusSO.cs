@@ -70,6 +70,12 @@ namespace VirulentVentures
             public int currentIndex;
         }
 
+        [System.Serializable]
+        public struct CombatSpeedData
+        {
+            public float speed;
+        }
+
         public event Action<LogData> OnLogMessage;
         public event Action<UnitUpdateData> OnUnitUpdated;
         public event Action<DamagePopupData> OnDamagePopup;
@@ -92,6 +98,9 @@ namespace VirulentVentures
         public event Action OnHealParty;
         public event Action OnExpeditionEnded;
         public event Action OnPlayerProgressUpdated;
+        public event Action OnCombatPaused; // New event
+        public event Action OnCombatPlayed; // New event
+        public event Action<CombatSpeedData> OnCombatSpeedChanged; // New event
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -201,6 +210,21 @@ namespace VirulentVentures
         public void RaisePlayerProgressUpdated()
         {
             OnPlayerProgressUpdated?.Invoke();
+        }
+
+        public void RaiseCombatPaused()
+        {
+            OnCombatPaused?.Invoke();
+        }
+
+        public void RaiseCombatPlayed()
+        {
+            OnCombatPlayed?.Invoke();
+        }
+
+        public void RaiseCombatSpeedChanged(float speed)
+        {
+            OnCombatSpeedChanged?.Invoke(new CombatSpeedData { speed = speed });
         }
     }
 }
