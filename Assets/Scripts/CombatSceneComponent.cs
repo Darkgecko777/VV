@@ -49,12 +49,16 @@ namespace VirulentVentures
             }
             if (!ValidateReferences()) return;
             eventBus.OnCombatEnded += EndCombat;
+            eventBus.OnCombatPaused += () => { isPaused = true; };
+            eventBus.OnCombatPlayed += () => { isPaused = false; };
             StartCoroutine(RunCombat());
         }
 
         void OnDestroy()
         {
             eventBus.OnCombatEnded -= EndCombat;
+            eventBus.OnCombatPaused -= () => { isPaused = true; };
+            eventBus.OnCombatPlayed -= () => { isPaused = false; };
         }
 
         public static UnitAttackState GetUnitAttackState(ICombatUnit unit)
@@ -232,13 +236,12 @@ namespace VirulentVentures
                     ? orderedMonsters.Select(m => m.Unit).ToList()
                     : orderedHeroes.Select(h => h.Unit).ToList();
                 var allyTargets = stats.Type == CharacterType.Hero
-                    ? orderedHeroes.Where(h => h.Unit != stats && h.Unit.Health > 0 && !h.Unit.HasRetreated).Select(h => h.Unit).ToList()
-                    : orderedMonsters.Where(m => m.Unit != stats && m.Unit.Health > 0 && !m.Unit.HasRetreated).Select(m => m.Unit).ToList();
-                bool prioritizeLowHealth = ability.Conditions.Any(c => c.Stat == Stat.Health && c.Target == ConditionTarget.Enemy && c.Comparison == Comparison.Lesser);
+                    ? orderedHeroes.Select(h => h.Unit).ToList() // Include self
+                    : orderedMonsters.Select(m => m.Unit).ToList(); // Include self
                 foreach (var attack in ability.Attacks)
                 {
                     var targetPool = attack.Enemy ? enemyTargets : allyTargets;
-                    if (attack.Melee)
+                    if (attack.TargetingRule.MeleeOnly || attack.Melee)
                     {
                         targetPool = targetPool.Where(t => (stats.Type == CharacterType.Hero
                             ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
@@ -252,16 +255,55 @@ namespace VirulentVentures
                     }
                     if (targetPool.Count > 0)
                     {
-                        int targetCount = attack.Melee ? Mathf.Min(attack.NumberOfTargets, 2) : Mathf.Min(attack.NumberOfTargets, 4);
-                        selectedTargets.AddRange(prioritizeLowHealth
-                            ? targetPool.OrderBy(t => t.Health).Take(targetCount)
-                            : targetPool.OrderBy(t => Random.value).Take(targetCount));
+                        switch (attack.TargetingRule.Type)
+                        {
+                            case TargetingRule.RuleType.LowestHealth:
+                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Health).ToList();
+                                break;
+                            case TargetingRule.RuleType.HighestHealth:
+                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Health).ToList();
+                                break;
+                            case TargetingRule.RuleType.LowestMorale:
+                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Morale).ToList();
+                                break;
+                            case TargetingRule.RuleType.HighestMorale:
+                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Morale).ToList();
+                                break;
+                            case TargetingRule.RuleType.LowestAttack:
+                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Attack).ToList();
+                                break;
+                            case TargetingRule.RuleType.HighestAttack:
+                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Attack).ToList();
+                                break;
+                            case TargetingRule.RuleType.AllAllies:
+                                if (attack.TargetingRule.Target == ConditionTarget.Ally)
+                                    break; // Keep all targets
+                                targetPool = new List<ICombatUnit>(); // Invalid for non-ally
+                                break;
+                            default: // Random
+                                targetPool = targetPool.OrderBy(t => Random.value).ToList();
+                                break;
+                        }
+                        if (attack.TargetingRule.MustBeInfected)
+                            targetPool = targetPool.Where(t => (t as CharacterStats).IsInfected).ToList();
+                        if (attack.TargetingRule.MustNotBeInfected)
+                            targetPool = targetPool.Where(t => !(t as CharacterStats).IsInfected).ToList();
+                        if (targetPool.Count > 0)
+                        {
+                            int targetCount = attack.TargetingRule.Type == TargetingRule.RuleType.AllAllies
+                                ? targetPool.Count
+                                : attack.Melee ? Mathf.Min(attack.NumberOfTargets, 2) : Mathf.Min(attack.NumberOfTargets, 4);
+                            selectedTargets.AddRange(targetPool.Take(targetCount));
+                            string targetMessage = $"Attack {abilityId} targets {string.Join(", ", selectedTargets.Select(t => (t as CharacterStats).Id))}.";
+                            allCombatLogs.Add(targetMessage);
+                            eventBus.RaiseLogMessage(targetMessage, uiConfig.TextColor);
+                        }
                     }
                 }
                 foreach (var effect in ability.Effects)
                 {
                     var targetPool = effect.Enemy ? enemyTargets : allyTargets;
-                    if (effect.Melee)
+                    if (effect.TargetingRule.MeleeOnly || effect.Melee)
                     {
                         targetPool = targetPool.Where(t => (stats.Type == CharacterType.Hero
                             ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
@@ -275,16 +317,68 @@ namespace VirulentVentures
                     }
                     if (targetPool.Count > 0)
                     {
-                        int targetCount = effect.Melee ? Mathf.Min(effect.NumberOfTargets, 2) : Mathf.Min(effect.NumberOfTargets, 4);
-                        selectedTargets.AddRange(prioritizeLowHealth
-                            ? targetPool.OrderBy(t => t.Health).Take(targetCount)
-                            : targetPool.OrderBy(t => Random.value).Take(targetCount));
+                        switch (effect.TargetingRule.Type)
+                        {
+                            case TargetingRule.RuleType.LowestHealth:
+                                if (effect.TargetingRule.Target == ConditionTarget.Ally && stats.Type == CharacterType.Hero)
+                                {
+                                    var lowestHealthHero = partyData.FindLowestHealthAlly();
+                                    if (lowestHealthHero != null && lowestHealthHero.Health > 0 && !lowestHealthHero.HasRetreated)
+                                    {
+                                        selectedTargets.Add(lowestHealthHero);
+                                        string targetMessage = $"{stats.Id} targets {lowestHealthHero.Id} (lowest health: {lowestHealthHero.Health} HP) for {abilityId}.";
+                                        allCombatLogs.Add(targetMessage);
+                                        eventBus.RaiseLogMessage(targetMessage, uiConfig.TextColor);
+                                    }
+                                }
+                                else
+                                {
+                                    targetPool = targetPool.OrderBy(t => (t as CharacterStats).Health).ToList();
+                                    selectedTargets.AddRange(targetPool.Take(1));
+                                }
+                                break;
+                            case TargetingRule.RuleType.HighestHealth:
+                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Health).ToList();
+                                break;
+                            case TargetingRule.RuleType.LowestMorale:
+                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Morale).ToList();
+                                break;
+                            case TargetingRule.RuleType.HighestMorale:
+                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Morale).ToList();
+                                break;
+                            case TargetingRule.RuleType.LowestAttack:
+                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Attack).ToList();
+                                break;
+                            case TargetingRule.RuleType.HighestAttack:
+                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Attack).ToList();
+                                break;
+                            case TargetingRule.RuleType.AllAllies:
+                                if (effect.TargetingRule.Target == ConditionTarget.Ally)
+                                    break; // Keep all targets
+                                targetPool = new List<ICombatUnit>(); // Invalid for non-ally
+                                break;
+                            default: // Random
+                                targetPool = targetPool.OrderBy(t => Random.value).ToList();
+                                break;
+                        }
+                        if (effect.TargetingRule.MustBeInfected)
+                            targetPool = targetPool.Where(t => (t as CharacterStats).IsInfected).ToList();
+                        if (effect.TargetingRule.MustNotBeInfected)
+                            targetPool = targetPool.Where(t => !(t as CharacterStats).IsInfected).ToList();
+                        if (targetPool.Count > 0)
+                        {
+                            int targetCount = effect.TargetingRule.Type == TargetingRule.RuleType.AllAllies
+                                ? targetPool.Count
+                                : effect.Melee ? Mathf.Min(effect.NumberOfTargets, 2) : Mathf.Min(effect.NumberOfTargets, 4);
+                            if (effect.TargetingRule.Type != TargetingRule.RuleType.LowestHealth || effect.TargetingRule.Target != ConditionTarget.Ally)
+                            {
+                                selectedTargets.AddRange(targetPool.Take(targetCount));
+                            }
+                            string targetMessage = $"Effect {abilityId} targets {string.Join(", ", selectedTargets.Select(t => (t as CharacterStats).Id))}.";
+                            allCombatLogs.Add(targetMessage);
+                            eventBus.RaiseLogMessage(targetMessage, uiConfig.TextColor);
+                        }
                     }
-                }
-                // Handle Self-targeting
-                if (ability.Attacks.Any(a => !a.Enemy && !a.Melee) || ability.Effects.Any(e => !e.Enemy && !e.Melee))
-                {
-                    selectedTargets.Add(unit);
                 }
                 selectedTargets = selectedTargets.Distinct().Take(maxTargets).ToList();
             }
@@ -303,7 +397,7 @@ namespace VirulentVentures
                     ? orderedMonsters.Select(m => m.Unit).ToList()
                     : orderedHeroes.Select(h => h.Unit).ToList();
                 AbilitySO basicAttack = AbilityDatabase.GetHeroAbility("BasicAttack") ?? AbilityDatabase.GetMonsterAbility("BasicAttack");
-                if (basicAttack != null && basicAttack.Attacks.Any(a => a.Melee))
+                if (basicAttack != null && (basicAttack.Attacks.Any(a => a.Melee || a.TargetingRule.MeleeOnly)))
                 {
                     enemyTargets = enemyTargets.Where(t => (stats.Type == CharacterType.Hero
                         ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
@@ -400,7 +494,7 @@ namespace VirulentVentures
                             }
                         }
                     }
-                    // Process Effects (apply even if attack dodged)
+                    // Process Effects
                     foreach (var effect in ability.Effects)
                     {
                         if ((effect.Enemy && targetStats.Type == stats.Type) || (!effect.Enemy && targetStats.Type != stats.Type && target != unit))

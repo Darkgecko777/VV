@@ -11,10 +11,11 @@ namespace VirulentVentures
         {
             public int NumberOfTargets; // Clamped: 2 for Melee, 4 for Ranged
             public bool Enemy; // True for enemies, false for allies/self
-            public bool Melee; // True for frontline (PartyPosition 1-2), false for Ranged (1-4)
+            public bool Melee; // True for frontline (CombatPosition 1-2), false for Ranged (1-4)
             public DefenseCheck Defense; // Full, Partial, or No defense calculation
             public bool Dodgeable; // True if target.Evasion applies
             public float PartialDefenseMultiplier; // Multiplier for Partial defense (e.g., 0.025)
+            public TargetingRule TargetingRule; // New field for target selection
         }
 
         [System.Serializable]
@@ -22,18 +23,19 @@ namespace VirulentVentures
         {
             public int NumberOfTargets; // Clamped: 2 for Melee, 4 for Ranged
             public bool Enemy; // True for enemies, false for allies/self
-            public bool Melee; // True for frontline (PartyPosition 1-2), false for Ranged (1-4)
-            public string[] Tags; // Effect IDs (e.g., "TrueStrike:10", "VirusSpread") for CombatEffectsComponent
+            public bool Melee; // True for frontline (CombatPosition 1-2), false for Ranged (1-4)
+            public string[] Tags; // Effect IDs (e.g., "TrueStrike:10", "VirusSpread")
+            public TargetingRule TargetingRule; // New field for target selection
         }
 
         [SerializeField] private string id;
         [SerializeField] private int priority; // Lower value = higher priority
         [SerializeField] private int cooldown; // Actions before reuse
         [SerializeField] private int rank; // Required hero rank (1-3), 0 for monsters
-        [SerializeField] private List<AbilityCondition> conditions; // Existing struct: Target, Stat, Comparison, Threshold, IsPercentage
-        [SerializeField] private List<Attack> attacks; // Array of attack actions
-        [SerializeField] private List<Effect> effects; // Array of effect actions
-        [SerializeField] private int costAmount; // Amount for costType
+        [SerializeField] private List<AbilityCondition> conditions;
+        [SerializeField] private List<Attack> attacks;
+        [SerializeField] private List<Effect> effects;
+        [SerializeField] private int costAmount;
 
         public string Id => id;
         public int Priority => priority;
@@ -75,6 +77,7 @@ namespace VirulentVentures
                 {
                     Debug.LogWarning($"AbilitySO {id}: Partial Defense requires positive PartialDefenseMultiplier.");
                 }
+                attack.TargetingRule.Validate();
             }
             foreach (var effect in effects)
             {
@@ -86,6 +89,7 @@ namespace VirulentVentures
                 {
                     Debug.LogWarning($"AbilitySO {id}: Effect Tags array is empty.");
                 }
+                effect.TargetingRule.Validate();
             }
             foreach (var condition in conditions)
             {
