@@ -25,4 +25,6 @@ MonoBehaviour:
   infectivity: 50
   canBeCultist: 1
   partyPosition: 4
-  abilities: []
+  abilities:
+  - {fileID: 11400000, guid: 84a9cee4f10c2f840a3af76400a8b791, type: 2}
+  rank: 1

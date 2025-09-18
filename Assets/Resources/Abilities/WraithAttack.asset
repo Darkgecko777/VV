@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f3f4502e65a4a8499f567392527fad2, type: 3}
+  m_Name: WraithAttack
+  m_EditorClassIdentifier: 
+  id: Basic Attack
+  priority: 1
+  cooldown: 0
+  rank: 1
+  conditions: []
+  attacks:
+  - NumberOfTargets: 1
+    Enemy: 1
+    Melee: 1
+    Defense: 0
+    Dodgeable: 0
+    PartialDefenseMultiplier: 0
+  effects: []
+  costAmount: 0
