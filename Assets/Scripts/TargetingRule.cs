@@ -49,18 +49,17 @@ namespace VirulentVentures
                 return new List<ICombatUnit>();
             }
 
-            var orderedHeroes = CombatSceneComponent.Instance.heroPositions
+            var orderedHeroes = CombatSceneComponent.Instance.setupComponent.HeroPositions
                 .Where(h => h.Health > 0 && !h.HasRetreated)
                 .OrderBy(h => h.PartyPosition)
                 .Select((h, i) => new { Unit = (ICombatUnit)h, CombatPosition = i + 1 })
                 .ToList();
-            var orderedMonsters = CombatSceneComponent.Instance.monsterPositions
+            var orderedMonsters = CombatSceneComponent.Instance.setupComponent.MonsterPositions
                 .Where(m => m.Health > 0 && !m.HasRetreated)
                 .OrderBy(m => m.PartyPosition)
                 .Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 })
                 .ToList();
 
-            // Apply melee restriction
             if (isMelee || MeleeOnly)
             {
                 targetPool = targetPool.Where(t =>
@@ -68,7 +67,7 @@ namespace VirulentVentures
                     var pos = user.Type == CharacterType.Hero
                         ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
                         : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition;
-                    return pos <= 2;
+                    return pos.HasValue && pos.Value <= 2;
                 }).ToList();
                 if (targetPool.Count == 0)
                 {
@@ -77,7 +76,6 @@ namespace VirulentVentures
                 }
             }
 
-            // Apply infection filters
             if (MustBeInfected)
                 targetPool = targetPool.Where(t => (t as CharacterStats)?.IsInfected == true).ToList();
             if (MustNotBeInfected)
@@ -89,7 +87,6 @@ namespace VirulentVentures
                 return new List<ICombatUnit>();
             }
 
-            // Apply targeting rule
             switch (Type)
             {
                 case RuleType.LowestHealth:
@@ -114,7 +111,7 @@ namespace VirulentVentures
                     if (Target != ConditionTarget.Ally)
                         targetPool = new List<ICombatUnit>();
                     break;
-                default: // Random
+                default:
                     targetPool = targetPool.OrderBy(t => UnityEngine.Random.value).ToList();
                     break;
             }

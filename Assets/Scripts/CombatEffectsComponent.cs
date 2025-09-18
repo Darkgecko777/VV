@@ -31,7 +31,7 @@ namespace VirulentVentures
             string effectType = tagParts[0];
             int value = tagParts.Length > 1 && int.TryParse(tagParts[1], out int parsedValue) ? parsedValue : 0;
             float floatValue = tagParts.Length > 1 && float.TryParse(tagParts[1], out float parsedFloat) ? parsedFloat : 0f;
-            var targetState = CombatSceneComponent.GetUnitAttackState(target);
+            var targetState = CombatSetupComponent.GetUnitAttackState(target);
 
             string effectMessage = string.Empty;
             Color messageColor = uiConfig.TextColor;
@@ -126,6 +126,7 @@ namespace VirulentVentures
 
             if (!string.IsNullOrEmpty(effectMessage))
             {
+                CombatSceneComponent.Instance.setupComponent.AllCombatLogs.Add(effectMessage);
                 eventBus.RaiseLogMessage(effectMessage, messageColor);
             }
         }
@@ -133,7 +134,7 @@ namespace VirulentVentures
         public void ApplyAttackDamage(CharacterStats user, CharacterStats target, AbilitySO.Attack attack, string abilityId)
         {
             if (target == null) return;
-            var targetState = CombatSceneComponent.GetUnitAttackState(target);
+            var targetState = CombatSetupComponent.GetUnitAttackState(target);
             int originalDefense = target.Defense;
             int currentEvasion = target.Evasion;
             if (targetState != null)
@@ -149,14 +150,14 @@ namespace VirulentVentures
                 if (UnityEngine.Random.value <= dodgeChance)
                 {
                     string dodgeMessage = $"{target.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>";
-                    CombatSceneComponent.Instance.AllCombatLogs.Add(dodgeMessage);
+                    CombatSceneComponent.Instance.setupComponent.AllCombatLogs.Add(dodgeMessage);
                     eventBus.RaiseLogMessage(dodgeMessage, uiConfig.TextColor);
                     attackDodged = true;
                 }
                 else
                 {
                     string failDodgeMessage = $"{target.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>";
-                    CombatSceneComponent.Instance.AllCombatLogs.Add(failDodgeMessage);
+                    CombatSceneComponent.Instance.setupComponent.AllCombatLogs.Add(failDodgeMessage);
                     eventBus.RaiseLogMessage(failDodgeMessage, uiConfig.TextColor);
                 }
             }
@@ -174,10 +175,10 @@ namespace VirulentVentures
                 {
                     target.Health -= damage;
                     string damageMessage = $"{user.Id} hits {target.Id} for {damage} damage with {abilityId} <color=#FFFF00>{damageFormula}</color>";
-                    CombatSceneComponent.Instance.AllCombatLogs.Add(damageMessage);
+                    CombatSceneComponent.Instance.setupComponent.AllCombatLogs.Add(damageMessage);
                     eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
                     eventBus.RaiseUnitDamaged(target, damageMessage);
-                    CombatSceneComponent.Instance.UpdateUnit(target, damageMessage);
+                    CombatSceneComponent.Instance.setupComponent.UpdateUnit(target, damageMessage);
                 }
             }
             target.Defense = originalDefense;

@@ -20,12 +20,12 @@ namespace VirulentVentures
 
         void Start()
         {
-            eventBus.OnCombatEnded += () => EndCombat(CombatSceneComponent.Instance.expeditionManager, CombatSceneComponent.Instance.NoActiveHeroes());
+            eventBus.OnCombatEnded += () => EndCombat(CombatSceneComponent.Instance.ExpeditionManager, CombatSceneComponent.Instance.setupComponent.HeroPositions.Count == 0);
         }
 
         void OnDestroy()
         {
-            eventBus.OnCombatEnded -= () => EndCombat(CombatSceneComponent.Instance.expeditionManager, CombatSceneComponent.Instance.NoActiveHeroes());
+            eventBus.OnCombatEnded -= () => EndCombat(CombatSceneComponent.Instance.ExpeditionManager, CombatSceneComponent.Instance.setupComponent.HeroPositions.Count == 0);
         }
 
         public bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
@@ -51,14 +51,14 @@ namespace VirulentVentures
         {
             roundNumber++;
             string roundMessage = $"Round {roundNumber} begins!";
-            CombatSceneComponent.Instance.AllCombatLogs.Add(roundMessage);
+            CombatSceneComponent.Instance.setupComponent.AllCombatLogs.Add(roundMessage);
             eventBus.RaiseLogMessage(roundMessage, CombatSceneComponent.Instance.UIConfig.TextColor);
         }
 
         public void EndCombat(ExpeditionManager expeditionManager, bool partyDead)
         {
             string endMessage = "Combat ends!";
-            CombatSceneComponent.Instance.AllCombatLogs.Add(endMessage);
+            CombatSceneComponent.Instance.setupComponent.AllCombatLogs.Add(endMessage);
             eventBus.RaiseLogMessage(endMessage, CombatSceneComponent.Instance.UIConfig.TextColor);
             expeditionManager.SaveProgress();
             if (!partyDead)
@@ -68,7 +68,7 @@ namespace VirulentVentures
                 {
                     expedition.NodeData[expedition.CurrentNodeIndex].Completed = true;
                     string victoryMessage = "Party victorious!";
-                    CombatSceneComponent.Instance.AllCombatLogs.Add(victoryMessage);
+                    CombatSceneComponent.Instance.setupComponent.AllCombatLogs.Add(victoryMessage);
                     eventBus.RaiseLogMessage(victoryMessage, Color.green);
                     expeditionManager.TransitionToExpeditionScene();
                 }
@@ -80,7 +80,7 @@ namespace VirulentVentures
             else
             {
                 string defeatMessage = "Party defeated!";
-                CombatSceneComponent.Instance.AllCombatLogs.Add(defeatMessage);
+                CombatSceneComponent.Instance.setupComponent.AllCombatLogs.Add(defeatMessage);
                 eventBus.RaiseLogMessage(defeatMessage, Color.red);
                 expeditionManager.TransitionToExpeditionScene();
             }

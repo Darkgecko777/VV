@@ -349,9 +349,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 621176281}
-  - component: {fileID: 621176282}
   - component: {fileID: 621176284}
+  - component: {fileID: 621176285}
+  - component: {fileID: 621176286}
   - component: {fileID: 621176283}
+  - component: {fileID: 621176282}
   m_Layer: 0
   m_Name: CombatSceneComponent
   m_TagString: Untagged
@@ -422,7 +424,41 @@ MonoBehaviour:
   effectsComponent: {fileID: 621176282}
   combatCamera: {fileID: 519420031}
   turnComponent: {fileID: 621176283}
-  allCombatLogs: []
+  setupComponent: {fileID: 621176285}
+  loopComponent: {fileID: 621176286}
+--- !u!114 &621176285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 621176279}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb03c1b88c589d04d80cfe555f1edb84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
+  AllCombatLogs: []
+--- !u!114 &621176286
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 621176279}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c04cfef7962ddb24e8f832c69dc41e33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  turnComponent: {fileID: 621176283}
+  setupComponent: {fileID: 621176285}
+  effectsComponent: {fileID: 621176282}
+  partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
 --- !u!1 &1688374977
 GameObject:
   m_ObjectHideFlags: 0
