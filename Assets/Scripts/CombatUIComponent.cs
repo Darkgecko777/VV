@@ -27,7 +27,7 @@ namespace VirulentVentures
         private Button pauseButton;
         private Button playButton;
         private float speedIncrement = 0.5f;
-        private bool isPaused; // Local pause state
+        private bool isPaused;
 
         void Awake()
         {
@@ -43,6 +43,7 @@ namespace VirulentVentures
             eventBus.OnCombatPaused += HandleCombatPaused;
             eventBus.OnCombatPlayed += HandleCombatPlayed;
             eventBus.OnCombatSpeedChanged += HandleCombatSpeedChanged;
+            eventBus.OnAbilitySelected += HandleAbilitySelected;
             SetupBackground();
         }
 
@@ -58,26 +59,17 @@ namespace VirulentVentures
             eventBus.OnCombatPaused -= HandleCombatPaused;
             eventBus.OnCombatPlayed -= HandleCombatPlayed;
             eventBus.OnCombatSpeedChanged -= HandleCombatSpeedChanged;
+            eventBus.OnAbilitySelected -= HandleAbilitySelected;
             if (backgroundGameObject != null)
-            {
                 Destroy(backgroundGameObject);
-            }
             if (speedPlusButton != null)
-            {
                 speedPlusButton.clicked -= IncreaseSpeed;
-            }
             if (speedMinusButton != null)
-            {
                 speedMinusButton.clicked -= DecreaseSpeed;
-            }
             if (pauseButton != null)
-            {
                 pauseButton.clicked -= PauseCombat;
-            }
             if (playButton != null)
-            {
                 playButton.clicked -= PlayCombat;
-            }
         }
 
         private void SetupUI()
@@ -133,23 +125,23 @@ namespace VirulentVentures
         private void IncreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed + speedIncrement;
-            eventBus.RaiseCombatSpeedChanged(newSpeed); // Trigger event instead of direct call
+            eventBus.RaiseCombatSpeedChanged(newSpeed);
         }
 
         private void DecreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed - speedIncrement;
-            eventBus.RaiseCombatSpeedChanged(newSpeed); // Trigger event instead of direct call
+            eventBus.RaiseCombatSpeedChanged(newSpeed);
         }
 
         private void PauseCombat()
         {
-            eventBus.RaiseCombatPaused(); // Trigger event instead of direct call
+            eventBus.RaiseCombatPaused();
         }
 
         private void PlayCombat()
         {
-            eventBus.RaiseCombatPlayed(); // Trigger event instead of direct call
+            eventBus.RaiseCombatPlayed();
         }
 
         private void HandleCombatPaused()
@@ -172,12 +164,20 @@ namespace VirulentVentures
             UpdateButtonStates();
         }
 
+        private void HandleAbilitySelected(EventBusSO.AttackData data)
+        {
+            if (unitPanels.TryGetValue(data.attacker, out VisualElement panel))
+            {
+                StartCoroutine(FlashPanel(panel, new Color(0.5f, 0.5f, 1f), 0.3f));
+            }
+        }
+
         private void UpdateButtonStates()
         {
             pauseButton.SetEnabled(!isPaused);
             playButton.SetEnabled(isPaused);
             speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
-            speedMinusButton.SetEnabled(combatConfig.CombatSpeed > combatConfig.MinCombatSpeed); // Use > for clarity
+            speedMinusButton.SetEnabled(combatConfig.CombatSpeed > combatConfig.MinCombatSpeed);
         }
 
         private void SetupBackground()
@@ -203,17 +203,11 @@ namespace VirulentVentures
             label.enableRichText = true;
             label.style.color = logData.color;
             if (logData.message.Contains("[Taunt]") || logData.message.Contains("[Thorns]"))
-            {
-                label.style.color = new Color(1f, 1f, 0f); // Yellow #FFFF00
-            }
+                label.style.color = new Color(1f, 1f, 0f);
             else if (logData.message.Contains("[Heal"))
-            {
-                label.style.color = new Color(0f, 1f, 0f); // Green #00FF00
-            }
+                label.style.color = new Color(0f, 1f, 0f);
             else if (logData.message.Contains("[Debuff"))
-            {
-                label.style.color = new Color(1f, 0f, 0f); // Red #FF0000
-            }
+                label.style.color = new Color(1f, 0f, 0f);
             logContent.Add(label);
             logMessages.Add(label);
             var scrollView = logContent.parent as ScrollView;
@@ -225,9 +219,7 @@ namespace VirulentVentures
                     float scrollPosition = scrollView.verticalScroller.value;
                     float maxScroll = scrollView.verticalScroller.highValue;
                     if (scrollPosition >= maxScroll - scrollThreshold || scrollPosition == 0)
-                    {
                         scrollView.scrollOffset = new Vector2(0, maxScroll);
-                    }
                 }).ExecuteLater(20);
             }
             else
@@ -378,9 +370,7 @@ namespace VirulentVentures
                     var fill = healthBar.Q<VisualElement>(className: "health-fill");
                     var label = healthBar.Q<Label>(className: "health-label");
                     if (fill != null && label != null)
-                    {
                         UpdateHealthBar(fill, label, data.displayStats.health, data.displayStats.maxHealth);
-                    }
                 }
                 if (data.displayStats.isHero)
                 {
@@ -390,9 +380,7 @@ namespace VirulentVentures
                         var fill = moraleBar.Q<VisualElement>(className: "morale-fill");
                         var label = moraleBar.Q<Label>(className: "morale-label");
                         if (fill != null && label != null)
-                        {
                             UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale);
-                        }
                     }
                     if (data.displayStats.isInfected && !infectedLabels.ContainsKey(data.unit))
                     {
@@ -415,9 +403,7 @@ namespace VirulentVentures
                     statLabels.eva.text = $"E: {data.displayStats.evasion}";
                     statLabels.rank.text = $"RANK: {data.displayStats.rank}";
                     if (data.displayStats.isHero && statLabels.morale != null)
-                    {
                         statLabels.morale.text = $"Morale: {data.displayStats.morale}/{data.displayStats.maxMorale}";
-                    }
                 }
             }
         }
@@ -434,9 +420,7 @@ namespace VirulentVentures
                 }
             }
             if (unitPanels.TryGetValue(data.attacker, out VisualElement panel) && (data.abilityId.Contains("Taunt") || data.abilityId.Contains("Thorns")))
-            {
                 StartCoroutine(FlashPanel(panel, new Color(1f, 1f, 0f), 0.5f));
-            }
         }
 
         private void HandleUnitDamaged(EventBusSO.DamagePopupData data)
@@ -445,9 +429,7 @@ namespace VirulentVentures
             {
                 var animator = targetGo.GetComponent<SpriteAnimation>();
                 if (animator != null)
-                {
                     animator.Jiggle(combatConfig.CombatSpeed);
-                }
             }
         }
 
@@ -457,14 +439,10 @@ namespace VirulentVentures
             {
                 panel.style.opacity = 0.5f;
                 if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && stats.Morale <= stats.MaxMorale * 0.2f)
-                {
                     panel.AddToClassList("low-morale");
-                }
             }
             if (unitGameObjects.TryGetValue(unit, out GameObject go))
-            {
                 StartCoroutine(DeactivateAfterJiggle(go));
-            }
         }
 
         private void HandleUnitRetreated(ICombatUnit unit)
@@ -473,14 +451,10 @@ namespace VirulentVentures
             {
                 panel.style.opacity = 0.5f;
                 if (unit is CharacterStats stats && stats.Type == CharacterType.Hero)
-                {
                     panel.AddToClassList("retreat-slide");
-                }
             }
             if (unitGameObjects.TryGetValue(unit, out GameObject go))
-            {
                 StartCoroutine(DeactivateAfterFade(go));
-            }
         }
 
         private IEnumerator DeactivateAfterJiggle(GameObject go)
@@ -488,9 +462,7 @@ namespace VirulentVentures
             yield return new WaitUntil(() => !isPaused);
             yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
             if (go != null)
-            {
                 go.SetActive(false);
-            }
         }
 
         private IEnumerator DeactivateAfterFade(GameObject go)
@@ -498,9 +470,7 @@ namespace VirulentVentures
             yield return new WaitUntil(() => !isPaused);
             yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
             if (go != null)
-            {
                 go.SetActive(false);
-            }
         }
 
         private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)

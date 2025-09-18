@@ -9,22 +9,25 @@ namespace VirulentVentures
     {
         [SerializeField] private CombatConfig combatConfig;
         [SerializeField] private VisualConfig visualConfig;
-        [SerializeField] private UIConfig uiConfig;
+        [SerializeField] public UIConfig uiConfig;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private CombatEffectsComponent effectsComponent;
         [SerializeField] private Camera combatCamera;
+        [SerializeField] private CombatTurnComponent turnComponent;
         private ExpeditionManager expeditionManager;
         private bool isEndingCombat;
         private List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
-        private List<CharacterStats> heroPositions = new List<CharacterStats>();
-        private List<CharacterStats> monsterPositions = new List<CharacterStats>();
+        public List<CharacterStats> heroPositions = new List<CharacterStats>();
+        public List<CharacterStats> monsterPositions = new List<CharacterStats>();
         private bool isCombatActive;
         private bool isPaused;
-        private int roundNumber;
         private List<UnitAttackState> unitAttackStates = new List<UnitAttackState>();
-        private List<string> allCombatLogs = new List<string>();
+        public List<string> allCombatLogs = new List<string>();
         public static CombatSceneComponent Instance { get; private set; }
         public bool IsPaused => isPaused;
+        public List<string> AllCombatLogs => allCombatLogs;
+        public EventBusSO EventBus => eventBus;
+        public UIConfig UIConfig => uiConfig;
 
         void Awake()
         {
@@ -35,7 +38,6 @@ namespace VirulentVentures
             unitAttackStates.Clear();
             isCombatActive = false;
             isPaused = false;
-            roundNumber = 0;
             allCombatLogs.Clear();
         }
 
@@ -83,339 +85,83 @@ namespace VirulentVentures
             eventBus.RaiseCombatPlayed();
         }
 
-        private string SelectAbility(CharacterStats unit, PartyData partyData, List<ICombatUnit> targets)
-        {
-            var state = unitAttackStates.Find(s => s.Unit == unit);
-            if (state == null)
-            {
-                Debug.LogWarning($"No UnitAttackState for {unit.Id}. Falling back to BasicAttack.");
-                return "BasicAttack";
-            }
-            if (unit.Abilities == null || unit.Abilities.Length == 0)
-            {
-                Debug.LogWarning($"No abilities assigned to {unit.Id}. Falling back to BasicAttack.");
-                return "BasicAttack";
-            }
-            AbilitySO selectedAbility = null;
-            int lowestPriority = int.MaxValue;
-            foreach (var abilityObj in unit.Abilities)
-            {
-                if (!(abilityObj is AbilitySO ability))
-                {
-                    Debug.LogWarning($"Invalid AbilitySO for {unit.Id}: {abilityObj?.name}. Skipping.");
-                    continue;
-                }
-                // Check cooldown
-                if (state.AbilityCooldowns.TryGetValue(ability.Id, out int cd) && cd > 0)
-                {
-                    Debug.Log($"Ability {ability.Id} for {unit.Id} on cooldown: {cd} actions remaining.");
-                    continue;
-                }
-                // Check rank requirement
-                if (ability.Rank > 0 && unit.Rank < ability.Rank)
-                {
-                    string failMessage = $"Ability {ability.Id} requires Rank {ability.Rank}, unit has Rank {unit.Rank}.";
-                    allCombatLogs.Add(failMessage);
-                    eventBus.RaiseLogMessage(failMessage, uiConfig.TextColor);
-                    continue;
-                }
-                // Evaluate conditions
-                bool conditionsMet = true;
-                foreach (var condition in ability.Conditions)
-                {
-                    CharacterStats targetUnit = null;
-                    float statValue = 0;
-                    if (condition.Target == ConditionTarget.User)
-                        targetUnit = unit;
-                    else if (condition.Target == ConditionTarget.Enemy)
-                        targetUnit = targets.FirstOrDefault(t => t is CharacterStats cs && cs.Health > 0 && !cs.HasRetreated) as CharacterStats;
-                    else if (condition.Target == ConditionTarget.Ally)
-                        targetUnit = partyData.HeroStats.FirstOrDefault(h => h != unit && h.Health > 0 && !h.HasRetreated);
-                    if (targetUnit == null)
-                    {
-                        string failMessage = $"No valid {condition.Target} target for {ability.Id}.";
-                        allCombatLogs.Add(failMessage);
-                        eventBus.RaiseLogMessage(failMessage, uiConfig.TextColor);
-                        conditionsMet = false;
-                        break;
-                    }
-                    switch (condition.Stat)
-                    {
-                        case Stat.Health: statValue = condition.IsPercentage ? targetUnit.Health / (float)targetUnit.MaxHealth : targetUnit.Health; break;
-                        case Stat.Morale: statValue = condition.IsPercentage ? targetUnit.Morale / (float)targetUnit.MaxMorale : targetUnit.Morale; break;
-                        case Stat.Speed: statValue = targetUnit.Speed; break;
-                        case Stat.Attack: statValue = targetUnit.Attack; break;
-                        case Stat.Defense: statValue = targetUnit.Defense; break;
-                        case Stat.Rank: statValue = targetUnit.Rank; break;
-                        case Stat.MaxHealth: statValue = targetUnit.MaxHealth; break;
-                        case Stat.MaxMorale: statValue = targetUnit.MaxMorale; break;
-                        case Stat.Infectivity: statValue = targetUnit.Infectivity; break;
-                        case Stat.PartyPosition: statValue = targetUnit.PartyPosition; break;
-                        case Stat.IsInfected: statValue = targetUnit.IsInfected ? 1 : 0; break;
-                    }
-                    bool conditionResult = condition.Comparison == Comparison.Greater ? statValue > condition.Threshold :
-                                          condition.Comparison == Comparison.Lesser ? statValue < condition.Threshold :
-                                          Mathf.Abs(statValue - condition.Threshold) < 0.001f;
-                    if (!conditionResult)
-                    {
-                        string failMessage = $"Condition failed for {ability.Id}: {condition.Stat} {condition.Comparison} {condition.Threshold} (Value: {statValue}).";
-                        allCombatLogs.Add(failMessage);
-                        eventBus.RaiseLogMessage(failMessage, uiConfig.TextColor);
-                        conditionsMet = false;
-                        break;
-                    }
-                }
-                if (conditionsMet && ability.Priority < lowestPriority)
-                {
-                    selectedAbility = ability;
-                    lowestPriority = ability.Priority;
-                }
-            }
-            string selectedId = selectedAbility != null ? selectedAbility.Id : "BasicAttack";
-            Debug.Log($"Selected ability for {unit.Id}: {selectedId}");
-            if (selectedAbility != null && selectedAbility.Cooldown > 0)
-            {
-                state.AbilityCooldowns[selectedId] = selectedAbility.Cooldown;
-                Debug.Log($"Set cooldown for {selectedId}: {selectedAbility.Cooldown} actions.");
-            }
-            return selectedId;
-        }
-
-        private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
-        {
-            if (unit is not CharacterStats stats) return false;
-            if (state.SkipNextAttack)
-            {
-                state.SkipNextAttack = false;
-                return false;
-            }
-            if (stats.Speed >= combatConfig.SpeedTwoAttacksThreshold)
-                return state.AttacksThisRound < 1;
-            else if (stats.Speed >= combatConfig.SpeedThreePerTwoThreshold)
-                return state.RoundCounter % 2 == 1 ? state.AttacksThisRound < 2 : state.AttacksThisRound < 1;
-            else if (stats.Speed >= combatConfig.SpeedOneAttackThreshold)
-                return state.AttacksThisRound < 1;
-            else if (stats.Speed >= combatConfig.SpeedOnePerTwoThreshold)
-                return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
-            return false;
-        }
-
         private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> targets)
         {
             if (unit is not CharacterStats stats) yield break;
-            string abilityId = SelectAbility(stats, partyData, targets);
+            var state = unitAttackStates.Find(s => s.Unit == unit);
+            if (state == null) yield break;
+            string abilityId = AbilityDatabase.SelectAbility(stats, partyData, targets, state);
             AbilitySO ability = stats.Abilities.FirstOrDefault(a => a is AbilitySO so && so.Id == abilityId) as AbilitySO;
             string abilityMessage = $"{stats.Id} uses {abilityId}!";
             allCombatLogs.Add(abilityMessage);
             eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
             eventBus.RaiseUnitAttacking(unit, null, abilityId);
+            eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = unit, target = null, abilityId = abilityId });
+
             List<ICombatUnit> selectedTargets = new List<ICombatUnit>();
             if (ability != null)
             {
-                // Determine max targets
                 int maxTargets = 1;
                 foreach (var attack in ability.Attacks)
-                {
                     maxTargets = Mathf.Max(maxTargets, attack.Melee ? Mathf.Min(attack.NumberOfTargets, 2) : Mathf.Min(attack.NumberOfTargets, 4));
-                }
                 foreach (var effect in ability.Effects)
-                {
                     maxTargets = Mathf.Max(maxTargets, effect.Melee ? Mathf.Min(effect.NumberOfTargets, 2) : Mathf.Min(effect.NumberOfTargets, 4));
-                }
-                // Assign CombatPosition to living units
+
                 var orderedHeroes = heroPositions.Where(h => h.Health > 0 && !h.HasRetreated)
-                    .OrderBy(h => h.PartyPosition)
-                    .Select((h, i) => new { Unit = (ICombatUnit)h, CombatPosition = i + 1 })
-                    .ToList();
+                    .OrderBy(h => h.PartyPosition).Select((h, i) => new { Unit = (ICombatUnit)h, CombatPosition = i + 1 }).ToList();
                 var orderedMonsters = monsterPositions.Where(m => m.Health > 0 && !m.HasRetreated)
-                    .OrderBy(m => m.PartyPosition)
-                    .Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 })
-                    .ToList();
-                // Select targets based on Attacks and Effects
-                var enemyTargets = stats.Type == CharacterType.Hero
-                    ? orderedMonsters.Select(m => m.Unit).ToList()
-                    : orderedHeroes.Select(h => h.Unit).ToList();
-                var allyTargets = stats.Type == CharacterType.Hero
-                    ? orderedHeroes.Select(h => h.Unit).ToList() // Include self
-                    : orderedMonsters.Select(m => m.Unit).ToList(); // Include self
+                    .OrderBy(m => m.PartyPosition).Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 }).ToList();
+
+                var enemyTargets = stats.Type == CharacterType.Hero ? orderedMonsters.Select(m => m.Unit).ToList() : orderedHeroes.Select(h => h.Unit).ToList();
+                var allyTargets = stats.Type == CharacterType.Hero ? orderedHeroes.Select(h => h.Unit).ToList() : orderedMonsters.Select(m => m.Unit).ToList();
+
                 foreach (var attack in ability.Attacks)
                 {
-                    var targetPool = attack.Enemy ? enemyTargets : allyTargets;
-                    if (attack.TargetingRule.MeleeOnly || attack.Melee)
+                    selectedTargets.AddRange(attack.TargetingRule.SelectTargets(stats, attack.Enemy ? enemyTargets : allyTargets, partyData, attack.Melee));
+                    if (selectedTargets.Any())
                     {
-                        targetPool = targetPool.Where(t => (stats.Type == CharacterType.Hero
-                            ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
-                            : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition) <= 2).ToList();
-                        if (targetPool.Count == 0 && attack.Enemy)
-                        {
-                            string noTargetMessage = $"No frontline targets (CombatPosition 1-2) for melee attack {abilityId}.";
-                            allCombatLogs.Add(noTargetMessage);
-                            eventBus.RaiseLogMessage(noTargetMessage, uiConfig.TextColor);
-                        }
-                    }
-                    if (targetPool.Count > 0)
-                    {
-                        switch (attack.TargetingRule.Type)
-                        {
-                            case TargetingRule.RuleType.LowestHealth:
-                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Health).ToList();
-                                break;
-                            case TargetingRule.RuleType.HighestHealth:
-                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Health).ToList();
-                                break;
-                            case TargetingRule.RuleType.LowestMorale:
-                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Morale).ToList();
-                                break;
-                            case TargetingRule.RuleType.HighestMorale:
-                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Morale).ToList();
-                                break;
-                            case TargetingRule.RuleType.LowestAttack:
-                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Attack).ToList();
-                                break;
-                            case TargetingRule.RuleType.HighestAttack:
-                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Attack).ToList();
-                                break;
-                            case TargetingRule.RuleType.AllAllies:
-                                if (attack.TargetingRule.Target == ConditionTarget.Ally)
-                                    break; // Keep all targets
-                                targetPool = new List<ICombatUnit>(); // Invalid for non-ally
-                                break;
-                            default: // Random
-                                targetPool = targetPool.OrderBy(t => Random.value).ToList();
-                                break;
-                        }
-                        if (attack.TargetingRule.MustBeInfected)
-                            targetPool = targetPool.Where(t => (t as CharacterStats).IsInfected).ToList();
-                        if (attack.TargetingRule.MustNotBeInfected)
-                            targetPool = targetPool.Where(t => !(t as CharacterStats).IsInfected).ToList();
-                        if (targetPool.Count > 0)
-                        {
-                            int targetCount = attack.TargetingRule.Type == TargetingRule.RuleType.AllAllies
-                                ? targetPool.Count
-                                : attack.Melee ? Mathf.Min(attack.NumberOfTargets, 2) : Mathf.Min(attack.NumberOfTargets, 4);
-                            selectedTargets.AddRange(targetPool.Take(targetCount));
-                            string targetMessage = $"Attack {abilityId} targets {string.Join(", ", selectedTargets.Select(t => (t as CharacterStats).Id))}.";
-                            allCombatLogs.Add(targetMessage);
-                            eventBus.RaiseLogMessage(targetMessage, uiConfig.TextColor);
-                        }
+                        string targetMessage = $"Attack {abilityId} targets {string.Join(", ", selectedTargets.Select(t => (t as CharacterStats).Id))}.";
+                        allCombatLogs.Add(targetMessage);
+                        eventBus.RaiseLogMessage(targetMessage, uiConfig.TextColor);
                     }
                 }
+
                 foreach (var effect in ability.Effects)
                 {
-                    var targetPool = effect.Enemy ? enemyTargets : allyTargets;
-                    if (effect.TargetingRule.MeleeOnly || effect.Melee)
+                    var newTargets = effect.TargetingRule.SelectTargets(stats, effect.Enemy ? enemyTargets : allyTargets, partyData, effect.Melee);
+                    if (effect.TargetingRule.Type == TargetingRule.RuleType.LowestHealth && effect.TargetingRule.Target == ConditionTarget.Ally && stats.Type == CharacterType.Hero)
                     {
-                        targetPool = targetPool.Where(t => (stats.Type == CharacterType.Hero
-                            ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
-                            : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition) <= 2).ToList();
-                        if (targetPool.Count == 0 && effect.Enemy)
-                        {
-                            string noTargetMessage = $"No frontline targets (CombatPosition 1-2) for melee effect {abilityId}.";
-                            allCombatLogs.Add(noTargetMessage);
-                            eventBus.RaiseLogMessage(noTargetMessage, uiConfig.TextColor);
-                        }
+                        var lowestHealthHero = partyData.FindLowestHealthAlly();
+                        if (lowestHealthHero != null && lowestHealthHero.Health > 0 && !lowestHealthHero.HasRetreated)
+                            newTargets = new List<ICombatUnit> { lowestHealthHero };
                     }
-                    if (targetPool.Count > 0)
+                    selectedTargets.AddRange(newTargets);
+                    if (newTargets.Any())
                     {
-                        switch (effect.TargetingRule.Type)
-                        {
-                            case TargetingRule.RuleType.LowestHealth:
-                                if (effect.TargetingRule.Target == ConditionTarget.Ally && stats.Type == CharacterType.Hero)
-                                {
-                                    var lowestHealthHero = partyData.FindLowestHealthAlly();
-                                    if (lowestHealthHero != null && lowestHealthHero.Health > 0 && !lowestHealthHero.HasRetreated)
-                                    {
-                                        selectedTargets.Add(lowestHealthHero);
-                                        string targetMessage = $"{stats.Id} targets {lowestHealthHero.Id} (lowest health: {lowestHealthHero.Health} HP) for {abilityId}.";
-                                        allCombatLogs.Add(targetMessage);
-                                        eventBus.RaiseLogMessage(targetMessage, uiConfig.TextColor);
-                                    }
-                                }
-                                else
-                                {
-                                    targetPool = targetPool.OrderBy(t => (t as CharacterStats).Health).ToList();
-                                    selectedTargets.AddRange(targetPool.Take(1));
-                                }
-                                break;
-                            case TargetingRule.RuleType.HighestHealth:
-                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Health).ToList();
-                                break;
-                            case TargetingRule.RuleType.LowestMorale:
-                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Morale).ToList();
-                                break;
-                            case TargetingRule.RuleType.HighestMorale:
-                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Morale).ToList();
-                                break;
-                            case TargetingRule.RuleType.LowestAttack:
-                                targetPool = targetPool.OrderBy(t => (t as CharacterStats).Attack).ToList();
-                                break;
-                            case TargetingRule.RuleType.HighestAttack:
-                                targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Attack).ToList();
-                                break;
-                            case TargetingRule.RuleType.AllAllies:
-                                if (effect.TargetingRule.Target == ConditionTarget.Ally)
-                                    break; // Keep all targets
-                                targetPool = new List<ICombatUnit>(); // Invalid for non-ally
-                                break;
-                            default: // Random
-                                targetPool = targetPool.OrderBy(t => Random.value).ToList();
-                                break;
-                        }
-                        if (effect.TargetingRule.MustBeInfected)
-                            targetPool = targetPool.Where(t => (t as CharacterStats).IsInfected).ToList();
-                        if (effect.TargetingRule.MustNotBeInfected)
-                            targetPool = targetPool.Where(t => !(t as CharacterStats).IsInfected).ToList();
-                        if (targetPool.Count > 0)
-                        {
-                            int targetCount = effect.TargetingRule.Type == TargetingRule.RuleType.AllAllies
-                                ? targetPool.Count
-                                : effect.Melee ? Mathf.Min(effect.NumberOfTargets, 2) : Mathf.Min(effect.NumberOfTargets, 4);
-                            if (effect.TargetingRule.Type != TargetingRule.RuleType.LowestHealth || effect.TargetingRule.Target != ConditionTarget.Ally)
-                            {
-                                selectedTargets.AddRange(targetPool.Take(targetCount));
-                            }
-                            string targetMessage = $"Effect {abilityId} targets {string.Join(", ", selectedTargets.Select(t => (t as CharacterStats).Id))}.";
-                            allCombatLogs.Add(targetMessage);
-                            eventBus.RaiseLogMessage(targetMessage, uiConfig.TextColor);
-                        }
+                        string targetMessage = $"Effect {abilityId} targets {string.Join(", ", newTargets.Select(t => (t as CharacterStats).Id))}.";
+                        allCombatLogs.Add(targetMessage);
+                        eventBus.RaiseLogMessage(targetMessage, uiConfig.TextColor);
                     }
                 }
+
                 selectedTargets = selectedTargets.Distinct().Take(maxTargets).ToList();
             }
             else
             {
-                // Fallback to BasicAttack
                 var orderedHeroes = heroPositions.Where(h => h.Health > 0 && !h.HasRetreated)
-                    .OrderBy(h => h.PartyPosition)
-                    .Select((h, i) => new { Unit = (ICombatUnit)h, CombatPosition = i + 1 })
-                    .ToList();
+                    .OrderBy(h => h.PartyPosition).Select((h, i) => new { Unit = (ICombatUnit)h, CombatPosition = i + 1 }).ToList();
                 var orderedMonsters = monsterPositions.Where(m => m.Health > 0 && !m.HasRetreated)
-                    .OrderBy(m => m.PartyPosition)
-                    .Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 })
-                    .ToList();
-                var enemyTargets = stats.Type == CharacterType.Hero
-                    ? orderedMonsters.Select(m => m.Unit).ToList()
-                    : orderedHeroes.Select(h => h.Unit).ToList();
+                    .OrderBy(m => m.PartyPosition).Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 }).ToList();
+                var enemyTargets = stats.Type == CharacterType.Hero ? orderedMonsters.Select(m => m.Unit).ToList() : orderedHeroes.Select(h => h.Unit).ToList();
                 AbilitySO basicAttack = AbilityDatabase.GetHeroAbility("BasicAttack") ?? AbilityDatabase.GetMonsterAbility("BasicAttack");
                 if (basicAttack != null && (basicAttack.Attacks.Any(a => a.Melee || a.TargetingRule.MeleeOnly)))
-                {
                     enemyTargets = enemyTargets.Where(t => (stats.Type == CharacterType.Hero
                         ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
                         : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition) <= 2).ToList();
-                    if (enemyTargets.Count == 0)
-                    {
-                        string noTargetMessage = $"No frontline targets (CombatPosition 1-2) for melee BasicAttack.";
-                        allCombatLogs.Add(noTargetMessage);
-                        eventBus.RaiseLogMessage(noTargetMessage, uiConfig.TextColor);
-                    }
-                }
-                ICombatUnit selectedTarget = GetRandomAliveTarget(enemyTargets);
-                if (selectedTarget != null)
-                {
-                    selectedTargets.Add(selectedTarget);
-                }
+                selectedTargets = basicAttack != null ? basicAttack.Attacks.First().TargetingRule.SelectTargets(stats, enemyTargets, partyData, true) : new List<ICombatUnit>();
             }
-            if (selectedTargets.Count == 0)
+
+            if (!selectedTargets.Any())
             {
                 string message = $"{stats.Id} finds no valid targets for {abilityId}! <color=#FFFF00>[No Targets]</color>";
                 allCombatLogs.Add(message);
@@ -427,18 +173,21 @@ namespace VirulentVentures
                 }
                 yield break;
             }
-            var state = unitAttackStates.Find(s => s.Unit == unit);
+
+            var unitState = unitAttackStates.Find(s => s.Unit == unit);
             int originalAttack = stats.Attack;
             int originalSpeed = stats.Speed;
             int originalEvasion = stats.Evasion;
-            if (state != null)
+            if (unitState != null)
             {
-                if (state.TempStats.TryGetValue("Attack", out var attackMod)) stats.Attack += attackMod.value;
-                if (state.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
-                if (state.TempStats.TryGetValue("Evasion", out var evaMod)) stats.Evasion += evaMod.value;
+                if (unitState.TempStats.TryGetValue("Attack", out var attackMod)) stats.Attack += attackMod.value;
+                if (unitState.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
+                if (unitState.TempStats.TryGetValue("Evasion", out var evaMod)) stats.Evasion += evaMod.value;
             }
+
             yield return new WaitUntil(() => !isPaused);
             yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+
             foreach (var target in selectedTargets)
             {
                 var targetStats = target as CharacterStats;
@@ -450,10 +199,10 @@ namespace VirulentVentures
                     if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats.Defense += defMod.value;
                     if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) currentEvasion += evaMod.value;
                 }
+
                 bool attackDodged = false;
                 if (ability != null)
                 {
-                    // Process Attacks
                     foreach (var attack in ability.Attacks)
                     {
                         if ((attack.Enemy && targetStats.Type == stats.Type) || (!attack.Enemy && targetStats.Type != stats.Type && target != unit))
@@ -494,18 +243,15 @@ namespace VirulentVentures
                             }
                         }
                     }
-                    // Process Effects
                     foreach (var effect in ability.Effects)
                     {
                         if ((effect.Enemy && targetStats.Type == stats.Type) || (!effect.Enemy && targetStats.Type != stats.Type && target != unit))
                             continue;
                         foreach (var tag in effect.Tags)
-                        {
                             effectsComponent.ProcessEffect(stats, targetStats, tag, abilityId);
-                        }
                     }
                 }
-                // Check for death
+
                 if (targetStats != null && target.Health <= 0)
                 {
                     eventBus.RaiseUnitDied(target);
@@ -524,6 +270,7 @@ namespace VirulentVentures
                 }
                 if (targetStats != null) targetStats.Defense = originalDefense;
             }
+
             stats.Attack = originalAttack;
             stats.Speed = originalSpeed;
             stats.Evasion = originalEvasion;
@@ -553,7 +300,7 @@ namespace VirulentVentures
             }
             isCombatActive = true;
             InitializeUnits(heroStats, monsterStats);
-            IncrementRound();
+            turnComponent.IncrementRound();
             while (isCombatActive)
             {
                 yield return new WaitUntil(() => !isPaused);
@@ -592,9 +339,7 @@ namespace VirulentVentures
                             state.TempStats.Remove(tempStat.Key);
                             if (unit is CharacterStats stats)
                             {
-                                var baseData = stats.Type == CharacterType.Hero
-                                    ? CharacterLibrary.GetHeroData(stats.Id)
-                                    : CharacterLibrary.GetMonsterData(stats.Id);
+                                var baseData = stats.Type == CharacterType.Hero ? CharacterLibrary.GetHeroData(stats.Id) : CharacterLibrary.GetMonsterData(stats.Id);
                                 if (tempStat.Key == "Defense")
                                 {
                                     stats.Defense = baseData.Defense;
@@ -639,7 +384,7 @@ namespace VirulentVentures
                         yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
                         continue;
                     }
-                    if (!CanAttackThisRound(unit, state)) continue;
+                    if (!turnComponent.CanAttackThisRound(unit, state)) continue;
                     state.AttacksThisRound++;
                     yield return ProcessAttack(unit, expeditionManager.GetExpedition().Party, unitList);
                     if (NoActiveHeroes() || NoActiveMonsters())
@@ -663,7 +408,7 @@ namespace VirulentVentures
                         yield break;
                     }
                 }
-                IncrementRound();
+                turnComponent.IncrementRound();
             }
         }
 
@@ -702,20 +447,6 @@ namespace VirulentVentures
             eventBus.RaiseCombatInitialized(units);
         }
 
-        private void IncrementRound()
-        {
-            roundNumber++;
-            string roundMessage = $"Round {roundNumber} begins!";
-            allCombatLogs.Add(roundMessage);
-            eventBus.RaiseLogMessage(roundMessage, uiConfig.TextColor);
-        }
-
-        private void LogMessage(string message, Color color)
-        {
-            allCombatLogs.Add(message);
-            eventBus.RaiseLogMessage(message, color);
-        }
-
         private void UpdateUnit(ICombatUnit unit, string damageMessage = null)
         {
             if (unit == null) return;
@@ -735,13 +466,9 @@ namespace VirulentVentures
                 if (unit is CharacterStats stats && (stats.Health <= 0 || stats.HasRetreated))
                 {
                     if (stats.Type == CharacterType.Hero)
-                    {
                         heroPositions.Remove(stats);
-                    }
                     else
-                    {
                         monsterPositions.Remove(stats);
-                    }
                 }
             }
         }
@@ -760,13 +487,10 @@ namespace VirulentVentures
                 stats.Morale = Mathf.Min(stats.Morale + 20, stats.MaxMorale);
                 string retreatMessage = $"{stats.Id} flees! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
                 allCombatLogs.Add(retreatMessage);
-                LogMessage(retreatMessage, uiConfig.TextColor);
+                eventBus.RaiseLogMessage(retreatMessage, uiConfig.TextColor);
                 eventBus.RaiseUnitRetreated(unit);
                 int penalty = 10;
-                var teammates = units
-                    .Select(u => u.unit)
-                    .Where(u => u is CharacterStats cs && cs.Type == stats.Type && u.Health > 0 && !u.HasRetreated && u != unit)
-                    .ToList();
+                var teammates = units.Select(u => u.unit).Where(u => u is CharacterStats cs && cs.Type == stats.Type && u.Health > 0 && !u.HasRetreated && u != unit).ToList();
                 foreach (var teammate in teammates)
                 {
                     teammate.Morale = Mathf.Max(0, teammate.Morale - penalty);
@@ -793,9 +517,7 @@ namespace VirulentVentures
             {
                 var expedition = expeditionManager.GetExpedition();
                 if (expedition.CurrentNodeIndex < expedition.NodeData.Count)
-                {
                     expedition.NodeData[expedition.CurrentNodeIndex].Completed = true;
-                }
                 string victoryMessage = "Party victorious!";
                 allCombatLogs.Add(victoryMessage);
                 eventBus.RaiseLogMessage(victoryMessage, Color.green);
@@ -811,12 +533,6 @@ namespace VirulentVentures
             isEndingCombat = false;
         }
 
-        private ICombatUnit GetRandomAliveTarget(List<ICombatUnit> targets)
-        {
-            var aliveTargets = targets.Where(t => t.Health > 0 && !t.HasRetreated).ToList();
-            return aliveTargets.Count > 0 ? aliveTargets[Random.Range(0, aliveTargets.Count)] : null;
-        }
-
         private bool NoActiveHeroes()
         {
             return heroPositions.Count == 0;
@@ -829,7 +545,7 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null || effectsComponent == null)
+            if (combatConfig == null || eventBus == null || visualConfig == null || uiConfig == null || combatCamera == null || effectsComponent == null || turnComponent == null)
             {
                 Debug.LogError("CombatSceneComponent: Missing required reference(s). Please assign in the Inspector.");
                 return false;
