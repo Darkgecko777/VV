@@ -208,68 +208,113 @@ namespace VirulentVentures
             List<ICombatUnit> selectedTargets = new List<ICombatUnit>();
             if (ability != null)
             {
-                // Determine max targets based on Attacks and Effects
+                // Determine max targets
                 int maxTargets = 1;
-                bool isMelee = false;
                 foreach (var attack in ability.Attacks)
                 {
                     maxTargets = Mathf.Max(maxTargets, attack.Melee ? Mathf.Min(attack.NumberOfTargets, 2) : Mathf.Min(attack.NumberOfTargets, 4));
-                    if (attack.Melee) isMelee = true;
                 }
                 foreach (var effect in ability.Effects)
                 {
                     maxTargets = Mathf.Max(maxTargets, effect.Melee ? Mathf.Min(effect.NumberOfTargets, 2) : Mathf.Min(effect.NumberOfTargets, 4));
-                    if (effect.Melee) isMelee = true;
                 }
+                // Assign CombatPosition to living units
+                var orderedHeroes = heroPositions.Where(h => h.Health > 0 && !h.HasRetreated)
+                    .OrderBy(h => h.PartyPosition)
+                    .Select((h, i) => new { Unit = (ICombatUnit)h, CombatPosition = i + 1 })
+                    .ToList();
+                var orderedMonsters = monsterPositions.Where(m => m.Health > 0 && !m.HasRetreated)
+                    .OrderBy(m => m.PartyPosition)
+                    .Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 })
+                    .ToList();
                 // Select targets based on Attacks and Effects
                 var enemyTargets = stats.Type == CharacterType.Hero
-                    ? monsterPositions.Cast<ICombatUnit>().Where(t => t.Health > 0 && !t.HasRetreated && (!isMelee || (t as CharacterStats).PartyPosition <= 2)).ToList()
-                    : heroPositions.Cast<ICombatUnit>().Where(t => t.Health > 0 && !t.HasRetreated && (!isMelee || (t as CharacterStats).PartyPosition <= 2)).ToList();
+                    ? orderedMonsters.Select(m => m.Unit).ToList()
+                    : orderedHeroes.Select(h => h.Unit).ToList();
                 var allyTargets = stats.Type == CharacterType.Hero
-                    ? partyData.HeroStats.Where(h => h != unit && h.Health > 0 && !h.HasRetreated && (!isMelee || h.PartyPosition <= 2)).Cast<ICombatUnit>().ToList()
-                    : monsterPositions.Where(m => m != unit && m.Health > 0 && !m.HasRetreated && (!isMelee || m.PartyPosition <= 2)).Cast<ICombatUnit>().ToList();
-                // Check for low-health condition
+                    ? orderedHeroes.Where(h => h.Unit != stats && h.Unit.Health > 0 && !h.Unit.HasRetreated).Select(h => h.Unit).ToList()
+                    : orderedMonsters.Where(m => m.Unit != stats && m.Unit.Health > 0 && !m.Unit.HasRetreated).Select(m => m.Unit).ToList();
                 bool prioritizeLowHealth = ability.Conditions.Any(c => c.Stat == Stat.Health && c.Target == ConditionTarget.Enemy && c.Comparison == Comparison.Lesser);
-                if (prioritizeLowHealth)
+                foreach (var attack in ability.Attacks)
                 {
-                    selectedTargets.AddRange(enemyTargets.OrderBy(t => t.Health).Take(maxTargets));
+                    var targetPool = attack.Enemy ? enemyTargets : allyTargets;
+                    if (attack.Melee)
+                    {
+                        targetPool = targetPool.Where(t => (stats.Type == CharacterType.Hero
+                            ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
+                            : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition) <= 2).ToList();
+                        if (targetPool.Count == 0 && attack.Enemy)
+                        {
+                            string noTargetMessage = $"No frontline targets (CombatPosition 1-2) for melee attack {abilityId}.";
+                            allCombatLogs.Add(noTargetMessage);
+                            eventBus.RaiseLogMessage(noTargetMessage, uiConfig.TextColor);
+                        }
+                    }
+                    if (targetPool.Count > 0)
+                    {
+                        int targetCount = attack.Melee ? Mathf.Min(attack.NumberOfTargets, 2) : Mathf.Min(attack.NumberOfTargets, 4);
+                        selectedTargets.AddRange(prioritizeLowHealth
+                            ? targetPool.OrderBy(t => t.Health).Take(targetCount)
+                            : targetPool.OrderBy(t => Random.value).Take(targetCount));
+                    }
                 }
-                else
+                foreach (var effect in ability.Effects)
                 {
-                    // Collect targets for Attacks
-                    foreach (var attack in ability.Attacks)
+                    var targetPool = effect.Enemy ? enemyTargets : allyTargets;
+                    if (effect.Melee)
                     {
-                        var targetPool = attack.Enemy ? enemyTargets : allyTargets;
-                        if (targetPool.Count > 0)
+                        targetPool = targetPool.Where(t => (stats.Type == CharacterType.Hero
+                            ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
+                            : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition) <= 2).ToList();
+                        if (targetPool.Count == 0 && effect.Enemy)
                         {
-                            int targetCount = attack.Melee ? Mathf.Min(attack.NumberOfTargets, 2) : Mathf.Min(attack.NumberOfTargets, 4);
-                            selectedTargets.AddRange(targetPool.OrderBy(t => Random.value).Take(targetCount));
+                            string noTargetMessage = $"No frontline targets (CombatPosition 1-2) for melee effect {abilityId}.";
+                            allCombatLogs.Add(noTargetMessage);
+                            eventBus.RaiseLogMessage(noTargetMessage, uiConfig.TextColor);
                         }
                     }
-                    // Collect targets for Effects
-                    foreach (var effect in ability.Effects)
+                    if (targetPool.Count > 0)
                     {
-                        var targetPool = effect.Enemy ? enemyTargets : allyTargets;
-                        if (targetPool.Count > 0)
-                        {
-                            int targetCount = effect.Melee ? Mathf.Min(effect.NumberOfTargets, 2) : Mathf.Min(effect.NumberOfTargets, 4);
-                            selectedTargets.AddRange(targetPool.OrderBy(t => Random.value).Take(targetCount));
-                        }
+                        int targetCount = effect.Melee ? Mathf.Min(effect.NumberOfTargets, 2) : Mathf.Min(effect.NumberOfTargets, 4);
+                        selectedTargets.AddRange(prioritizeLowHealth
+                            ? targetPool.OrderBy(t => t.Health).Take(targetCount)
+                            : targetPool.OrderBy(t => Random.value).Take(targetCount));
                     }
-                    // Handle Self-targeting
-                    if (ability.Attacks.Any(a => !a.Enemy && !a.Melee) || ability.Effects.Any(e => !e.Enemy && !e.Melee))
-                    {
-                        selectedTargets.Add(unit);
-                    }
+                }
+                // Handle Self-targeting
+                if (ability.Attacks.Any(a => !a.Enemy && !a.Melee) || ability.Effects.Any(e => !e.Enemy && !e.Melee))
+                {
+                    selectedTargets.Add(unit);
                 }
                 selectedTargets = selectedTargets.Distinct().Take(maxTargets).ToList();
             }
             else
             {
                 // Fallback to BasicAttack
+                var orderedHeroes = heroPositions.Where(h => h.Health > 0 && !h.HasRetreated)
+                    .OrderBy(h => h.PartyPosition)
+                    .Select((h, i) => new { Unit = (ICombatUnit)h, CombatPosition = i + 1 })
+                    .ToList();
+                var orderedMonsters = monsterPositions.Where(m => m.Health > 0 && !m.HasRetreated)
+                    .OrderBy(m => m.PartyPosition)
+                    .Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 })
+                    .ToList();
                 var enemyTargets = stats.Type == CharacterType.Hero
-                    ? monsterPositions.Cast<ICombatUnit>().Where(t => t.Health > 0 && !t.HasRetreated).ToList()
-                    : heroPositions.Cast<ICombatUnit>().Where(t => t.Health > 0 && !t.HasRetreated).ToList();
+                    ? orderedMonsters.Select(m => m.Unit).ToList()
+                    : orderedHeroes.Select(h => h.Unit).ToList();
+                AbilitySO basicAttack = AbilityDatabase.GetHeroAbility("BasicAttack") ?? AbilityDatabase.GetMonsterAbility("BasicAttack");
+                if (basicAttack != null && basicAttack.Attacks.Any(a => a.Melee))
+                {
+                    enemyTargets = enemyTargets.Where(t => (stats.Type == CharacterType.Hero
+                        ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
+                        : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition) <= 2).ToList();
+                    if (enemyTargets.Count == 0)
+                    {
+                        string noTargetMessage = $"No frontline targets (CombatPosition 1-2) for melee BasicAttack.";
+                        allCombatLogs.Add(noTargetMessage);
+                        eventBus.RaiseLogMessage(noTargetMessage, uiConfig.TextColor);
+                    }
+                }
                 ICombatUnit selectedTarget = GetRandomAliveTarget(enemyTargets);
                 if (selectedTarget != null)
                 {
