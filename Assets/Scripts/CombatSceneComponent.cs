@@ -8,13 +8,13 @@ namespace VirulentVentures
     public class CombatSceneComponent : MonoBehaviour
     {
         [SerializeField] public CombatConfig combatConfig;
-        [SerializeField] private VisualConfig visualConfig;
-        [SerializeField] private UIConfig uiConfig;
+        [SerializeField] public VisualConfig visualConfig;
+        [SerializeField] public UIConfig uiConfig;
         [SerializeField] public EventBusSO eventBus;
-        [SerializeField] private CombatEffectsComponent effectsComponent;
-        [SerializeField] private Camera combatCamera;
-        [SerializeField] private CombatTurnComponent turnComponent;
-        private ExpeditionManager expeditionManager;
+        [SerializeField] public CombatEffectsComponent effectsComponent;
+        [SerializeField] public Camera combatCamera;
+        [SerializeField] public CombatTurnComponent turnComponent;
+        public ExpeditionManager expeditionManager;
         private bool isCombatActive;
         private bool isPaused;
         public List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
@@ -28,7 +28,6 @@ namespace VirulentVentures
         public List<string> AllCombatLogs => allCombatLogs;
         public EventBusSO EventBus => eventBus;
         public UIConfig UIConfig => uiConfig;
-        private bool isEventSubscribed; // Guard against re-subscription
 
         void Awake()
         {
@@ -47,7 +46,6 @@ namespace VirulentVentures
             isPaused = false;
             allCombatLogs.Clear();
             noTargetLogCooldowns.Clear();
-            isEventSubscribed = false;
         }
 
         void Start()
@@ -59,27 +57,15 @@ namespace VirulentVentures
                 return;
             }
             if (!ValidateReferences()) return;
-            if (!isEventSubscribed)
-            {
-                eventBus.OnCombatEnded += () => turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
-                eventBus.OnCombatPaused += () => { isPaused = true; };
-                eventBus.OnCombatPlayed += () => { isPaused = false; };
-                isEventSubscribed = true;
-                Debug.Log("CombatSceneComponent: Events subscribed.");
-            }
+            eventBus.OnCombatPaused += () => { isPaused = true; };
+            eventBus.OnCombatPlayed += () => { isPaused = false; };
             StartCoroutine(RunCombat());
         }
 
         void OnDestroy()
         {
-            if (isEventSubscribed)
-            {
-                eventBus.OnCombatEnded -= () => turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
-                eventBus.OnCombatPaused -= () => { isPaused = true; };
-                eventBus.OnCombatPlayed -= () => { isPaused = false; };
-                isEventSubscribed = false;
-                Debug.Log("CombatSceneComponent: Events unsubscribed.");
-            }
+            eventBus.OnCombatPaused -= () => { isPaused = true; };
+            eventBus.OnCombatPlayed -= () => { isPaused = false; };
         }
 
         public static UnitAttackState GetUnitAttackState(ICombatUnit unit)
@@ -189,7 +175,8 @@ namespace VirulentVentures
                 }
                 if (NoActiveHeroes() || NoActiveMonsters())
                 {
-                    turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
+                    isCombatActive = false;
+                    eventBus.RaiseCombatEnded();
                     yield break;
                 }
                 yield break;
@@ -287,7 +274,8 @@ namespace VirulentVentures
             if (expeditionData == null || expeditionData.CurrentNodeIndex >= expeditionData.NodeData.Count)
             {
                 Debug.LogWarning("CombatSceneComponent: Invalid expedition data, ending combat.");
-                turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
+                isCombatActive = false;
+                eventBus.RaiseCombatEnded();
                 yield break;
             }
             var heroStats = expeditionData.Party.GetHeroes();
@@ -295,7 +283,8 @@ namespace VirulentVentures
             if (heroStats == null || heroStats.Count == 0 || monsterStats == null || monsterStats.Count == 0)
             {
                 Debug.LogWarning("CombatSceneComponent: No valid units for combat, ending.");
-                turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
+                isCombatActive = false;
+                eventBus.RaiseCombatEnded();
                 yield break;
             }
             isCombatActive = true;
@@ -307,7 +296,8 @@ namespace VirulentVentures
                 var unitList = units.Select(u => u.unit).Where(u => u.Health > 0 && !u.HasRetreated).OrderByDescending(u => u.Speed).ToList();
                 if (unitList.Count == 0 || NoActiveHeroes() || NoActiveMonsters())
                 {
-                    turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
+                    isCombatActive = false;
+                    eventBus.RaiseCombatEnded();
                     yield break;
                 }
                 foreach (var unit in unitList.ToList())
@@ -382,7 +372,8 @@ namespace VirulentVentures
                         yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
                         if (NoActiveHeroes() || NoActiveMonsters())
                         {
-                            turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
+                            isCombatActive = false;
+                            eventBus.RaiseCombatEnded();
                             yield break;
                         }
                         continue;
@@ -393,7 +384,8 @@ namespace VirulentVentures
                     yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                     if (NoActiveHeroes() || NoActiveMonsters())
                     {
-                        turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
+                        isCombatActive = false;
+                        eventBus.RaiseCombatEnded();
                         yield break;
                     }
                 }
@@ -408,7 +400,8 @@ namespace VirulentVentures
                         yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                         if (NoActiveHeroes() || NoActiveMonsters())
                         {
-                            turnComponent.EndCombat(expeditionManager, NoActiveHeroes());
+                            isCombatActive = false;
+                            eventBus.RaiseCombatEnded();
                             yield break;
                         }
                     }
@@ -478,7 +471,7 @@ namespace VirulentVentures
             }
         }
 
-        private bool NoActiveHeroes()
+        public bool NoActiveHeroes()
         {
             return heroPositions.Count == 0;
         }
