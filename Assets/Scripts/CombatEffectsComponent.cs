@@ -31,7 +31,7 @@ namespace VirulentVentures
             string effectType = tagParts[0];
             int value = tagParts.Length > 1 && int.TryParse(tagParts[1], out int parsedValue) ? parsedValue : 0;
             float floatValue = tagParts.Length > 1 && float.TryParse(tagParts[1], out float parsedFloat) ? parsedFloat : 0f;
-            var targetState = CombatSceneComponent.GetUnitAttackState(target); // Declare targetState at method scope
+            var targetState = CombatSceneComponent.GetUnitAttackState(target);
 
             string effectMessage = string.Empty;
             Color messageColor = uiConfig.TextColor;
@@ -74,69 +74,10 @@ namespace VirulentVentures
                     }
                     break;
 
-                case "Morale":
-                    if (value != 0)
-                    {
-                        target.Morale = Mathf.Clamp(target.Morale + value, 0, target.MaxMorale);
-                        effectMessage = $"{user.Id} changes {target.Id}'s morale by {value} with {abilityId}! <color=#FFFF00>[Morale]</color>";
-                        messageColor = Color.yellow;
-                        eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-                    }
-                    break;
-
-                case "Buff":
-                    if (value != 0 && tagParts.Length > 2)
-                    {
-                        string stat = tagParts[2];
-                        int duration = tagParts.Length > 3 && int.TryParse(tagParts[3], out int dur) ? dur : 2;
-                        if (targetState != null)
-                        {
-                            targetState.TempStats[stat] = (value, duration);
-                            effectMessage = $"{user.Id} buffs {target.Id}'s {stat} +{value} for {duration} actions with {abilityId}! <color=#00FF00>[Buff]</color>";
-                            messageColor = Color.green;
-                            eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"CombatEffectsComponent: No UnitAttackState for {target.Id} for Buff {tag}.");
-                        }
-                    }
-                    break;
-
-                case "Debuff":
-                    if (value != 0 && tagParts.Length > 2)
-                    {
-                        string stat = tagParts[2];
-                        int duration = tagParts.Length > 3 && int.TryParse(tagParts[3], out int dur) ? dur : 2;
-                        if (targetState != null)
-                        {
-                            targetState.TempStats[stat] = (value, duration);
-                            effectMessage = $"{user.Id} debuffs {target.Id}'s {stat} {value} for {duration} actions with {abilityId}! <color=#FF0000>[Debuff]</color>";
-                            messageColor = Color.red;
-                            eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"CombatEffectsComponent: No UnitAttackState for {target.Id} for Debuff {tag}.");
-                        }
-                    }
-                    break;
-
-                case "SelfDamage":
-                    if (value > 0)
-                    {
-                        user.Health = Mathf.Max(0, user.Health - value);
-                        effectMessage = $"{user.Id} takes {value} self-damage from {abilityId}! <color=#FF0000>[SelfDamage]</color>";
-                        messageColor = Color.red;
-                        eventBus.RaiseUnitDamaged(user, effectMessage);
-                    }
-                    break;
-
                 case "SkipNextAttack":
-                    var userState = CombatSceneComponent.GetUnitAttackState(user);
-                    if (userState != null)
+                    if (targetState != null)
                     {
-                        userState.SkipNextAttack = true;
+                        targetState.SkipNextAttack = true;
                         effectMessage = $"{user.Id} will skip their next attack due to {abilityId}! <color=#FFFF00>[SkipNextAttack]</color>";
                         messageColor = Color.yellow;
                         eventBus.RaiseUnitUpdated(user, user.GetDisplayStats());
@@ -187,6 +128,59 @@ namespace VirulentVentures
             {
                 eventBus.RaiseLogMessage(effectMessage, messageColor);
             }
+        }
+
+        public void ApplyAttackDamage(CharacterStats user, CharacterStats target, AbilitySO.Attack attack, string abilityId)
+        {
+            if (target == null) return;
+            var targetState = CombatSceneComponent.GetUnitAttackState(target);
+            int originalDefense = target.Defense;
+            int currentEvasion = target.Evasion;
+            if (targetState != null)
+            {
+                if (targetState.TempStats.TryGetValue("Defense", out var defMod)) target.Defense += defMod.value;
+                if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) currentEvasion += evaMod.value;
+            }
+
+            bool attackDodged = false;
+            if (attack.Dodgeable)
+            {
+                float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
+                if (UnityEngine.Random.value <= dodgeChance)
+                {
+                    string dodgeMessage = $"{target.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>";
+                    CombatSceneComponent.Instance.AllCombatLogs.Add(dodgeMessage);
+                    eventBus.RaiseLogMessage(dodgeMessage, uiConfig.TextColor);
+                    attackDodged = true;
+                }
+                else
+                {
+                    string failDodgeMessage = $"{target.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>";
+                    CombatSceneComponent.Instance.AllCombatLogs.Add(failDodgeMessage);
+                    eventBus.RaiseLogMessage(failDodgeMessage, uiConfig.TextColor);
+                }
+            }
+            if (!attackDodged)
+            {
+                int damage = 0;
+                if (attack.Defense == DefenseCheck.Standard)
+                    damage = Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - 0.05f * target.Defense)));
+                else if (attack.Defense == DefenseCheck.Partial)
+                    damage = Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - attack.PartialDefenseMultiplier * target.Defense)));
+                else if (attack.Defense == DefenseCheck.None)
+                    damage = Mathf.Max(0, user.Attack);
+                string damageFormula = $"[{user.Attack} ATK - {target.Defense} DEF * {(attack.Defense == DefenseCheck.Partial ? attack.PartialDefenseMultiplier : 0.05f) * 100}%]";
+                if (damage > 0)
+                {
+                    target.Health -= damage;
+                    string damageMessage = $"{user.Id} hits {target.Id} for {damage} damage with {abilityId} <color=#FFFF00>{damageFormula}</color>";
+                    CombatSceneComponent.Instance.AllCombatLogs.Add(damageMessage);
+                    eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
+                    eventBus.RaiseUnitDamaged(target, damageMessage);
+                    CombatSceneComponent.Instance.UpdateUnit(target, damageMessage);
+                }
+            }
+            target.Defense = originalDefense;
         }
 
         private bool ValidateReferences()

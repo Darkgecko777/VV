@@ -38,7 +38,7 @@ namespace VirulentVentures
 
         public CharacterStats FindLowestHealthAlly()
         {
-            return HeroStats?.Find(h => h.Type == CharacterType.Hero && h.Health > 0 && h.Health == HeroStats.Where(hs => hs.Type == CharacterType.Hero).Min(hs => hs.Health));
+            return HeroStats?.Where(h => h.Type == CharacterType.Hero && h.Health > 0).OrderBy(h => h.Health).FirstOrDefault();
         }
 
         public CharacterStats[] FindAllies()
@@ -49,18 +49,48 @@ namespace VirulentVentures
         public bool CanHealParty()
         {
             if (HeroStats == null || HeroStats.Count == 0)
-            {
                 return false;
-            }
             return HeroStats.Any(hero =>
                 !hero.HasRetreated && hero.Health > 0 &&
                 (hero.Health < hero.MaxHealth || hero.Morale < hero.MaxMorale));
         }
 
+        public bool CheckRetreat(ICombatUnit unit, EventBusSO eventBus, UIConfig uiConfig)
+        {
+            if (unit is not CharacterStats stats || stats.Type != CharacterType.Hero || stats.HasRetreated)
+                return false;
+            return stats.Morale <= CombatSceneComponent.Instance.combatConfig.RetreatMoraleThreshold;
+        }
+
+        public void ProcessRetreat(ICombatUnit unit, EventBusSO eventBus, UIConfig uiConfig)
+        {
+            if (unit == null || unit.HasRetreated) return;
+            if (unit is not CharacterStats stats || stats.Type != CharacterType.Hero) return;
+
+            stats.HasRetreated = true;
+            stats.Morale = Mathf.Min(stats.Morale + 20, stats.MaxMorale);
+            string retreatMessage = $"{stats.Id} flees! <color=#FFFF00>[Morale <= {CombatSceneComponent.Instance.combatConfig.RetreatMoraleThreshold}]</color>";
+            CombatSceneComponent.Instance.AllCombatLogs.Add(retreatMessage);
+            eventBus.RaiseLogMessage(retreatMessage, uiConfig.TextColor);
+            eventBus.RaiseUnitRetreated(unit);
+
+            int penalty = 10;
+            var teammates = HeroStats.Where(h => h.Type == stats.Type && h.Health > 0 && !h.HasRetreated && h != stats).ToList();
+            foreach (var teammate in teammates)
+            {
+                teammate.Morale = Mathf.Max(0, teammate.Morale - penalty);
+                string teammateMessage = $"{teammate.Id}'s morale drops by {penalty} due to {stats.Id}'s retreat! <color=#FFFF00>[-{penalty} Morale]</color>";
+                CombatSceneComponent.Instance.AllCombatLogs.Add(teammateMessage);
+                eventBus.RaiseLogMessage(teammateMessage, uiConfig.TextColor);
+                eventBus.RaiseUnitUpdated(teammate, teammate.GetDisplayStats());
+            }
+            eventBus.RaiseUnitUpdated(unit, stats.GetDisplayStats());
+        }
+
         public void GenerateHeroStats(Vector3[] positions)
         {
-            HeroStats = HeroStats ?? new List<CharacterStats>(); // Ensure initialization
-            HeroStats.Clear(); // Clear existing stats to avoid duplicates
+            HeroStats = HeroStats ?? new List<CharacterStats>();
+            HeroStats.Clear();
             var positionMap = new Dictionary<int, Vector3>
             {
                 { 1, positions[0] },

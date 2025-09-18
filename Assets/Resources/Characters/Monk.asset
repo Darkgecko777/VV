@@ -26,5 +26,5 @@ MonoBehaviour:
   canBeCultist: 1
   partyPosition: 2
   abilities:
-  - {fileID: 11400000, guid: 84a9cee4f10c2f840a3af76400a8b791, type: 2}
+  - {fileID: 11400000, guid: b6b9f9649b50f7f48953fd552f20df83, type: 2}
   rank: 1

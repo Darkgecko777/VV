@@ -45,9 +45,7 @@ namespace VirulentVentures
         {
             if (targetPool == null || targetPool.Count == 0)
             {
-                string noTargetMessage = $"No valid targets for {user.Id}'s attack.";
-                CombatSceneComponent.Instance.AllCombatLogs.Add(noTargetMessage);
-                CombatSceneComponent.Instance.EventBus.RaiseLogMessage(noTargetMessage, CombatSceneComponent.Instance.UIConfig.TextColor);
+                Debug.LogWarning($"TargetingRule: Empty targetPool for {user.Id}. Returning empty list.");
                 return new List<ICombatUnit>();
             }
 
@@ -62,54 +60,61 @@ namespace VirulentVentures
                 .Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 })
                 .ToList();
 
+            // Apply melee restriction
             if (isMelee || MeleeOnly)
             {
-                targetPool = targetPool.Where(t => (user.Type == CharacterType.Hero
-                    ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
-                    : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition) <= 2).ToList();
+                targetPool = targetPool.Where(t =>
+                {
+                    var pos = user.Type == CharacterType.Hero
+                        ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
+                        : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition;
+                    return pos <= 2;
+                }).ToList();
                 if (targetPool.Count == 0)
                 {
-                    string noTargetMessage = $"No frontline targets (CombatPosition 1-2) for {user.Id}'s melee attack.";
-                    CombatSceneComponent.Instance.AllCombatLogs.Add(noTargetMessage);
-                    CombatSceneComponent.Instance.EventBus.RaiseLogMessage(noTargetMessage, CombatSceneComponent.Instance.UIConfig.TextColor);
+                    Debug.LogWarning($"TargetingRule: No frontline targets for {user.Id}'s melee attack.");
                     return new List<ICombatUnit>();
                 }
             }
 
+            // Apply infection filters
             if (MustBeInfected)
-                targetPool = targetPool.Where(t => (t as CharacterStats).IsInfected).ToList();
+                targetPool = targetPool.Where(t => (t as CharacterStats)?.IsInfected == true).ToList();
             if (MustNotBeInfected)
-                targetPool = targetPool.Where(t => !(t as CharacterStats).IsInfected).ToList();
+                targetPool = targetPool.Where(t => (t as CharacterStats)?.IsInfected == false).ToList();
 
             if (targetPool.Count == 0)
+            {
+                Debug.LogWarning($"TargetingRule: No targets after infection filter for {user.Id}.");
                 return new List<ICombatUnit>();
+            }
 
+            // Apply targeting rule
             switch (Type)
             {
                 case RuleType.LowestHealth:
-                    targetPool = targetPool.OrderBy(t => (t as CharacterStats).Health).ToList();
+                    targetPool = targetPool.OrderBy(t => (t as CharacterStats)?.Health ?? int.MaxValue).ToList();
                     break;
                 case RuleType.HighestHealth:
-                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Health).ToList();
+                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats)?.Health ?? 0).ToList();
                     break;
                 case RuleType.LowestMorale:
-                    targetPool = targetPool.OrderBy(t => (t as CharacterStats).Morale).ToList();
+                    targetPool = targetPool.OrderBy(t => (t as CharacterStats)?.Morale ?? 0).ToList();
                     break;
                 case RuleType.HighestMorale:
-                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Morale).ToList();
+                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats)?.Morale ?? 0).ToList();
                     break;
                 case RuleType.LowestAttack:
-                    targetPool = targetPool.OrderBy(t => (t as CharacterStats).Attack).ToList();
+                    targetPool = targetPool.OrderBy(t => (t as CharacterStats)?.Attack ?? 0).ToList();
                     break;
                 case RuleType.HighestAttack:
-                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats).Attack).ToList();
+                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats)?.Attack ?? 0).ToList();
                     break;
                 case RuleType.AllAllies:
-                    if (Target == ConditionTarget.Ally)
-                        break;
-                    targetPool = new List<ICombatUnit>();
+                    if (Target != ConditionTarget.Ally)
+                        targetPool = new List<ICombatUnit>();
                     break;
-                default:
+                default: // Random
                     targetPool = targetPool.OrderBy(t => UnityEngine.Random.value).ToList();
                     break;
             }
@@ -118,7 +123,9 @@ namespace VirulentVentures
             if (Type == RuleType.AllAllies && Target == ConditionTarget.Ally)
                 maxTargets = targetPool.Count;
 
-            return targetPool.Take(maxTargets).ToList();
+            var selected = targetPool.Take(maxTargets).ToList();
+            Debug.Log($"TargetingRule: Selected {selected.Count} targets for {user.Id} from pool of {targetPool.Count}.");
+            return selected;
         }
     }
 }
