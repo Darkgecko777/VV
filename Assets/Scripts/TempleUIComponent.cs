@@ -34,6 +34,7 @@ namespace VirulentVentures
         private List<Button> tabButtons;
         private bool isInitialized;
         private VisualElement root;
+
         void Awake()
         {
             if (!ValidateReferences())
@@ -82,6 +83,7 @@ namespace VirulentVentures
             isInitialized = true;
             InitializeUI();
         }
+
         void Start()
         {
             if (isInitialized)
@@ -92,6 +94,7 @@ namespace VirulentVentures
                 UpdateFavourDisplay();
             }
         }
+
         void OnDestroy()
         {
             if (eventBus != null)
@@ -119,6 +122,7 @@ namespace VirulentVentures
             virusTabButton = null;
             healTabButton = null;
         }
+
         private void InitializeUI()
         {
             virusDropdown.choices.Clear();
@@ -170,6 +174,7 @@ namespace VirulentVentures
             healTabButton.clicked += () => SwitchTab(3);
             launchButton.SetEnabled(false);
         }
+
         private void SwitchTab(int index)
         {
             for (int i = 0; i < tabContents.Count; i++)
@@ -182,6 +187,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         private void InitializeEmptyPortraits()
         {
             recruitPortraitContainer.Clear();
@@ -209,6 +215,7 @@ namespace VirulentVentures
                 healPortraitContainer.Add(healWrapper);
             }
         }
+
         private void UpdatePartyVisuals(PartyData partyData)
         {
             if (!isInitialized || partyData == null || recruitPortraitContainer == null || expeditionPortraitContainer == null || healPortraitContainer == null)
@@ -219,14 +226,12 @@ namespace VirulentVentures
             recruitPortraitContainer.Clear();
             expeditionPortraitContainer.Clear();
             healPortraitContainer.Clear();
-
             var heroes = partyData.GetHeroes()?.OrderByDescending(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList() ?? new List<CharacterStats>();
             bool hasActiveParty = partyData.HeroStats != null && partyData.HeroStats.Count > 0;
             if (!hasActiveParty)
             {
                 Debug.Log("TempleUIComponent: No active party (HeroStats null or empty), showing default portraits.");
             }
-
             for (int i = 0; i < 4; i++)
             {
                 VisualElement recruitWrapper = new VisualElement();
@@ -247,7 +252,6 @@ namespace VirulentVentures
                 healPortrait.AddToClassList("portrait");
                 healPortrait.style.width = 100;
                 healPortrait.style.height = 100;
-
                 VisualElement recruitHealthBar = new VisualElement();
                 recruitHealthBar.AddToClassList("health-bar");
                 recruitHealthBar.name = "HealthBar";
@@ -260,7 +264,6 @@ namespace VirulentVentures
                 recruitBarsContainer.Add(recruitMoraleBar);
                 recruitWrapper.Add(recruitPortrait); // Add portrait first
                 recruitWrapper.Add(recruitBarsContainer); // Then bars
-
                 VisualElement expeditionHealthBar = new VisualElement();
                 expeditionHealthBar.AddToClassList("health-bar");
                 expeditionHealthBar.name = "HealthBar";
@@ -273,7 +276,6 @@ namespace VirulentVentures
                 expeditionBarsContainer.Add(expeditionMoraleBar);
                 expeditionWrapper.Add(expeditionPortrait);
                 expeditionWrapper.Add(expeditionBarsContainer);
-
                 VisualElement healHealthBar = new VisualElement();
                 healHealthBar.AddToClassList("health-bar");
                 healHealthBar.name = "HealthBar";
@@ -286,7 +288,6 @@ namespace VirulentVentures
                 healBarsContainer.Add(healMoraleBar);
                 healWrapper.Add(healPortrait);
                 healWrapper.Add(healBarsContainer);
-
                 if (hasActiveParty && i < heroes.Count && heroes[i] != null)
                 {
                     string characterID = heroes[i].Id;
@@ -302,7 +303,8 @@ namespace VirulentVentures
                     }
                     else
                     {
-                        Sprite sprite = visualConfig.GetPortrait(characterID);
+                        var heroData = CharacterLibrary.GetHeroData(characterID);
+                        Sprite sprite = heroData.Portrait; // Access Portrait from CharacterSO
                         if (sprite != null)
                         {
                             recruitPortrait.image = sprite.texture; // Use Image.texture for UI Toolkit
@@ -336,7 +338,7 @@ namespace VirulentVentures
                         }
                         else
                         {
-                            Debug.LogWarning($"TempleUIComponent: No sprite found for '{characterID}' in VisualConfig, using fallback.");
+                            Debug.LogWarning($"TempleUIComponent: No portrait sprite found for '{characterID}' in CharacterSO, using fallback.");
                             recruitPortrait.style.backgroundColor = new StyleColor(Color.gray);
                             expeditionPortrait.style.backgroundColor = new StyleColor(Color.gray);
                             healPortrait.style.backgroundColor = new StyleColor(Color.gray);
@@ -369,11 +371,13 @@ namespace VirulentVentures
             healButton.SetEnabled(partyData.CanHealParty());
             UpdateFavourDisplay();
         }
+
         private void UpdateFavourDisplay()
         {
             var playerProgress = ExpeditionManager.Instance.GetPlayerProgress();
             favourLabel.text = $"Favour: {playerProgress.Favour}";
         }
+
         private void HandleExpeditionEnded()
         {
             Debug.Log($"TempleUIComponent: HandleExpeditionEnded called, HeroStats count: {(partyData.HeroStats == null ? 0 : partyData.HeroStats.Count)}");
@@ -382,10 +386,12 @@ namespace VirulentVentures
             UpdateFavourDisplay();
             UpdatePartyVisuals(partyData);
         }
+
         private void HandlePlayerProgressUpdated()
         {
             UpdateFavourDisplay();
         }
+
         private void SubscribeToEventBus()
         {
             eventBus.OnExpeditionUpdated += UpdateNodeVisuals;
@@ -394,6 +400,7 @@ namespace VirulentVentures
             eventBus.OnExpeditionEnded += HandleExpeditionEnded;
             eventBus.OnPlayerProgressUpdated += HandlePlayerProgressUpdated;
         }
+
         private void UnsubscribeFromEventBus()
         {
             eventBus.OnExpeditionUpdated -= UpdateNodeVisuals;
@@ -402,6 +409,7 @@ namespace VirulentVentures
             eventBus.OnExpeditionEnded -= HandleExpeditionEnded;
             eventBus.OnPlayerProgressUpdated -= HandlePlayerProgressUpdated;
         }
+
         private void UpdateNodeVisuals(EventBusSO.ExpeditionGeneratedData data)
         {
             if (!isInitialized || data.expeditionData == null || nodeContainer == null)
@@ -437,6 +445,7 @@ namespace VirulentVentures
             }
             launchButton.SetEnabled(data.expeditionData.IsValid());
         }
+
         private void UpdateVirusNode(EventBusSO.VirusSeededData data)
         {
             if (!isInitialized || nodeContainer == null) return;
@@ -451,6 +460,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         private bool ValidateReferences()
         {
             if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || availableViruses == null || partyData == null)

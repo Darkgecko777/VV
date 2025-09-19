@@ -21,7 +21,8 @@ namespace VirulentVentures
         public int PartyPosition { get; set; }
         public ScriptableObject[] Abilities { get; set; }
         public bool IsHero => Type == CharacterType.Hero;
-        public int Rank { get; set; } // Added Rank property
+        public int Rank { get; set; }
+        public Sprite CombatSprite { get; set; } // Added for combat scene
 
         public CharacterStats(CharacterSO data, Vector3 position)
         {
@@ -41,7 +42,8 @@ namespace VirulentVentures
                 Infectivity = 20;
                 PartyPosition = 1;
                 Abilities = new ScriptableObject[0];
-                Rank = 1; // Default Rank for null data
+                Rank = 1;
+                CombatSprite = null;
                 return;
             }
 
@@ -58,7 +60,8 @@ namespace VirulentVentures
             Infectivity = data.Infectivity;
             PartyPosition = data.PartyPosition;
             Abilities = data.Abilities ?? new ScriptableObject[0];
-            Rank = data.Rank; // Set Rank from CharacterSO
+            Rank = data.Rank;
+            CombatSprite = data.CombatSprite; // Set from CharacterSO
         }
 
         public struct DisplayStats
@@ -75,9 +78,10 @@ namespace VirulentVentures
             public int infectivity;
             public bool isHero;
             public bool isInfected;
-            public int rank; // Added rank field
+            public int rank;
+            public Sprite combatSprite; // Added for combat scene
 
-            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected, int rank)
+            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected, int rank, Sprite combatSprite)
             {
                 this.name = name;
                 this.health = health;
@@ -92,6 +96,7 @@ namespace VirulentVentures
                 this.isHero = isHero;
                 this.isInfected = isInfected;
                 this.rank = rank;
+                this.combatSprite = combatSprite;
             }
         }
 
@@ -110,7 +115,8 @@ namespace VirulentVentures
                 infectivity: Infectivity,
                 isHero: IsHero,
                 isInfected: IsInfected,
-                rank: Rank // Added rank
+                rank: Rank,
+                combatSprite: CombatSprite // From CharacterStats
             );
         }
     }

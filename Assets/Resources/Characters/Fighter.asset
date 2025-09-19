@@ -28,3 +28,5 @@ MonoBehaviour:
   abilities:
   - {fileID: 11400000, guid: 84a9cee4f10c2f840a3af76400a8b791, type: 2}
   rank: 1
+  portrait: {fileID: 21300000, guid: a4cfdd186383d3448b55ee8bf6a796bc, type: 3}
+  combatSprite: {fileID: 3290590973899192115, guid: 2522dbf2b7799bf479f0be1cd695da5c, type: 3}

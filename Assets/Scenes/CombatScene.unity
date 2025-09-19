@@ -119,6 +119,54 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &289561820
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 289561822}
+  - component: {fileID: 289561821}
+  m_Layer: 0
+  m_Name: CombatVisualsComponent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &289561821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 289561820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7a2b224dd53c35489072d4ce23454eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
+  characterPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
+--- !u!4 &289561822
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 289561820}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.6292439, y: 4.8873615, z: -0.1071192}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -520,13 +568,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1688374977}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b771399cd2b1ae5429b329736d44e831, type: 3}
+  m_Script: {fileID: 11500000, guid: aebc016e2b206f249abe95673ea1bc1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
-  characterPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
   combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
@@ -536,3 +582,4 @@ SceneRoots:
   - {fileID: 619394802}
   - {fileID: 621176281}
   - {fileID: 1688374979}
+  - {fileID: 289561822}
