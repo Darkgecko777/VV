@@ -10,11 +10,10 @@ namespace VirulentVentures.Editor
     public class ScriptReference
     {
         public string title = "Virulent Ventures Script Reference";
-        public string version = "1.7.4";
+        public string version = "1.8.0"; // Updated to match latest ScriptReference.json
         public string date;
         public string description = "Auto-generated document tracking all scripts for Virulent Ventures.";
         public List<ScriptEntry> scripts = new List<ScriptEntry>();
-        public List<RemovedScriptEntry> removed_scripts = new List<RemovedScriptEntry>();
         public List<string> notes = new List<string>();
     }
 
@@ -27,14 +26,6 @@ namespace VirulentVentures.Editor
         public List<string> dependencies = new List<string>();
         public string notes = "Auto-generated entry.";
         public string lastModified;
-    }
-
-    [Serializable]
-    public class RemovedScriptEntry
-    {
-        public string name;
-        public string path;
-        public string reason = "Removed during auto-update.";
     }
 
     public class UpdateScriptReference
@@ -54,23 +45,19 @@ namespace VirulentVentures.Editor
             {
                 string existingJson = File.ReadAllText(outputPath);
                 scriptReference = JsonUtility.FromJson<ScriptReference>(existingJson);
-                scriptReference.notes.Add($"Updated on {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             }
-            else
-            {
-                scriptReference.date = DateTime.Now.ToString("yyyy-MM-dd");
-                scriptReference.notes.Add("Initial auto-generated document.");
-            }
+
+            // Update date and add note for this run
+            scriptReference.date = DateTime.Now.ToString("yyyy-MM-dd");
+            scriptReference.notes.Add($"Updated on {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
 
             // Get all .cs files in Scripts folder
             string[] scriptFiles = Directory.GetFiles(scriptsFolder, "*.cs", SearchOption.AllDirectories);
             List<ScriptEntry> newScripts = new List<ScriptEntry>();
-            List<string> currentScriptNames = new List<string>();
 
             foreach (string filePath in scriptFiles)
             {
                 string fileName = Path.GetFileName(filePath);
-                currentScriptNames.Add(fileName);
 
                 // Check if script already exists in ScriptReference
                 ScriptEntry existingEntry = scriptReference.scripts.Find(s => s.name == fileName);
@@ -88,20 +75,6 @@ namespace VirulentVentures.Editor
                         name = fileName,
                         path = filePath,
                         lastModified = File.GetLastWriteTime(filePath).ToString("yyyy-MM-dd HH:mm:ss")
-                    });
-                }
-            }
-
-            // Mark removed scripts
-            foreach (var oldScript in scriptReference.scripts)
-            {
-                if (!currentScriptNames.Contains(oldScript.name))
-                {
-                    scriptReference.removed_scripts.Add(new RemovedScriptEntry
-                    {
-                        name = oldScript.name,
-                        path = oldScript.path,
-                        reason = $"Removed during auto-update on {DateTime.Now:yyyy-MM-dd HH:mm:ss}"
                     });
                 }
             }
