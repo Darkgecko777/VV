@@ -23,6 +23,33 @@ namespace VirulentVentures
             isPaused = false;
             noTargetLogCooldowns.Clear();
             Debug.Log("CombatLoopComponent: Awake completed.");
+
+            // Subscribe to pause/resume events
+            eventBus.OnCombatPaused += () =>
+            {
+                isPaused = true;
+                Debug.Log("CombatLoopComponent: Combat paused, isPaused = " + isPaused);
+            };
+            eventBus.OnCombatPlayed += () =>
+            {
+                isPaused = false;
+                Debug.Log("CombatLoopComponent: Combat resumed, isPaused = " + isPaused);
+            };
+        }
+
+        void OnDestroy()
+        {
+            // Unsubscribe from events to prevent memory leaks
+            eventBus.OnCombatPaused -= () =>
+            {
+                isPaused = true;
+                Debug.Log("CombatLoopComponent: Combat paused, isPaused = " + isPaused);
+            };
+            eventBus.OnCombatPlayed -= () =>
+            {
+                isPaused = false;
+                Debug.Log("CombatLoopComponent: Combat resumed, isPaused = " + isPaused);
+            };
         }
 
         void Start()
@@ -80,6 +107,7 @@ namespace VirulentVentures
             turnComponent.IncrementRound();
             while (isCombatActive)
             {
+                Debug.Log("CombatLoopComponent: Checking pause state, isPaused = " + isPaused);
                 yield return new WaitUntil(() => !isPaused);
                 var unitList = setupComponent.Units.Select(u => u.unit).Where(u => u.Health > 0 && !u.HasRetreated).OrderByDescending(u => u.Speed).ToList();
                 if (unitList.Count == 0 || setupComponent.HeroPositions.Count == 0 || setupComponent.MonsterPositions.Count == 0)
@@ -157,6 +185,7 @@ namespace VirulentVentures
                     if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && CombatSceneComponent.Instance.ExpeditionManager.GetExpedition().Party.CheckRetreat(unit, eventBus, CombatSceneComponent.Instance.UIConfig))
                     {
                         CombatSceneComponent.Instance.ExpeditionManager.GetExpedition().Party.ProcessRetreat(unit, eventBus, CombatSceneComponent.Instance.UIConfig);
+                        Debug.Log("CombatLoopComponent: Checking pause state after retreat, isPaused = " + isPaused);
                         yield return new WaitUntil(() => !isPaused);
                         yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
                         if (setupComponent.HeroPositions.Count == 0 || setupComponent.MonsterPositions.Count == 0)
@@ -214,7 +243,6 @@ namespace VirulentVentures
             eventBus.RaiseLogMessage(abilityMessage, CombatSceneComponent.Instance.UIConfig.TextColor);
             eventBus.RaiseUnitAttacking(unit, null, abilityId);
             eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = unit, target = null, abilityId = abilityId });
-
             List<ICombatUnit> selectedTargets = new List<ICombatUnit>();
             if (ability != null)
             {
@@ -223,14 +251,12 @@ namespace VirulentVentures
                     maxTargets = Mathf.Max(maxTargets, attack.Melee ? Mathf.Min(attack.NumberOfTargets, 2) : Mathf.Min(attack.NumberOfTargets, 4));
                 foreach (var effect in ability.Effects)
                     maxTargets = Mathf.Max(maxTargets, effect.Melee ? Mathf.Min(effect.NumberOfTargets, 2) : Mathf.Min(effect.NumberOfTargets, 4));
-
                 var enemyTargets = stats.Type == CharacterType.Hero
                     ? setupComponent.MonsterPositions.Where(m => m.Health > 0 && !m.HasRetreated).OrderBy(m => m.PartyPosition).Select(m => (ICombatUnit)m).ToList()
                     : setupComponent.HeroPositions.Where(h => h.Health > 0 && !h.HasRetreated).OrderBy(h => h.PartyPosition).Select(h => (ICombatUnit)h).ToList();
                 var allyTargets = stats.Type == CharacterType.Hero
                     ? setupComponent.HeroPositions.Where(h => h.Health > 0 && !h.HasRetreated).OrderBy(h => h.PartyPosition).Select(h => (ICombatUnit)h).ToList()
                     : setupComponent.MonsterPositions.Where(m => m.Health > 0 && !m.HasRetreated).OrderBy(m => m.PartyPosition).Select(m => (ICombatUnit)m).ToList();
-
                 foreach (var attack in ability.Attacks)
                 {
                     selectedTargets.AddRange(attack.TargetingRule.SelectTargets(stats, attack.Enemy ? enemyTargets : allyTargets, partyData, attack.Melee));
@@ -241,7 +267,6 @@ namespace VirulentVentures
                         eventBus.RaiseLogMessage(targetMessage, CombatSceneComponent.Instance.UIConfig.TextColor);
                     }
                 }
-
                 foreach (var effect in ability.Effects)
                 {
                     var newTargets = effect.TargetingRule.SelectTargets(stats, effect.Enemy ? enemyTargets : allyTargets, partyData, effect.Melee);
@@ -259,7 +284,6 @@ namespace VirulentVentures
                         eventBus.RaiseLogMessage(targetMessage, CombatSceneComponent.Instance.UIConfig.TextColor);
                     }
                 }
-
                 selectedTargets = selectedTargets.Distinct().Take(maxTargets).ToList();
             }
             else
@@ -274,7 +298,6 @@ namespace VirulentVentures
                         : setupComponent.HeroPositions.IndexOf(t as CharacterStats) + 1) <= 2).ToList();
                 selectedTargets = basicAttack != null ? basicAttack.Attacks.First().TargetingRule.SelectTargets(stats, enemyTargets, partyData, true) : new List<ICombatUnit>();
             }
-
             if (!selectedTargets.Any())
             {
                 string key = stats.Id + "_no_target";
@@ -294,7 +317,6 @@ namespace VirulentVentures
                 }
                 yield break;
             }
-
             var unitState = setupComponent.UnitAttackStates.Find(s => s.Unit == unit);
             int originalAttack = stats.Attack;
             int originalSpeed = stats.Speed;
@@ -305,10 +327,9 @@ namespace VirulentVentures
                 if (unitState.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
                 if (unitState.TempStats.TryGetValue("Evasion", out var evaMod)) stats.Evasion += evaMod.value;
             }
-
+            Debug.Log("CombatLoopComponent: Checking pause state before processing attack, isPaused = " + isPaused);
             yield return new WaitUntil(() => !isPaused);
             yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-
             foreach (var target in selectedTargets)
             {
                 var targetStats = target as CharacterStats;
@@ -320,7 +341,6 @@ namespace VirulentVentures
                     if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats.Defense += defMod.value;
                     if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) currentEvasion += evaMod.value;
                 }
-
                 bool attackDodged = false;
                 if (ability != null)
                 {
@@ -354,7 +374,6 @@ namespace VirulentVentures
                             effectsComponent.ProcessEffect(stats, targetStats, tag, abilityId);
                     }
                 }
-
                 if (targetStats != null && target.Health <= 0)
                 {
                     eventBus.RaiseUnitDied(target);
@@ -373,7 +392,6 @@ namespace VirulentVentures
                 }
                 if (targetStats != null) targetStats.Defense = originalDefense;
             }
-
             stats.Attack = originalAttack;
             stats.Speed = originalSpeed;
             stats.Evasion = originalEvasion;
