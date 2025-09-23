@@ -3,7 +3,6 @@ using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
-
 namespace VirulentVentures
 {
     public class CombatUIElementsComponent : MonoBehaviour
@@ -24,7 +23,6 @@ namespace VirulentVentures
         private Button playButton;
         private float speedIncrement = 0.5f;
         private bool isPaused;
-
         void Awake()
         {
             if (!ValidateReferences()) return;
@@ -37,7 +35,6 @@ namespace VirulentVentures
             eventBus.OnCombatSpeedChanged += HandleCombatSpeedChanged;
             eventBus.OnAbilitySelected += HandleAbilitySelected;
         }
-
         void OnDestroy()
         {
             eventBus.OnCombatInitialized -= InitializeCombat;
@@ -56,7 +53,6 @@ namespace VirulentVentures
             if (playButton != null)
                 playButton.clicked -= PlayCombat;
         }
-
         private void SetupUI()
         {
             root = GetComponent<UIDocument>().rootVisualElement;
@@ -101,60 +97,51 @@ namespace VirulentVentures
             }
             speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
             speedPlusButton.clicked += IncreaseSpeed;
-            speedMinusButton.clicked += DecreaseSpeed;
+            speedMinusButton.clicked -= DecreaseSpeed;
             pauseButton.clicked += PauseCombat;
             playButton.clicked += PlayCombat;
             UpdateButtonStates();
         }
-
         private void IncreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed + speedIncrement;
             eventBus.RaiseCombatSpeedChanged(newSpeed);
         }
-
         private void DecreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed - speedIncrement;
             eventBus.RaiseCombatSpeedChanged(newSpeed);
         }
-
         private void PauseCombat()
         {
             eventBus.RaiseCombatPaused();
         }
-
         private void PlayCombat()
         {
             eventBus.RaiseCombatPlayed();
         }
-
         private void HandleCombatPaused()
         {
             isPaused = true;
             eventBus.RaiseLogMessage("Combat paused", uiConfig.TextColor);
             UpdateButtonStates();
         }
-
         private void HandleCombatPlayed()
         {
             isPaused = false;
             eventBus.RaiseLogMessage("Combat resumed", uiConfig.TextColor);
             UpdateButtonStates();
         }
-
         private void HandleCombatSpeedChanged(EventBusSO.CombatSpeedData data)
         {
             speedLabel.text = $"Speed: {data.speed:F1}x";
             UpdateButtonStates();
         }
-
         private void HandleAbilitySelected(EventBusSO.AttackData data)
         {
             if (unitPanels.TryGetValue(data.attacker, out VisualElement panel) && (data.abilityId.Contains("Taunt") || data.abilityId.Contains("Thorns")))
                 StartCoroutine(FlashPanel(panel, new Color(1f, 1f, 0f), 0.5f));
         }
-
         private void UpdateButtonStates()
         {
             pauseButton.SetEnabled(!isPaused);
@@ -162,7 +149,6 @@ namespace VirulentVentures
             speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
             speedMinusButton.SetEnabled(combatConfig.CombatSpeed > combatConfig.MinCombatSpeed);
         }
-
         private void HandleLogMessage(EventBusSO.LogData logData)
         {
             var label = new Label(logData.message);
@@ -193,21 +179,22 @@ namespace VirulentVentures
                 Debug.LogError("CombatUIElementsComponent: ScrollView not found for log-content.");
             }
         }
-
         private void UpdateHealthBar(VisualElement fill, Label label, int health, int maxHealth)
         {
             float healthPercent = maxHealth > 0 ? (float)health / maxHealth : 0;
             fill.style.width = Length.Percent(healthPercent * 100);
+            fill.style.backgroundColor = new Color(0f, 1f, 0f); // Green fill
+            fill.parent.style.backgroundColor = new Color(1f, 0f, 0f); // Red background
             label.text = $"{health}/{maxHealth}";
         }
-
         private void UpdateMoraleBar(VisualElement fill, Label label, int morale, int maxMorale)
         {
             float moralePercent = maxMorale > 0 ? (float)morale / maxMorale : 0;
             fill.style.width = Length.Percent(moralePercent * 100);
+            fill.style.backgroundColor = new Color(0f, 0f, 1f); // Blue fill
+            fill.parent.style.backgroundColor = new Color(0.5f, 0.5f, 0.5f); // Grey background
             label.text = $"{morale}/{maxMorale}";
         }
-
         private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float heightPercent)
         {
             var panel = new VisualElement();
@@ -279,7 +266,6 @@ namespace VirulentVentures
             unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel, rankLabel);
             return panel;
         }
-
         private void InitializeCombat(EventBusSO.CombatInitData data)
         {
             unitPanels.Clear();
@@ -310,7 +296,6 @@ namespace VirulentVentures
                 unitPanels[unit] = panel;
             }
         }
-
         private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
         {
             if (unitPanels.TryGetValue(data.unit, out VisualElement panel))
@@ -358,7 +343,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         private IEnumerator FlashPanel(VisualElement panel, Color flashColor, float duration)
         {
             var originalColor = panel.style.backgroundColor;
@@ -366,7 +350,6 @@ namespace VirulentVentures
             yield return new WaitForSeconds(duration / combatConfig.CombatSpeed);
             panel.style.backgroundColor = originalColor;
         }
-
         private bool ValidateReferences()
         {
             if (uiConfig == null || eventBus == null || combatConfig == null)

@@ -84,16 +84,13 @@ namespace VirulentVentures
             heroPositions.Clear();
             monsterPositions.Clear();
             units.Clear();
-            Debug.Log("CombatSceneComponent: Awake completed.");
             eventBus.OnCombatPaused += () =>
             {
                 isPaused = true;
-                Debug.Log("CombatSceneComponent: Combat paused, isPaused = " + isPaused);
             };
             eventBus.OnCombatPlayed += () =>
             {
                 isPaused = false;
-                Debug.Log("CombatSceneComponent: Combat resumed, isPaused = " + isPaused);
             };
             eventBus.OnCombatEnded += () => EndCombat(ExpeditionManager, heroPositions.Count == 0);
         }
@@ -260,17 +257,20 @@ namespace VirulentVentures
             targetPool = targetPool.Where(t => filteredPool.Contains(t)).ToList();
             if (isMelee || rule.MeleeOnly)
             {
-                targetPool = targetPool.Where(t =>
+                if (targetPool.Count > 1) // Allow any target if only one exists
                 {
-                    var pos = user.Type == CharacterType.Hero
-                        ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
-                        : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition;
-                    return pos.HasValue && pos.Value <= 2;
-                }).ToList();
-                if (targetPool.Count == 0)
-                {
-                    Debug.LogWarning($"CombatSceneComponent: No frontline targets for {user.Id}'s melee attack.");
-                    return new List<ICombatUnit>();
+                    targetPool = targetPool.Where(t =>
+                    {
+                        var pos = user.Type == CharacterType.Hero
+                            ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
+                            : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition;
+                        return pos.HasValue && pos.Value <= 2;
+                    }).ToList();
+                    if (targetPool.Count == 0)
+                    {
+                        Debug.LogWarning($"CombatSceneComponent: No frontline targets for {user.Id}'s melee attack.");
+                        return new List<ICombatUnit>();
+                    }
                 }
             }
             if (rule.MustBeInfected)
