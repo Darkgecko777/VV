@@ -13,7 +13,6 @@ namespace VirulentVentures
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private Camera combatCamera;
         [SerializeField] private PartyData partyData;
-
         private List<UnitAttackState> unitAttackStates = new List<UnitAttackState>();
         private List<string> allCombatLogs = new List<string>();
         private List<CharacterStats> heroPositions = new List<CharacterStats>();
@@ -23,7 +22,6 @@ namespace VirulentVentures
         private bool isPaused;
         private int roundNumber;
         private Dictionary<string, float> noTargetLogCooldowns = new Dictionary<string, float>();
-        public static CombatSceneComponent Instance { get; private set; }
         public ExpeditionManager ExpeditionManager => ExpeditionManager.Instance;
         public List<string> AllCombatLogs => allCombatLogs;
         public bool IsPaused => isPaused;
@@ -85,13 +83,6 @@ namespace VirulentVentures
 
         void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Debug.LogWarning("CombatSceneComponent: Duplicate instance detected, destroying this one.");
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
             isCombatActive = false;
             isPaused = false;
             roundNumber = 0;
@@ -102,7 +93,6 @@ namespace VirulentVentures
             monsterPositions.Clear();
             units.Clear();
             Debug.Log("CombatSceneComponent: Awake completed.");
-
             eventBus.OnCombatPaused += () =>
             {
                 isPaused = true;
@@ -130,6 +120,7 @@ namespace VirulentVentures
                 return;
             }
             Debug.Log("CombatSceneComponent: Initializing units...");
+            AbilityDatabase.Reinitialize(this); // Pass direct reference to AbilityDatabase
             InitializeUnits(expedition.Party.GetHeroes(), expedition.NodeData[expedition.CurrentNodeIndex].Monsters);
             Debug.Log("CombatSceneComponent: Starting combat loop...");
             StartCombatLoop(expedition.Party);
@@ -261,7 +252,6 @@ namespace VirulentVentures
                 Debug.LogWarning($"CombatSceneComponent: Empty targetPool for {user.Id}. Returning empty list.");
                 return new List<ICombatUnit>();
             }
-
             var orderedHeroes = heroPositions
                 .Where(h => h.Health > 0 && !h.HasRetreated)
                 .OrderBy(h => h.PartyPosition)
@@ -272,13 +262,10 @@ namespace VirulentVentures
                 .OrderBy(m => m.PartyPosition)
                 .Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 })
                 .ToList();
-
             List<ICombatUnit> filteredPool = rule.Target == TargetingRule.ConditionTarget.Ally
                 ? (user.Type == CharacterType.Hero ? orderedHeroes.Select(h => h.Unit).ToList() : orderedMonsters.Select(m => m.Unit).ToList())
                 : (user.Type == CharacterType.Hero ? orderedMonsters.Select(m => m.Unit).ToList() : orderedHeroes.Select(h => h.Unit).ToList());
-
             targetPool = targetPool.Where(t => filteredPool.Contains(t)).ToList();
-
             if (isMelee || rule.MeleeOnly)
             {
                 targetPool = targetPool.Where(t =>
@@ -294,18 +281,15 @@ namespace VirulentVentures
                     return new List<ICombatUnit>();
                 }
             }
-
             if (rule.MustBeInfected)
                 targetPool = targetPool.Where(t => (t as CharacterStats)?.IsInfected == true).ToList();
             if (rule.MustNotBeInfected)
                 targetPool = targetPool.Where(t => (t as CharacterStats)?.IsInfected == false).ToList();
-
             if (targetPool.Count == 0)
             {
                 Debug.LogWarning($"CombatSceneComponent: No targets after infection filter for {user.Id}.");
                 return new List<ICombatUnit>();
             }
-
             switch (rule.Type)
             {
                 case TargetingRule.RuleType.LowestHealth:
@@ -334,11 +318,9 @@ namespace VirulentVentures
                     targetPool = targetPool.OrderBy(t => UnityEngine.Random.value).ToList();
                     break;
             }
-
             int maxTargets = isMelee ? Mathf.Min(2, targetPool.Count) : Mathf.Min(4, targetPool.Count);
             if (rule.Type == TargetingRule.RuleType.AllAllies && rule.Target == TargetingRule.ConditionTarget.Ally)
                 maxTargets = targetPool.Count;
-
             var selected = targetPool.Take(maxTargets).ToList();
             Debug.Log($"CombatSceneComponent: Selected {selected.Count} targets for {user.Id} from pool of {targetPool.Count}.");
             return selected;
@@ -551,16 +533,13 @@ namespace VirulentVentures
                 Debug.LogWarning($"CombatSceneComponent: Null user or target for effect {tag} in ability {abilityId}.");
                 return;
             }
-
             string[] tagParts = tag.Split(':');
             string effectType = tagParts[0];
             int value = tagParts.Length > 1 && int.TryParse(tagParts[1], out int parsedValue) ? parsedValue : 0;
             float floatValue = tagParts.Length > 1 && float.TryParse(tagParts[1], out float parsedFloat) ? parsedFloat : 0f;
             var targetState = GetUnitAttackState(target);
-
             string effectMessage = string.Empty;
             Color messageColor = uiConfig.TextColor;
-
             switch (effectType)
             {
                 case "TrueStrike":
@@ -572,7 +551,6 @@ namespace VirulentVentures
                         eventBus.RaiseUnitDamaged(target, effectMessage);
                     }
                     break;
-
                 case "Heal":
                     if (floatValue > 0)
                     {
@@ -583,7 +561,6 @@ namespace VirulentVentures
                         eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
                     }
                     break;
-
                 case "SkipNextAttack":
                     if (targetState != null)
                     {
@@ -597,7 +574,6 @@ namespace VirulentVentures
                         Debug.LogWarning($"CombatSceneComponent: No UnitAttackState for {target.Id} for SkipNextAttack {tag}.");
                     }
                     break;
-
                 case "Thorns":
                     if (value > 0 && targetState != null)
                     {
@@ -612,7 +588,6 @@ namespace VirulentVentures
                         Debug.LogWarning($"CombatSceneComponent: No UnitAttackState for {target.Id} for ThornsInfection {tag}.");
                     }
                     break;
-
                 case "MoraleShield":
                     if (targetState != null && !targetState.TempStats.ContainsKey("MoraleShield"))
                     {
@@ -622,13 +597,11 @@ namespace VirulentVentures
                         eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
                     }
                     break;
-
                 default:
                     Debug.LogWarning($"CombatSceneComponent: Unrecognized effect tag {tag} for {abilityId}.");
                     effectMessage = $"Unknown effect {tag} applied by {user.Id} on {target.Id} with {abilityId}!";
                     break;
             }
-
             if (!string.IsNullOrEmpty(effectMessage))
             {
                 allCombatLogs.Add(effectMessage);
@@ -640,7 +613,6 @@ namespace VirulentVentures
         {
             if (target == null) return;
             var targetState = GetUnitAttackState(target);
-
             bool shielded = false;
             if (targetState != null && targetState.TempStats.TryGetValue("MoraleShield", out var shield))
             {
@@ -651,7 +623,6 @@ namespace VirulentVentures
                 eventBus.RaiseLogMessage(shieldMessage, uiConfig.TextColor);
                 eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
             }
-
             if (!shielded)
             {
                 target.Morale = Mathf.Max(0, target.Morale - moraleLoss);
@@ -673,7 +644,6 @@ namespace VirulentVentures
                 if (targetState.TempStats.TryGetValue("Defense", out var defMod)) target.Defense += defMod.value;
                 if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) currentEvasion += evaMod.value;
             }
-
             bool attackDodged = false;
             if (attackParams.Dodgeable)
             {
@@ -739,7 +709,6 @@ namespace VirulentVentures
             eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
             eventBus.RaiseUnitAttacking(unit, null, abilityId);
             eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = unit, target = null, abilityId = abilityId });
-
             int originalAttack = stats.Attack;
             int originalSpeed = stats.Speed;
             int originalEvasion = stats.Evasion;
@@ -749,12 +718,9 @@ namespace VirulentVentures
                 if (state.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
                 if (state.TempStats.TryGetValue("Evasion", out var evaMod)) stats.Evasion += evaMod.value;
             }
-
             yield return new WaitUntil(() => !isPaused);
             yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-
             ability.Effect(stats, partyData, targets);
-
             foreach (var target in targets.ToList())
             {
                 if (target.Health <= 0)
@@ -782,7 +748,6 @@ namespace VirulentVentures
             {
                 partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig);
             }
-
             stats.Attack = originalAttack;
             stats.Speed = originalSpeed;
             stats.Evasion = originalEvasion;

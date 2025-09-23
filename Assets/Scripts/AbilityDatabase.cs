@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
 namespace VirulentVentures
 {
     public static class AbilityDatabase
     {
         public enum CooldownType { Actions, Rounds }
-
         public class Ability
         {
             public string Id { get; }
@@ -21,7 +19,6 @@ namespace VirulentVentures
             public int Rank { get; }
             public string LogTemplate { get; }
             private readonly CombatSceneComponent sceneComponent;
-
             public Ability(
                 string id,
                 string animationTrigger,
@@ -43,10 +40,9 @@ namespace VirulentVentures
                 Priority = priority;
                 Rank = rank;
                 LogTemplate = logTemplate;
-                this.sceneComponent = sceneComponent;
+                this.sceneComponent = sceneComponent ?? throw new ArgumentNullException(nameof(sceneComponent));
             }
         }
-
         private static readonly Dictionary<string, Ability> heroAbilities = new Dictionary<string, Ability>();
         private static readonly Dictionary<string, Ability> monsterAbilities = new Dictionary<string, Ability>();
         private static readonly Dictionary<string, string[]> heroAbilityMap = new Dictionary<string, string[]>
@@ -64,12 +60,6 @@ namespace VirulentVentures
             { "Wraith", new[] { "WraithStrike", "WraithHoaryGrasp" } }
         };
         private static bool isInitialized = false;
-
-        static AbilityDatabase()
-        {
-            InitializeAbilities(null);
-        }
-
         public static string[] GetCharacterAbilityIds(string characterId, CharacterType type)
         {
             var map = type == CharacterType.Hero ? heroAbilityMap : monsterAbilityMap;
@@ -80,12 +70,15 @@ namespace VirulentVentures
             Debug.LogWarning($"AbilityDatabase: No abilities mapped for {characterId} ({type}). Returning BasicAttack.");
             return type == CharacterType.Hero ? new[] { "BasicAttack" } : new string[0];
         }
-
-        private static void InitializeAbilities(CombatSceneComponent sceneComponent)
+        public static void InitializeAbilities(CombatSceneComponent sceneComponent)
         {
             if (isInitialized) return;
             isInitialized = true;
-
+            if (sceneComponent == null)
+            {
+                Debug.LogError("AbilityDatabase: sceneComponent is null in InitializeAbilities.");
+                return;
+            }
             // Generic BasicAttack (for fallback)
             heroAbilities["BasicAttack"] = new Ability(
                 id: "BasicAttack",
@@ -117,7 +110,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} attacks {target.Id} for {damage} damage!",
                 sceneComponent: sceneComponent
             );
-
             // Fighter Abilities
             heroAbilities["FighterMeleeAttack"] = new Ability(
                 id: "FighterMeleeAttack",
@@ -149,7 +141,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} attacks {target.Id} for {damage} damage!",
                 sceneComponent: sceneComponent
             );
-
             heroAbilities["FighterShieldBash"] = new Ability(
                 id: "FighterShieldBash",
                 animationTrigger: "DefaultAttack",
@@ -183,7 +174,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} bashes {target.Id} for {damage} damage, delaying their attack!",
                 sceneComponent: sceneComponent
             );
-
             heroAbilities["FighterCoupDeGrace"] = new Ability(
                 id: "FighterCoupDeGrace",
                 animationTrigger: "DefaultAttack",
@@ -221,7 +211,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} executes {target.Id} with CoupDeGrace! | {target.Id} resists CoupDeGrace!",
                 sceneComponent: sceneComponent
             );
-
             // Monk Abilities
             heroAbilities["MonkBasicAttack"] = new Ability(
                 id: "MonkBasicAttack",
@@ -256,7 +245,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} attacks {target.Id} for {damage} damage, boosting Evasion!",
                 sceneComponent: sceneComponent
             );
-
             heroAbilities["MonkChiStrike"] = new Ability(
                 id: "MonkChiStrike",
                 animationTrigger: "DefaultAttack",
@@ -285,7 +273,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} unleashes ChiStrike on {target.Id} for {damage} true damage!",
                 sceneComponent: sceneComponent
             );
-
             heroAbilities["MonkMeditate"] = new Ability(
                 id: "MonkMeditate",
                 animationTrigger: "DefaultBuff",
@@ -307,7 +294,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} meditates, healing {amount} HP and gaining 5 Morale!",
                 sceneComponent: sceneComponent
             );
-
             // Scout Abilities
             heroAbilities["ScoutBasicAttack"] = new Ability(
                 id: "ScoutBasicAttack",
@@ -339,7 +325,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} attacks {target.Id} for {damage} damage!",
                 sceneComponent: sceneComponent
             );
-
             heroAbilities["ScoutSniperShot"] = new Ability(
                 id: "ScoutSniperShot",
                 animationTrigger: "DefaultAttack",
@@ -370,7 +355,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} snipes {target.Id} for {damage} damage!",
                 sceneComponent: sceneComponent
             );
-
             heroAbilities["ScoutEnhanceWeaponry"] = new Ability(
                 id: "ScoutEnhanceWeaponry",
                 animationTrigger: "DefaultBuff",
@@ -399,7 +383,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} enhances {target.Id}’s weaponry, boosting Attack by 5!",
                 sceneComponent: sceneComponent
             );
-
             // Healer Abilities
             heroAbilities["HealerBasicAttack"] = new Ability(
                 id: "HealerBasicAttack",
@@ -431,7 +414,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} attacks {target.Id} for {damage} damage!",
                 sceneComponent: sceneComponent
             );
-
             heroAbilities["HealerHeal"] = new Ability(
                 id: "HealerHeal",
                 animationTrigger: "DefaultBuff",
@@ -460,7 +442,6 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} heals {target.Id} for {amount} HP!",
                 sceneComponent: sceneComponent
             );
-
             heroAbilities["HealerSteelResolve"] = new Ability(
                 id: "HealerSteelResolve",
                 animationTrigger: "DefaultBuff",
@@ -491,9 +472,8 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} casts SteelResolve, shielding allies from Morale loss!",
                 sceneComponent: sceneComponent
             );
-
             // MireShambler Abilities
-            heroAbilities["ShamblerThornNeedle"] = new Ability(
+            monsterAbilities["ShamblerThornNeedle"] = new Ability(
                 id: "ShamblerThornNeedle",
                 animationTrigger: "DefaultAttack",
                 useCondition: (user, party, targets) => true,
@@ -523,8 +503,7 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} fires ThornNeedle at {target.Id} for {damage} damage!",
                 sceneComponent: sceneComponent
             );
-
-            heroAbilities["ShamblerSwampBrambles"] = new Ability(
+            monsterAbilities["ShamblerSwampBrambles"] = new Ability(
                 id: "ShamblerSwampBrambles",
                 animationTrigger: "DefaultBuff",
                 useCondition: (user, party, targets) => true,
@@ -544,9 +523,8 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} grows SwampBrambles, reflecting damage!",
                 sceneComponent: sceneComponent
             );
-
             // BogFiend Abilities
-            heroAbilities["FiendMeleeAttack"] = new Ability(
+            monsterAbilities["FiendMeleeAttack"] = new Ability(
                 id: "FiendMeleeAttack",
                 animationTrigger: "DefaultAttack",
                 useCondition: (user, party, targets) => true,
@@ -576,8 +554,7 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} attacks {target.Id} for {damage} damage!",
                 sceneComponent: sceneComponent
             );
-
-            heroAbilities["FiendSludgeSlam"] = new Ability(
+            monsterAbilities["FiendSludgeSlam"] = new Ability(
                 id: "FiendSludgeSlam",
                 animationTrigger: "DefaultAttack",
                 useCondition: (user, party, targets) => targets.Any(t => t.PartyPosition <= 2 && t.Health > 0 && !t.HasRetreated),
@@ -611,8 +588,7 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} slams heroes for {damage} damage, slowing them!",
                 sceneComponent: sceneComponent
             );
-
-            heroAbilities["FiendDrainHealth"] = new Ability(
+            monsterAbilities["FiendDrainHealth"] = new Ability(
                 id: "FiendDrainHealth",
                 animationTrigger: "DefaultAttack",
                 useCondition: (user, party, targets) => targets.Any(t => t.PartyPosition <= 4 && t.Health > 0 && !t.HasRetreated),
@@ -642,9 +618,8 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} drains {target.Id} for {damage} HP, healing itself!",
                 sceneComponent: sceneComponent
             );
-
             // UmbralCorvax Abilities
-            heroAbilities["CorvaxBasicAttack"] = new Ability(
+            monsterAbilities["CorvaxBasicAttack"] = new Ability(
                 id: "CorvaxBasicAttack",
                 animationTrigger: "DefaultAttack",
                 useCondition: (user, party, targets) => true,
@@ -674,8 +649,7 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} attacks {target.Id} for {damage} damage!",
                 sceneComponent: sceneComponent
             );
-
-            heroAbilities["CorvaxMortifyingShriek"] = new Ability(
+            monsterAbilities["CorvaxMortifyingShriek"] = new Ability(
                 id: "CorvaxMortifyingShriek",
                 animationTrigger: "DefaultAttack",
                 useCondition: (user, party, targets) => targets.Any(t => t.PartyPosition <= 4 && t.Health > 0 && !t.HasRetreated),
@@ -702,8 +676,7 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} shrieks, draining 10 Morale from heroes!",
                 sceneComponent: sceneComponent
             );
-
-            heroAbilities["CorvaxWindsOfTerror"] = new Ability(
+            monsterAbilities["CorvaxWindsOfTerror"] = new Ability(
                 id: "CorvaxWindsOfTerror",
                 animationTrigger: "DefaultBuff",
                 useCondition: (user, party, targets) => sceneComponent.GetMonsterUnits().Any(m => m.Health > 0 && !m.HasRetreated),
@@ -732,9 +705,8 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} summons WindsOfTerror, boosting ally Speed!",
                 sceneComponent: sceneComponent
             );
-
             // Wraith Abilities
-            heroAbilities["WraithStrike"] = new Ability(
+            monsterAbilities["WraithStrike"] = new Ability(
                 id: "WraithStrike",
                 animationTrigger: "DefaultAttack",
                 useCondition: (user, party, targets) => true,
@@ -765,8 +737,7 @@ namespace VirulentVentures
                 logTemplate: "{user.Id} strikes {target.Id} for {damage} true damage, losing 10 HP!",
                 sceneComponent: sceneComponent
             );
-
-            heroAbilities["WraithHoaryGrasp"] = new Ability(
+            monsterAbilities["WraithHoaryGrasp"] = new Ability(
                 id: "WraithHoaryGrasp",
                 animationTrigger: "DefaultAttack",
                 useCondition: (user, party, targets) => targets.Any(t => t.PartyPosition <= 2 && t.Health > 0 && !t.HasRetreated),
@@ -804,7 +775,6 @@ namespace VirulentVentures
                 sceneComponent: sceneComponent
             );
         }
-
         public static Ability GetHeroAbility(string id)
         {
             if (heroAbilities.TryGetValue(id, out var ability))
@@ -812,7 +782,6 @@ namespace VirulentVentures
             Debug.LogWarning($"AbilityDatabase: Hero ability ID {id} not found, returning null.");
             return null;
         }
-
         public static Ability GetMonsterAbility(string id)
         {
             if (monsterAbilities.TryGetValue(id, out var ability))
@@ -820,7 +789,6 @@ namespace VirulentVentures
             Debug.LogWarning($"AbilityDatabase: Monster ability ID {id} not found, returning null.");
             return null;
         }
-
         public static void Reinitialize(CombatSceneComponent sceneComponent)
         {
             heroAbilities.Clear();
@@ -828,7 +796,6 @@ namespace VirulentVentures
             isInitialized = false;
             InitializeAbilities(sceneComponent);
         }
-
         public static (string abilityId, string failMessage) SelectAbility(CharacterStats unit, PartyData partyData, List<ICombatUnit> targets, UnitAttackState state)
         {
             if (state == null)

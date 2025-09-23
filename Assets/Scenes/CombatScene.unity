@@ -129,6 +129,8 @@ GameObject:
   m_Component:
   - component: {fileID: 289561822}
   - component: {fileID: 289561821}
+  - component: {fileID: 289561823}
+  - component: {fileID: 289561824}
   m_Layer: 0
   m_Name: CombatVisualsComponent
   m_TagString: Untagged
@@ -167,6 +169,40 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &289561823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 289561820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aebc016e2b206f249abe95673ea1bc1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
+--- !u!114 &289561824
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 289561820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_PanelSettings: {fileID: 11400000, guid: cf1ac79303ed47947bcc1c7304ec1ab1, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 279e09c874667a4499e5c984870c11d6, type: 3}
+  m_SortingOrder: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -433,14 +469,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
-  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
-  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
-  effectsComponent: {fileID: 0}
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
   combatCamera: {fileID: 519420031}
-  turnComponent: {fileID: 0}
-  setupComponent: {fileID: 0}
-  loopComponent: {fileID: 0}
+  partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
