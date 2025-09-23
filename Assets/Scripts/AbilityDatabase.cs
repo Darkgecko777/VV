@@ -168,7 +168,7 @@ namespace VirulentVentures
                         sceneComponent.UIConfig.TextColor);
                 },
                 cooldown: 1,
-                cooldownType: CooldownType.Actions,
+                cooldownType: CooldownType.Rounds,
                 priority: 2,
                 rank: 1,
                 logTemplate: "{user.Id} bashes {target.Id} for {damage} damage, delaying their attack!",

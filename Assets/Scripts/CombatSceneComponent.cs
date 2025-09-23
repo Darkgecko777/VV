@@ -108,9 +108,7 @@ namespace VirulentVentures
                 Debug.LogError("CombatSceneComponent: Invalid expedition data, cannot initialize units.");
                 return;
             }
-            Debug.Log("CombatSceneComponent: Initializing units...");
             InitializeUnits(expedition.Party.GetHeroes(), expedition.NodeData[expedition.CurrentNodeIndex].Monsters);
-            Debug.Log("CombatSceneComponent: Starting combat loop...");
             StartCombatLoop(expedition.Party);
         }
         void OnDestroy()
@@ -118,7 +116,6 @@ namespace VirulentVentures
             eventBus.OnCombatPaused -= () => { isPaused = true; Debug.Log("CombatSceneComponent: Combat paused."); };
             eventBus.OnCombatPlayed -= () => { isPaused = false; Debug.Log("CombatSceneComponent: Combat resumed."); };
             eventBus.OnCombatEnded -= () => EndCombat(ExpeditionManager, heroPositions.Count == 0);
-            Debug.Log("CombatSceneComponent: Destroyed.");
         }
         public void PauseCombat()
         {
@@ -178,7 +175,6 @@ namespace VirulentVentures
                 if (monster.abilityIds == null || monster.abilityIds.Length == 0)
                 {
                     monster.abilityIds = AbilityDatabase.GetCharacterAbilityIds(monster.Id, CharacterType.Monster);
-                    Debug.Log($"Assigned abilities to monster {monster.Id}: {string.Join(", ", monster.abilityIds)}");
                 }
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
@@ -208,7 +204,7 @@ namespace VirulentVentures
             {
                 units.Remove(unitEntry);
                 var newStats = unit.GetDisplayStats();
-                units.Add((unit, unitEntry.go, newStats));
+                units.Add((unit, null, newStats));
                 eventBus.RaiseUnitUpdated(unit, newStats);
                 if (damageMessage != null)
                 {
