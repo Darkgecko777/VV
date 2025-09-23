@@ -27,6 +27,7 @@ MonoBehaviour:
   partyPosition: 4
   abilities:
   - {fileID: 11400000, guid: ae79e6b54615c9d49b6e005971252a17, type: 2}
+  - {fileID: 11400000, guid: df156db03ea43804696eaa37706b5cbd, type: 2}
   rank: 1
   portrait: {fileID: 21300000, guid: 65e5c69832357b840ae15c90410a73cc, type: 3}
   combatSprite: {fileID: 21300000, guid: fdcb236dea2783543b57a323fc050816, type: 3}

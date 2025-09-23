@@ -15,7 +15,6 @@ namespace VirulentVentures
             public DefenseCheck Defense; // Full, Partial, or No defense calculation
             public bool Dodgeable; // True if target.Evasion applies
             public float PartialDefenseMultiplier; // Multiplier for Partial defense (e.g., 0.025)
-            public TargetingRule TargetingRule; // New field for target selection
         }
 
         [System.Serializable]
@@ -25,7 +24,6 @@ namespace VirulentVentures
             public bool Enemy; // True for enemies, false for allies/self
             public bool Melee; // True for frontline (CombatPosition 1-2), false for Ranged (1-4)
             public string[] Tags; // Effect IDs (e.g., "TrueStrike:10", "VirusSpread")
-            public TargetingRule TargetingRule; // New field for target selection
         }
 
         [SerializeField] private string id;
@@ -77,7 +75,6 @@ namespace VirulentVentures
                 {
                     Debug.LogWarning($"AbilitySO {id}: Partial Defense requires positive PartialDefenseMultiplier.");
                 }
-                attack.TargetingRule.Validate();
             }
             foreach (var effect in effects)
             {
@@ -89,7 +86,6 @@ namespace VirulentVentures
                 {
                     Debug.LogWarning($"AbilitySO {id}: Effect Tags array is empty.");
                 }
-                effect.TargetingRule.Validate();
             }
             foreach (var condition in conditions)
             {

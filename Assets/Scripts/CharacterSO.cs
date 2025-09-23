@@ -19,10 +19,9 @@ namespace VirulentVentures
         [SerializeField] private int infectivity;
         [SerializeField] private bool canBeCultist;
         [SerializeField] private int partyPosition;
-        [SerializeField] private AbilitySO[] abilities; // Changed to AbilitySO[] for Rank 1
-        [SerializeField] private int rank = 1; // Added rank field, default 1
-        [SerializeField] private Sprite portrait; // Added for Temple scene
-        [SerializeField] private Sprite combatSprite; // Added for Combat scene
+        [SerializeField] private int rank = 1; // Default 1
+        [SerializeField] private Sprite portrait; // For Temple scene
+        [SerializeField] private Sprite combatSprite; // For Combat scene
 
         public string Id => id;
         public CharacterType Type => type;
@@ -37,7 +36,6 @@ namespace VirulentVentures
         public int Infectivity => infectivity;
         public bool CanBeCultist => canBeCultist;
         public int PartyPosition => partyPosition;
-        public AbilitySO[] Abilities => abilities;
         public int Rank => rank;
         public Sprite Portrait => portrait;
         public Sprite CombatSprite => combatSprite;
@@ -58,7 +56,7 @@ namespace VirulentVentures
                 isHero: isHero,
                 isInfected: false,
                 rank: rank,
-                combatSprite: combatSprite // Only combatSprite for combat scene
+                combatSprite: combatSprite
             );
         }
 
@@ -83,6 +81,10 @@ namespace VirulentVentures
             if (combatSprite == null)
             {
                 Debug.LogWarning($"CharacterSO {id}: Combat sprite is null.");
+            }
+            if (string.IsNullOrEmpty(id))
+            {
+                Debug.LogWarning($"CharacterSO: Id is empty or null.");
             }
         }
     }

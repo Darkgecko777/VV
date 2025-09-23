@@ -55,22 +55,22 @@ namespace VirulentVentures
                 (hero.Health < hero.MaxHealth || hero.Morale < hero.MaxMorale));
         }
 
-        public bool CheckRetreat(ICombatUnit unit, EventBusSO eventBus, UIConfig uiConfig)
+        public bool CheckRetreat(ICombatUnit unit, EventBusSO eventBus, UIConfig uiConfig, CombatConfig combatConfig)
         {
             if (unit is not CharacterStats stats || stats.Type != CharacterType.Hero || stats.HasRetreated)
                 return false;
-            return stats.Morale <= CombatSceneComponent.Instance.combatConfig.RetreatMoraleThreshold;
+            return stats.Morale <= combatConfig.RetreatMoraleThreshold;
         }
 
-        public void ProcessRetreat(ICombatUnit unit, EventBusSO eventBus, UIConfig uiConfig)
+        public void ProcessRetreat(ICombatUnit unit, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, CombatConfig combatConfig)
         {
             if (unit == null || unit.HasRetreated) return;
             if (unit is not CharacterStats stats || stats.Type != CharacterType.Hero) return;
 
             stats.HasRetreated = true;
             stats.Morale = Mathf.Min(stats.Morale + 20, stats.MaxMorale);
-            string retreatMessage = $"{stats.Id} flees! <color=#FFFF00>[Morale <= {CombatSceneComponent.Instance.combatConfig.RetreatMoraleThreshold}]</color>";
-            CombatSceneComponent.Instance.AllCombatLogs.Add(retreatMessage);
+            string retreatMessage = $"{stats.Id} flees! <color=#FFFF00>[Morale <= {combatConfig.RetreatMoraleThreshold}]</color>";
+            combatLogs.Add(retreatMessage);
             eventBus.RaiseLogMessage(retreatMessage, uiConfig.TextColor);
             eventBus.RaiseUnitRetreated(unit);
 
@@ -80,7 +80,7 @@ namespace VirulentVentures
             {
                 teammate.Morale = Mathf.Max(0, teammate.Morale - penalty);
                 string teammateMessage = $"{teammate.Id}'s morale drops by {penalty} due to {stats.Id}'s retreat! <color=#FFFF00>[-{penalty} Morale]</color>";
-                CombatSceneComponent.Instance.AllCombatLogs.Add(teammateMessage);
+                combatLogs.Add(teammateMessage);
                 eventBus.RaiseLogMessage(teammateMessage, uiConfig.TextColor);
                 eventBus.RaiseUnitUpdated(teammate, teammate.GetDisplayStats());
             }

@@ -19,10 +19,10 @@ namespace VirulentVentures
         public bool HasRetreated { get; set; } = false;
         public bool IsInfected { get; set; } = false;
         public int PartyPosition { get; set; }
-        public ScriptableObject[] Abilities { get; set; }
+        public string[] abilityIds { get; set; }
         public bool IsHero => Type == CharacterType.Hero;
         public int Rank { get; set; }
-        public Sprite CombatSprite { get; set; } // Added for combat scene
+        public Sprite CombatSprite { get; set; }
 
         public CharacterStats(CharacterSO data, Vector3 position)
         {
@@ -41,7 +41,7 @@ namespace VirulentVentures
                 MaxMorale = 100;
                 Infectivity = 20;
                 PartyPosition = 1;
-                Abilities = new ScriptableObject[0];
+                abilityIds = new string[] { "BasicAttack" }; // Fallback
                 Rank = 1;
                 CombatSprite = null;
                 return;
@@ -59,9 +59,9 @@ namespace VirulentVentures
             MaxMorale = Type == CharacterType.Hero ? data.MaxMorale : 0;
             Infectivity = data.Infectivity;
             PartyPosition = data.PartyPosition;
-            Abilities = data.Abilities ?? new ScriptableObject[0];
+            abilityIds = AbilityDatabase.GetCharacterAbilityIds(data.Id, data.Type); // Fetch from AbilityDatabase
             Rank = data.Rank;
-            CombatSprite = data.CombatSprite; // Set from CharacterSO
+            CombatSprite = data.CombatSprite;
         }
 
         public struct DisplayStats
@@ -79,7 +79,7 @@ namespace VirulentVentures
             public bool isHero;
             public bool isInfected;
             public int rank;
-            public Sprite combatSprite; // Added for combat scene
+            public Sprite combatSprite;
 
             public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected, int rank, Sprite combatSprite)
             {
@@ -116,7 +116,7 @@ namespace VirulentVentures
                 isHero: IsHero,
                 isInfected: IsInfected,
                 rank: Rank,
-                combatSprite: CombatSprite // From CharacterStats
+                combatSprite: CombatSprite
             );
         }
     }

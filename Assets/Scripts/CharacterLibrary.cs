@@ -39,7 +39,7 @@ namespace VirulentVentures
             var defaultSO = ScriptableObject.CreateInstance<CharacterSO>();
             defaultSO.name = "DefaultHero";
             // Set default stats to prevent null refs, including rank: 1
-            defaultSO.SetDefaultStats(id, CharacterType.Hero, 50, 50, 10, 5, 3, 10, 100, 100, 20, false, 1, 1, new AbilitySO[0]);
+            defaultSO.SetDefaultStats(id, CharacterType.Hero, 50, 50, 10, 5, 3, 10, 100, 100, 20, false, 1, 1, new string[0]);
             return defaultSO;
         }
 
@@ -52,7 +52,7 @@ namespace VirulentVentures
             Debug.LogWarning($"CharacterLibrary: Monster ID {id} not found, returning default");
             var defaultSO = ScriptableObject.CreateInstance<CharacterSO>();
             defaultSO.name = "DefaultMonster";
-            defaultSO.SetDefaultStats(id, CharacterType.Monster, 0, 50, 10, 5, 3, 10, 0, 0, 0, false, 0, 1, new AbilitySO[0]); // Added rank: 1
+            defaultSO.SetDefaultStats(id, CharacterType.Monster, 0, 50, 10, 5, 3, 10, 0, 0, 0, false, 0, 1, new string[0]); // Added rank: 1
             return defaultSO;
         }
 
@@ -65,7 +65,7 @@ namespace VirulentVentures
     // Extension to set default stats via reflection (since fields are private)
     public static class CharacterSOExtensions
     {
-        public static void SetDefaultStats(this CharacterSO so, string id, CharacterType type, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool canBeCultist, int partyPosition, int rank, AbilitySO[] abilities)
+        public static void SetDefaultStats(this CharacterSO so, string id, CharacterType type, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool canBeCultist, int partyPosition, int rank, string[] abilityIds)
         {
             var idField = typeof(CharacterSO).GetField("id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var typeField = typeof(CharacterSO).GetField("type", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -81,7 +81,7 @@ namespace VirulentVentures
             var canBeCultistField = typeof(CharacterSO).GetField("canBeCultist", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var partyPositionField = typeof(CharacterSO).GetField("partyPosition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var rankField = typeof(CharacterSO).GetField("rank", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance); // Added rank field reflection
-            var abilitiesField = typeof(CharacterSO).GetField("abilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var abilityIdsField = typeof(CharacterSO).GetField("abilityIds", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance); // Changed from abilities
 
             idField.SetValue(so, id);
             typeField.SetValue(so, type);
@@ -97,7 +97,7 @@ namespace VirulentVentures
             canBeCultistField.SetValue(so, canBeCultist);
             partyPositionField.SetValue(so, partyPosition);
             rankField.SetValue(so, rank);
-            abilitiesField.SetValue(so, abilities);
+            abilityIdsField.SetValue(so, abilityIds); // Changed from abilities
         }
     }
 }

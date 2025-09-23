@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: HealerAttack
   m_EditorClassIdentifier: 
   id: Basic Attack
-  priority: 1
+  priority: 3
   cooldown: 0
   rank: 1
   conditions: []
@@ -24,5 +24,11 @@ MonoBehaviour:
     Defense: 0
     Dodgeable: 0
     PartialDefenseMultiplier: 0
+    TargetingRule:
+      Type: 0
+      Target: 0
+      MustBeInfected: 0
+      MustNotBeInfected: 0
+      MeleeOnly: 0
   effects: []
   costAmount: 0
