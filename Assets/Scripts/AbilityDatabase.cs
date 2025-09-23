@@ -54,9 +54,9 @@ namespace VirulentVentures
         };
         private static readonly Dictionary<string, string[]> monsterAbilityMap = new Dictionary<string, string[]>
         {
-            { "MireShambler", new[] { "ShamblerThornNeedle", "ShamblerSwampBrambles" } },
-            { "BogFiend", new[] { "FiendMeleeAttack", "FiendSludgeSlam", "FiendDrainHealth" } },
-            { "UmbralCorvax", new[] { "CorvaxBasicAttack", "CorvaxMortifyingShriek", "CorvaxWindsOfTerror" } },
+            { "Mire Shambler", new[] { "ShamblerThornNeedle", "ShamblerSwampBrambles" } },
+            { "Bog Fiend", new[] { "FiendMeleeAttack", "FiendSludgeSlam", "FiendDrainHealth" } },
+            { "Umbral Corvax", new[] { "CorvaxBasicAttack", "CorvaxMortifyingShriek", "CorvaxWindsOfTerror" } },
             { "Wraith", new[] { "WraithStrike", "WraithHoaryGrasp" } }
         };
         private static bool isInitialized = false;

@@ -47,7 +47,7 @@ namespace VirulentVentures
             if (!monsterPool.Any(id => validMonsterIds.Contains(id)))
             {
                 Debug.LogWarning("CombatNodeGenerator: monsterPool contains no valid monster IDs. Using fallback.");
-                monsterPool = validMonsterIds.Count > 0 ? validMonsterIds : new List<string> { "Bog Fiend", "Wraith", "Mire Shambler", "Umbral Corvax" };
+                monsterPool = validMonsterIds.Count > 0 ? validMonsterIds : new List<string> { "BogFiend", "Wraith", "MireShambler", "UmbralCorvax" };
             }
             return true;
         }
