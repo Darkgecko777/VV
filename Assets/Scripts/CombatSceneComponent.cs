@@ -310,7 +310,6 @@ namespace VirulentVentures
             if (rule.Type == TargetingRule.RuleType.AllAllies && rule.Target == TargetingRule.ConditionTarget.Ally)
                 maxTargets = targetPool.Count;
             var selected = targetPool.Take(maxTargets).ToList();
-            Debug.Log($"CombatSceneComponent: Selected {selected.Count} targets for {user.Id} from pool of {targetPool.Count}.");
             return selected;
         }
         public void StartCombatLoop(PartyData party)
@@ -327,7 +326,6 @@ namespace VirulentVentures
             }
             partyData = party;
             isCombatActive = true;
-            Debug.Log("CombatSceneComponent: Starting RunCombat coroutine...");
             StartCoroutine(RunCombat());
         }
         private IEnumerator RunCombat()
@@ -628,18 +626,19 @@ namespace VirulentVentures
             if (attackParams.Dodgeable)
             {
                 float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
-                if (UnityEngine.Random.value <= dodgeChance)
+                float randomRoll = UnityEngine.Random.value;
+                if (randomRoll <= dodgeChance)
                 {
-                    string dodgeMessage = $"{target.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>";
+                    string dodgeMessage = $"{target.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} <= {dodgeChance:F2}]</color>";
                     allCombatLogs.Add(dodgeMessage);
-                    eventBus.RaiseLogMessage(dodgeMessage, uiConfig.TextColor);
+                    eventBus.RaiseLogMessage(dodgeMessage, Color.green); // Changed to green for dodge success
                     attackDodged = true;
                 }
                 else
                 {
-                    string failDodgeMessage = $"{target.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance]</color>";
+                    string failDodgeMessage = $"{target.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} > {dodgeChance:F2}]</color>";
                     allCombatLogs.Add(failDodgeMessage);
-                    eventBus.RaiseLogMessage(failDodgeMessage, uiConfig.TextColor);
+                    eventBus.RaiseLogMessage(failDodgeMessage, Color.red); // Changed to red for dodge failure
                 }
             }
             if (!attackDodged)
@@ -746,7 +745,6 @@ namespace VirulentVentures
                 Debug.LogError("CombatSceneComponent: partyData is null.");
             if (combatConfig == null || eventBus == null || uiConfig == null || combatCamera == null || partyData == null)
                 return false;
-            Debug.Log("CombatSceneComponent: All references validated.");
             return true;
         }
     }

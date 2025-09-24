@@ -821,18 +821,16 @@ namespace VirulentVentures
                 }
                 if (state.AbilityCooldowns.TryGetValue(abilityId, out int actionCd) && actionCd > 0)
                 {
-                    Debug.Log($"Ability {abilityId} for {unit.Id} on action cooldown: {actionCd} actions remaining.");
                     continue;
                 }
                 if (state.RoundCooldowns.TryGetValue(abilityId, out int roundCd) && roundCd > 0)
                 {
-                    Debug.Log($"Ability {abilityId} for {unit.Id} on round cooldown: {roundCd} rounds remaining.");
                     continue;
                 }
                 if (ability.Rank > 0 && unit.Rank < ability.Rank)
                 {
                     failMessage = $"Ability {abilityId} requires Rank {ability.Rank}, unit has Rank {unit.Rank}.";
-                    Debug.Log(failMessage);
+                    Debug.LogWarning(failMessage);
                     continue;
                 }
                 if (ability.UseCondition(unit, partyData, targets) && ability.Priority < lowestPriority)
@@ -847,12 +845,10 @@ namespace VirulentVentures
                 if (selectedAbility.CooldownType == CooldownType.Actions)
                 {
                     state.AbilityCooldowns[selectedId] = selectedAbility.Cooldown;
-                    Debug.Log($"Set action cooldown for {selectedId}: {selectedAbility.Cooldown} actions.");
                 }
                 else
                 {
                     state.RoundCooldowns[selectedId] = selectedAbility.Cooldown;
-                    Debug.Log($"Set round cooldown for {selectedId}: {selectedAbility.Cooldown} rounds.");
                 }
             }
             return (selectedId, failMessage);
