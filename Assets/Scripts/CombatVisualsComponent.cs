@@ -90,6 +90,7 @@ namespace VirulentVentures
         {
             if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
             {
+                if (targetGo == null || !targetGo.activeSelf) return;  // Add this check
                 var animator = targetGo.GetComponent<SpriteAnimation>();
                 if (animator != null)
                     animator.Jiggle(combatConfig.CombatSpeed);
