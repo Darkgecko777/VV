@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+
 namespace VirulentVentures
 {
     public class CombatSceneComponent : MonoBehaviour
@@ -55,17 +56,9 @@ namespace VirulentVentures
             }
             public RuleType Type;
             public ConditionTarget Target;
-            public bool MustBeInfected;
-            public bool MustNotBeInfected;
             public bool MeleeOnly;
             public void Validate()
             {
-                if (MustBeInfected && MustNotBeInfected)
-                {
-                    Debug.LogWarning("TargetingRule: MustBeInfected and MustNotBeInfected cannot both be true.");
-                    MustBeInfected = false;
-                    MustNotBeInfected = false;
-                }
                 if (Type == RuleType.AllAllies && Target != ConditionTarget.Ally)
                 {
                     Debug.LogWarning("TargetingRule: AllAllies rule requires Target = Ally.");
@@ -268,15 +261,6 @@ namespace VirulentVentures
                         return new List<ICombatUnit>();
                     }
                 }
-            }
-            if (rule.MustBeInfected)
-                targetPool = targetPool.Where(t => (t as CharacterStats)?.IsInfected == true).ToList();
-            if (rule.MustNotBeInfected)
-                targetPool = targetPool.Where(t => (t as CharacterStats)?.IsInfected == false).ToList();
-            if (targetPool.Count == 0)
-            {
-                Debug.LogWarning($"CombatSceneComponent: No targets after infection filter for {user.Id}.");
-                return new List<ICombatUnit>();
             }
             switch (rule.Type)
             {
@@ -565,7 +549,7 @@ namespace VirulentVentures
                     }
                     else
                     {
-                        Debug.LogWarning($"CombatSceneComponent: No UnitAttackState for {target.Id} for ThornsInfection {tag}.");
+                        Debug.LogWarning($"CombatSceneComponent: No UnitAttackState for {target.Id} for Thorns {tag}.");
                     }
                     break;
                 case "MoraleShield":
@@ -631,14 +615,14 @@ namespace VirulentVentures
                 {
                     string dodgeMessage = $"{target.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} <= {dodgeChance:F2}]</color>";
                     allCombatLogs.Add(dodgeMessage);
-                    eventBus.RaiseLogMessage(dodgeMessage, Color.green); // Changed to green for dodge success
+                    eventBus.RaiseLogMessage(dodgeMessage, Color.green);
                     attackDodged = true;
                 }
                 else
                 {
                     string failDodgeMessage = $"{target.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} > {dodgeChance:F2}]</color>";
                     allCombatLogs.Add(failDodgeMessage);
-                    eventBus.RaiseLogMessage(failDodgeMessage, Color.red); // Changed to red for dodge failure
+                    eventBus.RaiseLogMessage(failDodgeMessage, Color.red);
                 }
             }
             if (!attackDodged)

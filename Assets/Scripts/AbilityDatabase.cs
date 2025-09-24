@@ -717,7 +717,6 @@ namespace VirulentVentures
                         Type = CombatSceneComponent.TargetingRule.RuleType.Random,
                         Target = CombatSceneComponent.TargetingRule.ConditionTarget.Enemy,
                         MeleeOnly = false,
-                        MustBeInfected = true
                     }, isMelee: false);
                     var target = selectedTargets.FirstOrDefault();
                     if (target == null) return;
