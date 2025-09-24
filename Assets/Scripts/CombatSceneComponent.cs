@@ -467,24 +467,21 @@ namespace VirulentVentures
         {
             string endMessage = "Combat ends!";
             allCombatLogs.Add(endMessage);
-            eventBus.RaiseLogMessage(endMessage, uiConfig.TextColor);
+            eventBus?.RaiseLogMessage(endMessage, uiConfig?.TextColor ?? Color.white);
             expeditionManager.SaveProgress();
-            // Reset combat state to ensure clean slate for next combat
-            unitAttackStates.Clear();
-            heroPositions.Clear();
-            monsterPositions.Clear();
+
+            // Reset combat state (clears targeting-related data)
+            unitAttackStates.Clear(); // Clears AbilityCooldowns, TempStats, etc.
+            heroPositions.Clear(); // Clears hero targeting data
+            monsterPositions.Clear(); // Clears monster targeting data
             units.Clear();
             noTargetLogCooldowns.Clear();
             isCombatActive = false;
             roundNumber = 0;
-            if (ValidateReferences())
-            {
-                AbilityDatabase.Reinitialize(this);
-            }
-            else
-            {
-                Debug.LogWarning("CombatSceneComponent: Cannot reinitialize AbilityDatabase due to invalid references.");
-            }
+
+            // Removed AbilityDatabase.Reinitialize call
+            // Targeting data is reset via unitAttackStates, heroPositions, and monsterPositions
+
             if (!partyDead)
             {
                 var expedition = expeditionManager.GetExpedition();
@@ -493,7 +490,7 @@ namespace VirulentVentures
                     expedition.NodeData[expedition.CurrentNodeIndex].Completed = true;
                     string victoryMessage = "Party victorious!";
                     allCombatLogs.Add(victoryMessage);
-                    eventBus.RaiseLogMessage(victoryMessage, Color.green);
+                    eventBus?.RaiseLogMessage(victoryMessage, Color.green);
                     expeditionManager.TransitionToExpeditionScene();
                 }
                 else
@@ -505,7 +502,7 @@ namespace VirulentVentures
             {
                 string defeatMessage = "Party defeated!";
                 allCombatLogs.Add(defeatMessage);
-                eventBus.RaiseLogMessage(defeatMessage, Color.red);
+                eventBus?.RaiseLogMessage(defeatMessage, Color.red);
                 expeditionManager.TransitionToExpeditionScene();
             }
         }
