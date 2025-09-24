@@ -26,6 +26,14 @@ namespace VirulentVentures
             AllowCultist = false;
         }
 
+        public void ResetHeroAbilities()
+        {
+            foreach (var hero in HeroStats)
+            {
+                hero.abilityIds = AbilityDatabase.GetCharacterAbilityIds(hero.Id, CharacterType.Hero);
+            }
+        }
+
         public List<CharacterStats> GetHeroes()
         {
             return HeroStats?.Where(h => h.Type == CharacterType.Hero).ToList() ?? new List<CharacterStats>();

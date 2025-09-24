@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
 namespace VirulentVentures
 {
     public class CombatSceneComponent : MonoBehaviour
@@ -56,9 +55,17 @@ namespace VirulentVentures
             }
             public RuleType Type;
             public ConditionTarget Target;
+            public bool MustBeInfected;
+            public bool MustNotBeInfected;
             public bool MeleeOnly;
             public void Validate()
             {
+                if (MustBeInfected && MustNotBeInfected)
+                {
+                    Debug.LogWarning("TargetingRule: MustBeInfected and MustNotBeInfected cannot both be true.");
+                    MustBeInfected = false;
+                    MustNotBeInfected = false;
+                }
                 if (Type == RuleType.AllAllies && Target != ConditionTarget.Ally)
                 {
                     Debug.LogWarning("TargetingRule: AllAllies rule requires Target = Ally.");
@@ -89,7 +96,7 @@ namespace VirulentVentures
         }
         void Start()
         {
-            AbilityDatabase.InitializeAbilities(this);
+            AbilityDatabase.Reinitialize(this);
             if (!ValidateReferences())
             {
                 Debug.LogError("CombatSceneComponent: Validation failed, aborting Start.");
@@ -106,8 +113,8 @@ namespace VirulentVentures
         }
         void OnDestroy()
         {
-            eventBus.OnCombatPaused -= () => { isPaused = true; Debug.Log("CombatSceneComponent: Combat paused."); };
-            eventBus.OnCombatPlayed -= () => { isPaused = false; Debug.Log("CombatSceneComponent: Combat resumed."); };
+            eventBus.OnCombatPaused -= () => { isPaused = true; };
+            eventBus.OnCombatPlayed -= () => { isPaused = false; };
             eventBus.OnCombatEnded -= () => EndCombat(ExpeditionManager, heroPositions.Count == 0);
         }
         public void PauseCombat()
@@ -145,7 +152,6 @@ namespace VirulentVentures
                 if (hero.abilityIds == null || hero.abilityIds.Length == 0)
                 {
                     hero.abilityIds = AbilityDatabase.GetCharacterAbilityIds(hero.Id, CharacterType.Hero);
-                    Debug.Log($"Assigned abilities to hero {hero.Id}: {string.Join(", ", hero.abilityIds)}");
                 }
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
@@ -344,7 +350,6 @@ namespace VirulentVentures
                 var unitList = heroPositions.Cast<ICombatUnit>().Concat(monsterPositions.Cast<ICombatUnit>()).Where(u => u.Health > 0 && !u.HasRetreated).OrderByDescending(u => u.Speed).ToList();
                 if (unitList.Count == 0 || heroPositions.Count == 0 || monsterPositions.Count == 0)
                 {
-                    Debug.Log("CombatSceneComponent: No active units, ending combat.");
                     isCombatActive = false;
                     eventBus.RaiseCombatEnded();
                     yield break;
@@ -393,7 +398,6 @@ namespace VirulentVentures
                     yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                     {
-                        Debug.Log("CombatSceneComponent: No active heroes or monsters after attack, ending combat.");
                         isCombatActive = false;
                         eventBus.RaiseCombatEnded();
                         yield break;
@@ -410,7 +414,6 @@ namespace VirulentVentures
                         yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
-                            Debug.Log("CombatSceneComponent: No active heroes or monsters after second attack, ending combat.");
                             isCombatActive = false;
                             eventBus.RaiseCombatEnded();
                             yield break;
@@ -466,6 +469,22 @@ namespace VirulentVentures
             allCombatLogs.Add(endMessage);
             eventBus.RaiseLogMessage(endMessage, uiConfig.TextColor);
             expeditionManager.SaveProgress();
+            // Reset combat state to ensure clean slate for next combat
+            unitAttackStates.Clear();
+            heroPositions.Clear();
+            monsterPositions.Clear();
+            units.Clear();
+            noTargetLogCooldowns.Clear();
+            isCombatActive = false;
+            roundNumber = 0;
+            if (ValidateReferences())
+            {
+                AbilityDatabase.Reinitialize(this);
+            }
+            else
+            {
+                Debug.LogWarning("CombatSceneComponent: Cannot reinitialize AbilityDatabase due to invalid references.");
+            }
             if (!partyDead)
             {
                 var expedition = expeditionManager.GetExpedition();
@@ -549,7 +568,7 @@ namespace VirulentVentures
                     }
                     else
                     {
-                        Debug.LogWarning($"CombatSceneComponent: No UnitAttackState for {target.Id} for Thorns {tag}.");
+                        Debug.LogWarning($"CombatSceneComponent: No UnitAttackState for {target.Id} for ThornsInfection {tag}.");
                     }
                     break;
                 case "MoraleShield":

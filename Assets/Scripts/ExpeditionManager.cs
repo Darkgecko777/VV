@@ -60,7 +60,6 @@ namespace VirulentVentures
             {
                 SaveManager.Instance.ClearProgressOnStart(expeditionData, partyData, playerProgress);
                 SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
-                // Fallback: Ensure expeditionData.Party is set
                 if (expeditionData.Party == null && partyData != null)
                 {
                     expeditionData.SetParty(partyData);
@@ -81,6 +80,7 @@ namespace VirulentVentures
                 return null;
             }
             isTransitioning = true;
+            expeditionData.Party.ResetHeroAbilities();
             StartCoroutine(FadeAndLoad("CombatScene", () =>
             {
                 OnCombatStarted?.Invoke();
@@ -190,7 +190,6 @@ namespace VirulentVentures
                     (expeditionData != null) + ", NodeData: " + (expeditionData?.NodeData != null) +
                     ", Party: " + (expeditionData?.Party != null) + ", HeroStats: " +
                     (expeditionData?.Party?.HeroStats != null));
-                // Attempt to recover HeroStats
                 if (expeditionData?.Party != null && expeditionData.Party.HeroStats == null)
                 {
                     expeditionData.Party.HeroStats = new List<CharacterStats>();
