@@ -16,21 +16,26 @@
 }
 
 .menu-box {
+    width: 150px;
+    height: 200px;
     display: flex;
     flex-direction: column;
     background-color: #252525; /* Darker menu background */
-    padding: 20px;
+    padding: 10px;
     border-color: #404040;
     border-width: 2px;
     border-radius: 5px;
+    position: absolute;
+    bottom: 20px;
+    align-self: center;
 }
 
 .menu-button {
-    font-size: 24px;
+    font-size: 18px; /* Reduced for smaller panel */
     color: #e0e0e0;
     background-color: #353535; /* Button background */
-    padding: 10px;
-    margin: 5px;
+    padding: 8px;
+    margin: 4px;
     border-color: #505050;
     border-width: 1px;
     border-radius: 3px;
