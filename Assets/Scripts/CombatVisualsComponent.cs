@@ -77,6 +77,7 @@ namespace VirulentVentures
         {
             if (unitGameObjects.TryGetValue(data.attacker, out GameObject attackerGo))
             {
+                if (!attackerGo.activeSelf) return;
                 var animator = attackerGo.GetComponent<SpriteAnimation>();
                 if (animator != null)
                 {
@@ -90,7 +91,7 @@ namespace VirulentVentures
         {
             if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
             {
-                if (targetGo == null || !targetGo.activeSelf) return;  // Add this check
+                if (!targetGo.activeSelf) return;
                 var animator = targetGo.GetComponent<SpriteAnimation>();
                 if (animator != null)
                     animator.Jiggle(combatConfig.CombatSpeed);
@@ -100,13 +101,23 @@ namespace VirulentVentures
         private void HandleUnitDied(ICombatUnit unit)
         {
             if (unitGameObjects.TryGetValue(unit, out GameObject go))
+            {
+                var animator = go.GetComponent<SpriteAnimation>();
+                if (animator != null)
+                    animator.StopAllCoroutines(); // Cancel ongoing animations
                 StartCoroutine(DeactivateAfterJiggle(go));
+            }
         }
 
         private void HandleUnitRetreated(ICombatUnit unit)
         {
             if (unitGameObjects.TryGetValue(unit, out GameObject go))
+            {
+                var animator = go.GetComponent<SpriteAnimation>();
+                if (animator != null)
+                    animator.StopAllCoroutines(); // Cancel ongoing animations
                 StartCoroutine(DeactivateAfterFade(go));
+            }
         }
 
         private IEnumerator DeactivateAfterJiggle(GameObject go)
@@ -127,7 +138,7 @@ namespace VirulentVentures
         {
             var go = new GameObject(stats.name);
             var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = stats.combatSprite; // Use from DisplayStats
+            sr.sprite = stats.combatSprite;
             if (sr.sprite == null)
             {
                 Debug.LogWarning($"CombatVisualsComponent: No combat sprite for {stats.name}.");
