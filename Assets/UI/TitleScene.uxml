@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="root-container">
+        <ui:Label text="Virulent Ventures" class="title-label" />
+        <ui:VisualElement class="menu-box">
+            <ui:Button name="start-button" text="Start New" class="menu-button" />
+            <ui:Button name="continue-button" text="Continue" class="menu-button" />
+            <ui:Button name="exit-button" text="Exit" class="menu-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

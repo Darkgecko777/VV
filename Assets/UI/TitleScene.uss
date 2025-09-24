@@ -1,0 +1,45 @@
+.root-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #151515; /* Darker fantasy background */
+}
+
+.title-label {
+    font-size: 48px;
+    color: #e0e0e0; /* Muted white for contrast */
+    -unity-text-align: middle-center;
+    margin-bottom: 20px;
+}
+
+.menu-box {
+    display: flex;
+    flex-direction: column;
+    background-color: #252525; /* Darker menu background */
+    padding: 20px;
+    border-color: #404040;
+    border-width: 2px;
+    border-radius: 5px;
+}
+
+.menu-button {
+    font-size: 24px;
+    color: #e0e0e0;
+    background-color: #353535; /* Button background */
+    padding: 10px;
+    margin: 5px;
+    border-color: #505050;
+    border-width: 1px;
+    border-radius: 3px;
+    -unity-text-align: middle-center;
+    transition-property: background-color;
+    transition-duration: 0.2s;
+}
+
+.menu-button:hover {
+    background-color: #454545; /* Subtle hover effect */
+    opacity: 0.9;
+}
