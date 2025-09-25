@@ -40,7 +40,8 @@ namespace VirulentVentures
             eventBus.OnCombatSpeedChanged += HandleCombatSpeedChanged;
             eventBus.OnAbilitySelected += HandleAbilitySelected;
             eventBus.OnCombatEnded += ShowEndPanel;
-            eventBus.OnUnitRetreated += HandleUnitRetreated; // Subscribe to retreat event
+            eventBus.OnUnitRetreated += HandleUnitRetreated;
+            eventBus.OnUnitDied += HandleUnitDied;
         }
         void OnDestroy()
         {
@@ -52,7 +53,8 @@ namespace VirulentVentures
             eventBus.OnCombatSpeedChanged -= HandleCombatSpeedChanged;
             eventBus.OnAbilitySelected -= HandleAbilitySelected;
             eventBus.OnCombatEnded -= ShowEndPanel;
-            eventBus.OnUnitRetreated -= HandleUnitRetreated; // Unsubscribe
+            eventBus.OnUnitRetreated -= HandleUnitRetreated;
+            eventBus.OnUnitDied -= HandleUnitDied;
             if (speedPlusButton != null)
                 speedPlusButton.clicked -= IncreaseSpeed;
             if (speedMinusButton != null)
@@ -155,7 +157,6 @@ namespace VirulentVentures
         {
             bool isVictory = endLabel.text == "Victory!";
             endPanel.style.display = DisplayStyle.None;
-            Debug.Log($"CombatUIElementsComponent: ContinueCombat called, isVictory: {isVictory}");
             if (isVictory)
             {
                 ExpeditionManager.Instance.TransitionToExpeditionScene();
@@ -172,7 +173,6 @@ namespace VirulentVentures
                 Debug.LogError("CombatUIElementsComponent: endPanel or endLabel is null in ShowEndPanel. Ensure SetupUI completed successfully.");
                 return;
             }
-            Debug.Log($"CombatUIElementsComponent: Showing end panel, isVictory: {isVictory}");
             endPanel.style.display = DisplayStyle.Flex;
             endLabel.text = isVictory ? "Victory!" : "Defeat!";
             endLabel.style.color = isVictory ? Color.green : Color.red;
@@ -206,7 +206,6 @@ namespace VirulentVentures
             {
                 retreatedUnits[unit] = true;
                 panel.AddToClassList("retreat-slide");
-                Debug.Log($"CombatUIElementsComponent: {unit.Id} retreated, applied retreat-slide class.");
             }
         }
         private void UpdateButtonStates()
@@ -410,6 +409,13 @@ namespace VirulentVentures
             float moralePercent = Mathf.Clamp(morale / maxMorale, 0f, 1f);
             fill.style.width = new StyleLength(new Length(moralePercent * 100f, LengthUnit.Percent));
             label.text = $"Morale: {morale:F0}/{maxMorale:F0}";
+        }
+        private void HandleUnitDied(ICombatUnit unit)
+        {
+            if (unitPanels.TryGetValue(unit, out var panel) && panel != null)
+            {
+                panel.style.display = DisplayStyle.None; 
+            }
         }
         private void HandleLogMessage(EventBusSO.LogData data)
         {

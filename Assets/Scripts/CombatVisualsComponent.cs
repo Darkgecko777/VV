@@ -100,12 +100,13 @@ namespace VirulentVentures
 
         private void HandleUnitDied(ICombatUnit unit)
         {
-            if (unitGameObjects.TryGetValue(unit, out GameObject go))
+            if (unitGameObjects.TryGetValue(unit, out GameObject go) && go != null)
             {
                 var animator = go.GetComponent<SpriteAnimation>();
                 if (animator != null)
                     animator.StopAllCoroutines(); // Cancel ongoing animations
-                StartCoroutine(DeactivateAfterJiggle(go));
+                go.SetActive(false); // Deactivate immediately
+                unitGameObjects.Remove(unit); // Clean up dictionary
             }
         }
 

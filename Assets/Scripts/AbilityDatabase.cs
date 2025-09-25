@@ -376,7 +376,7 @@ namespace VirulentVentures
                         sceneComponent.UIConfig.TextColor);
                     sceneComponent.EventBus.RaiseUnitUpdated(targetAlly, targetAlly.GetDisplayStats());
                 },
-                cooldown: 1,
+                cooldown: 2,
                 cooldownType: CooldownType.Rounds,
                 priority: 1,
                 rank: 1,
@@ -420,18 +420,21 @@ namespace VirulentVentures
                 useCondition: (user, party, targets) => party.HeroStats.Any(h => h.Health < 0.75f * h.MaxHealth),
                 effect: (user, party, targets) =>
                 {
-                    var selectedTargets = sceneComponent.SelectTargets(user, party.HeroStats.Cast<ICombatUnit>().ToList(), party, new CombatSceneComponent.TargetingRule
-                    {
-                        Type = CombatSceneComponent.TargetingRule.RuleType.LowestHealth,
-                        Target = CombatSceneComponent.TargetingRule.ConditionTarget.Ally,
-                        MeleeOnly = false
-                    }, isMelee: false);
-                    var target = selectedTargets.FirstOrDefault() as CharacterStats;
+                    var eligibleHeroes = party.HeroStats
+                        .Cast<ICombatUnit>()
+                        .Where(h => h.Health > 0 && !h.HasRetreated)
+                        .OrderBy(h => (float)h.Health / h.MaxHealth) // Sort by health percentage
+                        .ToList();
+                    var target = eligibleHeroes.FirstOrDefault() as CharacterStats;
                     if (target == null) return;
                     int healAmount = Mathf.Min((int)(0.15f * target.MaxHealth), target.MaxHealth - target.Health);
                     target.Health += healAmount;
                     sceneComponent.EventBus.RaiseLogMessage(
-                        "{user.Id} heals {target.Id} for {amount} HP!".Replace("{user.Id}", user.Id).Replace("{target.Id}", target.Id).Replace("{amount}", healAmount.ToString()),
+                        "{user.Id} heals {target.Id} for {amount} HP! <color=#00FF00>[{healthPercent:F0}% HP]</color>"
+                        .Replace("{user.Id}", user.Id)
+                        .Replace("{target.Id}", target.Id)
+                        .Replace("{amount}", healAmount.ToString())
+                        .Replace("{healthPercent}", ((float)target.Health / target.MaxHealth * 100f).ToString()),
                         sceneComponent.UIConfig.TextColor);
                     sceneComponent.EventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
                 },
@@ -581,7 +584,7 @@ namespace VirulentVentures
                         "{user.Id} slams heroes for {damage} damage, slowing them!".Replace("{user.Id}", user.Id).Replace("{damage}", user.Attack.ToString()),
                         sceneComponent.UIConfig.TextColor);
                 },
-                cooldown: 1,
+                cooldown: 2,
                 cooldownType: CooldownType.Rounds,
                 priority: 1,
                 rank: 0,
@@ -669,7 +672,7 @@ namespace VirulentVentures
                         "{user.Id} shrieks, draining 10 Morale from heroes!".Replace("{user.Id}", user.Id),
                         sceneComponent.UIConfig.TextColor);
                 },
-                cooldown: 3,
+                cooldown: 2,
                 cooldownType: CooldownType.Rounds,
                 priority: 1,
                 rank: 0,
@@ -698,7 +701,7 @@ namespace VirulentVentures
                         "{user.Id} summons WindsOfTerror, boosting ally Speed!".Replace("{user.Id}", user.Id),
                         sceneComponent.UIConfig.TextColor);
                 },
-                cooldown: 1,
+                cooldown: 2,
                 cooldownType: CooldownType.Rounds,
                 priority: 2,
                 rank: 0,
@@ -766,8 +769,8 @@ namespace VirulentVentures
                         sceneComponent.UIConfig.TextColor);
                     sceneComponent.EventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
                 },
-                cooldown: 1,
-                cooldownType: CooldownType.Actions,
+                cooldown: 2,
+                cooldownType: CooldownType.Rounds,
                 priority: 1,
                 rank: 0,
                 logTemplate: "{user.Id} grasps {target.Id} for {damage} damage, reducing Morale and Defense!",
