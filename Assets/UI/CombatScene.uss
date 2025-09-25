@@ -153,6 +153,8 @@
 .stats-section {
     width: 33%;
     flex-direction: column;
+    flex-grow: 1; /* Allow the section to grow and use available vertical space */
+    justify-content: flex-start; /* Align items at the top */
 }
 
 /* Bars section (third third) */
@@ -281,7 +283,7 @@
 /* Individual stat containers */
 .stat-container {
     width: 48%;
-    height: 12px;
+    height: 24px;
     margin: 1px;
     flex-direction: row;
     align-items: center;
