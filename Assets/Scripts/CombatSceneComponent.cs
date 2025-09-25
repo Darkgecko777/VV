@@ -21,6 +21,10 @@ namespace VirulentVentures
         private bool isPaused;
         private int roundNumber;
         private Dictionary<string, float> noTargetLogCooldowns = new Dictionary<string, float>();
+        private Coroutine activeCombatCoroutine; // Track active coroutine
+        private float lastEndCombatTime; // Track last EndCombat call
+        private const float logDuplicateWindow = 1f; // Prevent duplicates within 1 second
+        private static bool hasSubscribed; // Static flag to prevent duplicate subscriptions
         public ExpeditionManager ExpeditionManager => ExpeditionManager.Instance;
         public List<string> AllCombatLogs => allCombatLogs;
         public bool IsPaused => isPaused;
@@ -84,15 +88,16 @@ namespace VirulentVentures
             heroPositions.Clear();
             monsterPositions.Clear();
             units.Clear();
-            eventBus.OnCombatPaused += () =>
+            lastEndCombatTime = -logDuplicateWindow; // Initialize to allow first log
+            // Subscribe only once
+            if (!hasSubscribed)
             {
-                isPaused = true;
-            };
-            eventBus.OnCombatPlayed += () =>
-            {
-                isPaused = false;
-            };
-            eventBus.OnCombatEnded += (isVictory) => EndCombat(ExpeditionManager, isVictory);
+                eventBus.OnCombatPaused += () => { isPaused = true; };
+                eventBus.OnCombatPlayed += () => { isPaused = false; };
+                eventBus.OnCombatEnded += (isVictory) => EndCombat(ExpeditionManager, isVictory);
+                hasSubscribed = true;
+                Debug.Log("CombatSceneComponent: Subscribed to eventBus events.");
+            }
         }
         void Start()
         {
@@ -113,9 +118,19 @@ namespace VirulentVentures
         }
         void OnDestroy()
         {
-            eventBus.OnCombatPaused -= () => { isPaused = true; };
-            eventBus.OnCombatPlayed -= () => { isPaused = false; };
-            eventBus.OnCombatEnded -= (isVictory) => EndCombat(ExpeditionManager, isVictory);
+            if (hasSubscribed)
+            {
+                eventBus.OnCombatPaused -= () => { isPaused = true; };
+                eventBus.OnCombatPlayed -= () => { isPaused = false; };
+                eventBus.OnCombatEnded -= (isVictory) => EndCombat(ExpeditionManager, isVictory);
+                hasSubscribed = false; // Reset for next instance
+                Debug.Log("CombatSceneComponent: Unsubscribed from eventBus events.");
+            }
+            if (activeCombatCoroutine != null)
+            {
+                StopCoroutine(activeCombatCoroutine);
+                activeCombatCoroutine = null;
+            }
         }
         public void PauseCombat()
         {
@@ -311,12 +326,16 @@ namespace VirulentVentures
             }
             if (isCombatActive)
             {
-                Debug.LogWarning("CombatSceneComponent: Combat already active, ignoring StartCombatLoop.");
-                return;
+                Debug.LogWarning("CombatSceneComponent: Combat already active, stopping existing coroutine.");
+                if (activeCombatCoroutine != null)
+                {
+                    StopCoroutine(activeCombatCoroutine);
+                    activeCombatCoroutine = null;
+                }
             }
             partyData = party;
             isCombatActive = true;
-            StartCoroutine(RunCombat());
+            activeCombatCoroutine = StartCoroutine(RunCombat());
         }
         private IEnumerator RunCombat()
         {
@@ -398,7 +417,7 @@ namespace VirulentVentures
                             state.TempStats.Remove(tempStat.Key);
                         }
                     }
-                    if (!CanAttackThisRound(unit, state)) continue;
+                    if (!CanAttackThisRound(unit, state) || unit.Health <= 0 || unit.HasRetreated) continue; // Skip dead or retreated units
                     state.AttacksThisRound++;
                     yield return ProcessAttack(unit, expeditionData.Party, unitList);
                     yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
@@ -471,20 +490,29 @@ namespace VirulentVentures
         }
         private void EndCombat(ExpeditionManager expeditionManager, bool isVictory)
         {
+            float currentTime = Time.time;
+            if (currentTime - lastEndCombatTime < logDuplicateWindow)
+            {
+                Debug.LogWarning($"CombatSceneComponent: EndCombat called too soon after previous call (time: {currentTime}, last: {lastEndCombatTime}). Skipping duplicate logs.");
+                return;
+            }
+            lastEndCombatTime = currentTime;
+            Debug.Log($"CombatSceneComponent: EndCombat called, isVictory: {isVictory}, time: {currentTime}");
             string endMessage = "Combat ends!";
-            allCombatLogs.Add(endMessage);
-            eventBus?.RaiseLogMessage(endMessage, uiConfig?.TextColor ?? Color.white);
+            if (!allCombatLogs.Contains(endMessage) || allCombatLogs.LastIndexOf(endMessage) < allCombatLogs.Count - 5)
+            {
+                allCombatLogs.Add(endMessage);
+                eventBus?.RaiseLogMessage(endMessage, uiConfig?.TextColor ?? Color.white);
+            }
             expeditionManager.SaveProgress();
-            // Reset combat state (clears targeting-related data)
-            unitAttackStates.Clear(); // Clears AbilityCooldowns, TempStats, etc.
-            heroPositions.Clear(); // Clears hero targeting data
-            monsterPositions.Clear(); // Clears monster targeting data
+            // Reset combat state
+            unitAttackStates.Clear();
+            heroPositions.Clear();
+            monsterPositions.Clear();
             units.Clear();
             noTargetLogCooldowns.Clear();
             isCombatActive = false;
             roundNumber = 0;
-            // Removed AbilityDatabase.Reinitialize call
-            // Targeting data is reset via unitAttackStates, heroPositions, and monsterPositions
             if (isVictory)
             {
                 var expedition = expeditionManager.GetExpedition();
@@ -492,8 +520,11 @@ namespace VirulentVentures
                 {
                     expedition.NodeData[expedition.CurrentNodeIndex].Completed = true;
                     string victoryMessage = "Party victorious!";
-                    allCombatLogs.Add(victoryMessage);
-                    eventBus?.RaiseLogMessage(victoryMessage, Color.green);
+                    if (!allCombatLogs.Contains(victoryMessage) || allCombatLogs.LastIndexOf(victoryMessage) < allCombatLogs.Count - 5)
+                    {
+                        allCombatLogs.Add(victoryMessage);
+                        eventBus?.RaiseLogMessage(victoryMessage, Color.green);
+                    }
                 }
                 else
                 {
@@ -503,8 +534,11 @@ namespace VirulentVentures
             else
             {
                 string defeatMessage = "Party defeated!";
-                allCombatLogs.Add(defeatMessage);
-                eventBus?.RaiseLogMessage(defeatMessage, Color.red);
+                if (!allCombatLogs.Contains(defeatMessage) || allCombatLogs.LastIndexOf(defeatMessage) < allCombatLogs.Count - 5)
+                {
+                    allCombatLogs.Add(defeatMessage);
+                    eventBus?.RaiseLogMessage(defeatMessage, Color.red);
+                }
             }
         }
         public void ProcessEffect(CharacterStats user, CharacterStats target, string tag, string abilityId)
@@ -666,6 +700,8 @@ namespace VirulentVentures
         }
         private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> targets)
         {
+            if (unit == null || unit.Health <= 0 || unit.HasRetreated) yield break; // Skip if unit is dead or retreated
+            Debug.Log($"CombatSceneComponent: Processing attack for {unit.Id}, Health: {unit.Health}, HasRetreated: {unit.HasRetreated}");
             if (unit is not CharacterStats stats) yield break;
             var state = GetUnitAttackState(unit);
             if (state == null) yield break;
@@ -700,15 +736,29 @@ namespace VirulentVentures
             yield return new WaitUntil(() => !isPaused);
             yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
             ability.Effect(stats, partyData, targets);
+            var processedTargets = new HashSet<ICombatUnit>(); // Track processed targets to avoid duplicates
             foreach (var target in targets.ToList())
             {
+                if (processedTargets.Contains(target)) continue; // Skip already processed targets
+                processedTargets.Add(target);
                 if (target.Health <= 0)
                 {
-                    eventBus.RaiseUnitDied(target);
-                    string deathMessage = $"{target.Id} dies!";
-                    allCombatLogs.Add(deathMessage);
-                    eventBus.RaiseLogMessage(deathMessage, Color.red);
-                    UpdateUnit(target, deathMessage);
+                    if (!allCombatLogs.Contains($"{target.Id} dies!")) // Avoid duplicate death logs
+                    {
+                        eventBus.RaiseUnitDied(target);
+                        string deathMessage = $"{target.Id} dies!";
+                        allCombatLogs.Add(deathMessage);
+                        eventBus.RaiseLogMessage(deathMessage, Color.red);
+                        UpdateUnit(target, deathMessage);
+                        // Remove dead unit from positions immediately
+                        if (target is CharacterStats statsTarget)
+                        {
+                            if (statsTarget.Type == CharacterType.Hero)
+                                heroPositions.Remove(statsTarget);
+                            else
+                                monsterPositions.Remove(statsTarget);
+                        }
+                    }
                 }
                 else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
                 {
@@ -718,11 +768,19 @@ namespace VirulentVentures
             }
             if (stats.Health <= 0)
             {
-                eventBus.RaiseUnitDied(unit);
-                string deathMessage = $"{stats.Id} dies!";
-                allCombatLogs.Add(deathMessage);
-                eventBus.RaiseLogMessage(deathMessage, Color.red);
-                UpdateUnit(unit, deathMessage);
+                if (!allCombatLogs.Contains($"{stats.Id} dies!")) // Avoid duplicate death logs
+                {
+                    eventBus.RaiseUnitDied(unit);
+                    string deathMessage = $"{stats.Id} dies!";
+                    allCombatLogs.Add(deathMessage);
+                    eventBus.RaiseLogMessage(deathMessage, Color.red);
+                    UpdateUnit(unit, deathMessage);
+                    // Remove dead attacker from positions immediately
+                    if (stats.Type == CharacterType.Hero)
+                        heroPositions.Remove(stats);
+                    else
+                        monsterPositions.Remove(stats);
+                }
             }
             else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
             {
