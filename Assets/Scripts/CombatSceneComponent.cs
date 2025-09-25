@@ -96,7 +96,6 @@ namespace VirulentVentures
                 eventBus.OnCombatPlayed += () => { isPaused = false; };
                 eventBus.OnCombatEnded += (isVictory) => EndCombat(ExpeditionManager, isVictory);
                 hasSubscribed = true;
-                Debug.Log("CombatSceneComponent: Subscribed to eventBus events.");
             }
         }
         void Start()
@@ -124,7 +123,6 @@ namespace VirulentVentures
                 eventBus.OnCombatPlayed -= () => { isPaused = false; };
                 eventBus.OnCombatEnded -= (isVictory) => EndCombat(ExpeditionManager, isVictory);
                 hasSubscribed = false; // Reset for next instance
-                Debug.Log("CombatSceneComponent: Unsubscribed from eventBus events.");
             }
             if (activeCombatCoroutine != null)
             {
@@ -497,7 +495,6 @@ namespace VirulentVentures
                 return;
             }
             lastEndCombatTime = currentTime;
-            Debug.Log($"CombatSceneComponent: EndCombat called, isVictory: {isVictory}, time: {currentTime}");
             string endMessage = "Combat ends!";
             if (!allCombatLogs.Contains(endMessage) || allCombatLogs.LastIndexOf(endMessage) < allCombatLogs.Count - 5)
             {
@@ -701,7 +698,6 @@ namespace VirulentVentures
         private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> targets)
         {
             if (unit == null || unit.Health <= 0 || unit.HasRetreated) yield break; // Skip if unit is dead or retreated
-            Debug.Log($"CombatSceneComponent: Processing attack for {unit.Id}, Health: {unit.Health}, HasRetreated: {unit.HasRetreated}");
             if (unit is not CharacterStats stats) yield break;
             var state = GetUnitAttackState(unit);
             if (state == null) yield break;

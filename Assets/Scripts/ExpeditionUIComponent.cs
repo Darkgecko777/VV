@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -181,7 +181,7 @@ namespace VirulentVentures
             // Start the async load RIGHT NOW (black screen hides any hitch)
             onStartLoad?.Invoke();
 
-            // Get the op from manager (assume we expose a getter or pass it— for now, we'll simulate by waiting a frame and polling manager if needed.
+            // Get the op from manager (assume we expose a getter or pass itâ€” for now, we'll simulate by waiting a frame and polling manager if needed.
             // Better: Modify the callback to return/pass the op, but to keep simple, we'll use a public getter in Manager.
             yield return null;  // Tiny buffer to let load start
 
@@ -217,7 +217,7 @@ namespace VirulentVentures
             }
 
             fadeOverlay.style.display = DisplayStyle.None;
-            // No SetTransitioning(false) here—let Manager's completed handle it
+            // No SetTransitioning(false) hereâ€”let Manager's completed handle it
         }
 
         private void SubscribeToEventBus()

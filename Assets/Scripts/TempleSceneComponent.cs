@@ -33,6 +33,21 @@ namespace VirulentVentures
         void Start()
         {
             isExpeditionGenerated = expeditionData.IsValid();
+            // Reload partyData if empty to preserve surviving heroes
+            if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
+            {
+                Debug.Log("TempleSceneComponent: HeroStats is empty on Start, attempting to load from SaveManager");
+                SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
+                if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
+                {
+                    Debug.LogWarning("TempleSceneComponent: HeroStats still empty after load, may need to generate new party");
+                }
+                else
+                {
+                    Debug.Log($"TempleSceneComponent: Loaded {partyData.HeroStats.Count} heroes: {string.Join(", ", partyData.HeroStats.Select(h => h.Id))}");
+                }
+            }
+            eventBus.RaisePartyUpdated(partyData);
         }
 
         void OnDestroy()
@@ -50,7 +65,7 @@ namespace VirulentVentures
         {
             if (partyData == null || partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
-                Debug.LogWarning("TemplePlanningController: No party to heal!");
+                Debug.LogWarning("TempleSceneComponent: No party to heal!");
                 return;
             }
 
@@ -71,8 +86,8 @@ namespace VirulentVentures
             if (totalFavour > 0)
             {
                 playerProgress.AddFavour(totalFavour);
-                Debug.Log($"TemplePlanningController: Healed party, earned {totalFavour} favour");
-                eventBus.RaisePlayerProgressUpdated(); // Notify UI of favour change
+                Debug.Log($"TempleSceneComponent: Healed party, earned {totalFavour} favour");
+                eventBus.RaisePlayerProgressUpdated();
             }
             eventBus.RaisePartyUpdated(partyData);
         }
@@ -101,53 +116,38 @@ namespace VirulentVentures
             int nonCombatNodeCount = totalNodeCount / 2;
             int level = 2;
 
-            List<NodeData> expeditionNodes = new List<NodeData>();
             for (int i = 0; i < combatNodeCount; i++)
             {
-                expeditionNodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", level, combatEncounterData));
-                level++;
+                nodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", level, combatEncounterData));
             }
             for (int i = 0; i < nonCombatNodeCount; i++)
             {
-                expeditionNodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", level));
-                level++;
+                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", level));
             }
 
-            for (int i = expeditionNodes.Count - 1; i > 0; i--)
+            partyData.Reset();
+            partyData.HeroIds = new List<string>();
+            var positionMap = new Dictionary<int, string>
             {
-                int j = Random.Range(0, i + 1);
-                NodeData temp = expeditionNodes[i];
-                expeditionNodes[i] = expeditionNodes[j];
-                expeditionNodes[j] = temp;
-            }
+                { 1, "Fighter" },
+                { 2, "Monk" },
+                { 3, "Scout" },
+                { 4, "Healer" }
+            };
 
-            nodes.AddRange(expeditionNodes);
-
-            if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
+            foreach (var pos in positionMap.Keys)
             {
-                partyData.HeroIds = new List<string>();
-                var positionMap = new Dictionary<int, string>
+                string selectedHero = positionMap[pos];
+                if (playerProgress.UnlockedHeroes.Contains(selectedHero))
                 {
-                    { 1, "Fighter" },
-                    { 2, "Monk" },
-                    { 3, "Scout" },
-                    { 4, "Healer" }
-                };
-
-                foreach (var pos in positionMap.Keys)
-                {
-                    string selectedHero = positionMap[pos];
-                    if (playerProgress.UnlockedHeroes.Contains(selectedHero))
-                    {
-                        partyData.HeroIds.Add(selectedHero);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"TemplePlanningController: Hero {selectedHero} not unlocked, skipping position {pos}");
-                    }
+                    partyData.HeroIds.Add(selectedHero);
                 }
-                partyData.PartyID = System.Guid.NewGuid().ToString();
+                else
+                {
+                    Debug.LogWarning($"TempleSceneComponent: Hero {selectedHero} not unlocked, skipping position {pos}");
+                }
             }
+            partyData.PartyID = System.Guid.NewGuid().ToString();
 
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
             foreach (var hero in partyData.HeroStats)
@@ -158,7 +158,7 @@ namespace VirulentVentures
 
             if (expeditionData == null)
             {
-                Debug.LogError("TemplePlanningController: expeditionData is null in GenerateExpedition!");
+                Debug.LogError("TempleSceneComponent: expeditionData is null in GenerateExpedition!");
                 return;
             }
             expeditionData.SetNodes(nodes);
@@ -174,7 +174,7 @@ namespace VirulentVentures
         {
             if (!isExpeditionGenerated || !expeditionData.IsValid())
             {
-                Debug.LogWarning("TemplePlanningController: Cannot launch expedition, invalid or not generated!");
+                Debug.LogWarning("TempleSceneComponent: Cannot launch expedition, invalid or not generated!");
                 return;
             }
             ExpeditionManager.Instance.TransitionToExpeditionScene();
@@ -184,19 +184,19 @@ namespace VirulentVentures
         {
             if (!isExpeditionGenerated || data.nodeIndex < 0 || data.nodeIndex >= expeditionData.NodeData.Count)
             {
-                Debug.LogWarning($"TemplePlanningController: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {data.nodeIndex}");
+                Debug.LogWarning($"TempleSceneComponent: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {data.nodeIndex}");
                 return;
             }
 
             VirusData virus = availableViruses.Find(v => v.VirusID == data.virusID);
             if (virus == null)
             {
-                Debug.LogWarning($"TemplePlanningController: Virus {data.virusID} not found!");
+                Debug.LogWarning($"TempleSceneComponent: Virus {data.virusID} not found!");
                 return;
             }
 
             expeditionData.NodeData[data.nodeIndex].SeededViruses.Add(virus);
-            Debug.Log($"TemplePlanningController: Seeded {virus.VirusID} to Node {data.nodeIndex}");
+            Debug.Log($"TempleSceneComponent: Seeded {virus.VirusID} to Node {data.nodeIndex}");
             eventBus.RaiseExpeditionUpdated(expeditionData, partyData);
         }
 
@@ -206,7 +206,7 @@ namespace VirulentVentures
                 combatNodeGenerator == null || nonCombatNodeGenerator == null || combatEncounterData == null ||
                 defaultPositions == null || eventBus == null || healingConfig == null)
             {
-                Debug.LogError($"TemplePlanningController: Missing references! ExpeditionData: {expeditionData != null}, " +
+                Debug.LogError($"TempleSceneComponent: Missing references! ExpeditionData: {expeditionData != null}, " +
                     $"PartyData: {partyData != null}, PlayerProgress: {playerProgress != null}, AvailableViruses: {availableViruses != null}, " +
                     $"VisualConfig: {visualConfig != null}, CombatNodeGenerator: {combatNodeGenerator != null}, " +
                     $"NonCombatNodeGenerator: {nonCombatNodeGenerator != null}, CombatEncounterData: {combatEncounterData != null}, " +

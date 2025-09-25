@@ -24,8 +24,6 @@ namespace VirulentVentures
             eventBus.OnNodeUpdated += HandleNodeUpdate;
             eventBus.OnSceneTransitionCompleted += HandleNodeUpdate;
             eventBus.OnContinueClicked += HandleContinueClicked;
-            eventBus.OnUnitDied += HandleUnitDied;
-            eventBus.OnCombatEnded += HandleCombatEnded;
 
             var expedition = ExpeditionManager.Instance.GetExpedition();
             if (!expedition.IsValid())
@@ -42,8 +40,6 @@ namespace VirulentVentures
                 eventBus.OnNodeUpdated -= HandleNodeUpdate;
                 eventBus.OnSceneTransitionCompleted -= HandleNodeUpdate;
                 eventBus.OnContinueClicked -= HandleContinueClicked;
-                eventBus.OnUnitDied -= HandleUnitDied;
-                eventBus.OnCombatEnded -= HandleCombatEnded;
             }
         }
 
@@ -99,6 +95,12 @@ namespace VirulentVentures
             {
                 eventBus.RaiseLogMessage(currentNode.Completed ? "Combat Won!" : currentNode.FlavourText, Color.white);
                 eventBus.RaisePartyUpdated(partyData);
+                // Check for hero deaths after node processing
+                if (CheckForHeroDeaths())
+                {
+                    Debug.Log($"ExpeditionSceneComponent: Hero death detected after node {data.currentIndex}, will transition to Temple on Continue");
+                    return;
+                }
                 CheckExpeditionFailure();
             }
         }
@@ -106,11 +108,23 @@ namespace VirulentVentures
         private void HandleContinueClicked()
         {
             var expedition = ExpeditionManager.Instance.GetExpedition();
-            if (expedition == null || expedition.NodeData == null) return;
-
-            if (partyData.HeroStats.All(h => h.HasRetreated || h.Health <= 0) || expedition.CurrentNodeIndex >= expedition.NodeData.Count - 1)
+            if (expedition == null || expedition.NodeData == null)
             {
-                Debug.Log("ExpeditionSceneComponent: Expedition failed or completed, transitioning to Temple");
+                Debug.LogError("ExpeditionSceneComponent: Expedition or NodeData is null in HandleContinueClicked!");
+                return;
+            }
+
+            // Check for hero deaths before advancing
+            if (CheckForHeroDeaths())
+            {
+                Debug.Log("ExpeditionSceneComponent: Hero death detected on Continue, transitioning to Temple");
+                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
+                return;
+            }
+
+            if (expedition.CurrentNodeIndex >= expedition.NodeData.Count - 1)
+            {
+                Debug.Log("ExpeditionSceneComponent: Expedition completed, transitioning to Temple");
                 ExpeditionManager.Instance.TransitionToTemplePlanningScene();
             }
             else
@@ -121,25 +135,33 @@ namespace VirulentVentures
             }
         }
 
-        private void HandleUnitDied(ICombatUnit unit)
+        private bool CheckForHeroDeaths()
         {
-            if (unit is CharacterStats stats && stats.Type == CharacterType.Hero)
+            if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
-                CheckExpeditionFailure();
+                Debug.LogWarning("ExpeditionSceneComponent: HeroStats is null or empty in CheckForHeroDeaths");
+                return false;
             }
-        }
-
-        private void HandleCombatEnded(bool isVictory)
-        {
-            CheckExpeditionFailure();
+            bool hasDeadHero = partyData.HeroStats.Any(h => h.Type == CharacterType.Hero && h.Health <= 0);
+            if (hasDeadHero)
+            {
+                Debug.Log($"ExpeditionSceneComponent: Found dead hero(s): {string.Join(", ", partyData.HeroStats.Where(h => h.Type == CharacterType.Hero && h.Health <= 0).Select(h => h.Id))}");
+            }
+            return hasDeadHero;
         }
 
         private void CheckExpeditionFailure()
         {
+            if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
+            {
+                Debug.LogWarning("ExpeditionSceneComponent: HeroStats is null or empty in CheckExpeditionFailure, transitioning to Temple");
+                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
+                return;
+            }
             if (partyData.HeroStats.All(h => h.HasRetreated || h.Health <= 0))
             {
-                Debug.Log("ExpeditionSceneComponent: All heroes dead or retreated, awaiting UI transition");
-                // Transition handled by CombatUIElementsComponent.cs via Continue button
+                Debug.Log("ExpeditionSceneComponent: All heroes dead or retreated, transitioning to Temple");
+                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
             }
         }
 
