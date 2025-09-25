@@ -204,7 +204,7 @@ namespace VirulentVentures
                             sceneComponent.UIConfig.TextColor);
                     }
                 },
-                cooldown: 2,
+                cooldown: 3,
                 cooldownType: CooldownType.Actions,
                 priority: 1,
                 rank: 1,
@@ -436,7 +436,7 @@ namespace VirulentVentures
                     sceneComponent.EventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
                 },
                 cooldown: 1,
-                cooldownType: CooldownType.Rounds,
+                cooldownType: CooldownType.Actions,
                 priority: 2,
                 rank: 1,
                 logTemplate: "{user.Id} heals {target.Id} for {amount} HP!",
@@ -466,7 +466,7 @@ namespace VirulentVentures
                         sceneComponent.UIConfig.TextColor);
                 },
                 cooldown: 2,
-                cooldownType: CooldownType.Actions,
+                cooldownType: CooldownType.Rounds,
                 priority: 1,
                 rank: 1,
                 logTemplate: "{user.Id} casts SteelResolve, shielding allies from Morale loss!",

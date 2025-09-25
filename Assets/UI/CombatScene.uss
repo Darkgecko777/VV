@@ -254,12 +254,10 @@
     -unity-text-align: middle-center; /* Ensure text centers and stretches across */
 }
 
-/* Low morale flash effect for heroes */
+/* Low morale visual cue */
 .low-morale {
-    transition-property: background-color;
-    transition-duration: 0.5s;
-    transition-timing-function: ease-in-out;
-    background-color: rgb(255, 50, 50);
+    border-width: 2px;
+    border-color: rgb(255, 255, 0); /* Yellow border for low morale */
 }
 
 /* Low morale hover effect */
@@ -269,10 +267,11 @@
 
 /* Retreat slide effect for heroes */
 .retreat-slide {
-    transition-property: translate;
+    transition-property: translate, background-color;
     transition-duration: 0.5s;
     transition-timing-function: ease-in-out;
     translate: 100% 0;
+    background-color: rgb(255, 50, 50); /* Red background for retreat */
 }
 
 /* Stat grid for attack, defense, speed, evasion */

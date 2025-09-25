@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
 namespace VirulentVentures
 {
     public class CombatSceneComponent : MonoBehaviour
@@ -622,7 +621,7 @@ namespace VirulentVentures
             if (targetState != null)
             {
                 if (targetState.TempStats.TryGetValue("Defense", out var defMod)) target.Defense += defMod.value;
-                if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) currentEvasion += evaMod.value;
+                if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) target.Evasion += evaMod.value;
             }
             bool attackDodged = false;
             if (attackParams.Dodgeable)
@@ -714,6 +713,7 @@ namespace VirulentVentures
                 else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
                 {
                     partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig);
+                    UpdateUnit(target);
                 }
             }
             if (stats.Health <= 0)
@@ -727,6 +727,7 @@ namespace VirulentVentures
             else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
             {
                 partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig);
+                UpdateUnit(unit);
             }
             stats.Attack = originalAttack;
             stats.Speed = originalSpeed;
