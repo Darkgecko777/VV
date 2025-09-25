@@ -48,9 +48,9 @@
 /* End panel */
 .end-panel {
     position: absolute;
-    top: 50%;
+    top: 10px; /* Adjusted to top center */
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%); /* Center horizontally only */
     width: 300px;
     height: 150px;
     background-color: rgba(50, 50, 50, 0.9);
@@ -60,6 +60,8 @@
     justify-content: center;
     align-items: center;
     padding: 10px;
+    -unity-rendering-layer: 1000; /* Ensure renders on top */
+    picking-mode: Position; /* Ensure clickable */
 }
 
 /* End label */
@@ -81,6 +83,7 @@
     border-color: rgb(255, 255, 255);
     border-radius: 4px;
     margin: 10px;
+    picking-mode: Position; /* Ensure clickable */
 }
 
 /* End button hover effect */

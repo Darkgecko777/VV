@@ -161,6 +161,7 @@ namespace VirulentVentures
         {
             bool isVictory = endLabel.text == "Victory!";
             endPanel.style.display = DisplayStyle.None;
+            Debug.Log($"CombatUIElementsComponent: ContinueCombat called, isVictory: {isVictory}");
             if (isVictory)
             {
                 ExpeditionManager.Instance.TransitionToExpeditionScene();
@@ -178,6 +179,7 @@ namespace VirulentVentures
                 Debug.LogError("CombatUIElementsComponent: endPanel or endLabel is null in ShowEndPanel. Ensure SetupUI completed successfully.");
                 return;
             }
+            Debug.Log($"CombatUIElementsComponent: Showing end panel, isVictory: {isVictory}");
             endPanel.style.display = DisplayStyle.Flex;
             endLabel.text = isVictory ? "Victory!" : "Defeat!";
             endLabel.style.color = isVictory ? Color.green : Color.red;
@@ -320,7 +322,7 @@ namespace VirulentVentures
             var panel = new VisualElement();
             panel.AddToClassList("unit-panel");
             panel.style.height = new StyleLength(new Length(heightPercent, LengthUnit.Percent));
-            var nameLabel = new Label(stats.name);
+            var nameLabel = new Label(stats.name); // Fixed: Changed stats.Id to stats.name
             nameLabel.AddToClassList("unit-panel");
             panel.Add(nameLabel);
             if (stats.isInfected)

@@ -8,10 +8,6 @@
             <ui:Button name="pause-button" class="speed-button" text="Pause" />
             <ui:Button name="play-button" class="speed-button" text="Play" />
         </ui:VisualElement>
-        <ui:VisualElement name="end-panel" class="end-panel" style="display: none;">
-            <ui:Label name="end-label" class="end-label" text="Combat Outcome" />
-            <ui:Button name="continue-button" class="end-button" text="Continue" />
-        </ui:VisualElement>
         <ui:VisualElement name="bottom-panel" class="bottom-panel">
             <ui:VisualElement name="left-panel" class="left-panel" />
             <ui:VisualElement name="combat-log" class="combat-log">
@@ -20,6 +16,10 @@
                 </ui:ScrollView>
             </ui:VisualElement>
             <ui:VisualElement name="right-panel" class="right-panel" />
+        </ui:VisualElement>
+        <ui:VisualElement name="end-panel" class="end-panel" style="display: none;" picking-mode="Position">
+            <ui:Label name="end-label" class="end-label" text="Combat Outcome" />
+            <ui:Button name="continue-button" class="end-button" text="Continue" picking-mode="Position" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
