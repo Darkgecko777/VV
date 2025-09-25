@@ -253,48 +253,62 @@ namespace VirulentVentures
 
         private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
         {
-            if (unitPanels.TryGetValue(data.unit, out VisualElement panel))
+            if (!unitPanels.TryGetValue(data.unit, out var panel) || panel == null) return;
+
+            var rankSection = panel.Q<VisualElement>(className: "rank-section");
+            if (rankSection == null) return;  // Safety check
+
+            if (data.displayStats.isInfected && !infectedLabels.ContainsKey(data.unit))
             {
+                var infectedLabel = new Label("Infected");
+                infectedLabel.AddToClassList("infected-label");
+                rankSection.Add(infectedLabel);
+                infectedLabels[data.unit] = infectedLabel;
+            }
+            else if (!data.displayStats.isInfected && infectedLabels.ContainsKey(data.unit))
+            {
+                rankSection.Remove(infectedLabels[data.unit]);
+                infectedLabels.Remove(data.unit);
+            }
+
+            if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
+            {
+                statLabels.atk.text = $"A: {data.displayStats.attack}";
+                statLabels.def.text = $"D: {data.displayStats.defense}";
+                statLabels.spd.text = $"S: {data.displayStats.speed}";
+                statLabels.eva.text = $"E: {data.displayStats.evasion}";
+                statLabels.rank.text = $"RANK: {data.displayStats.rank}";
+                if (data.displayStats.isHero && statLabels.morale != null)
+                    statLabels.morale.text = $"Morale: {data.displayStats.morale}/{data.displayStats.maxMorale}";
+
                 var healthBar = panel.Q<VisualElement>(className: "health-bar");
-                if (healthBar != null)
-                {
-                    var fill = healthBar.Q<VisualElement>(className: "health-fill");
-                    var label = healthBar.Q<Label>(className: "health-label");
-                    if (fill != null && label != null)
-                        UpdateHealthBar(fill, label, data.displayStats.health, data.displayStats.maxHealth);
-                }
+                var healthFill = healthBar?.Q<VisualElement>(className: "health-fill");
+                var healthLabel = healthBar?.Q<Label>(className: "health-label");
+                if (healthFill != null && healthLabel != null)
+                    UpdateHealthBar(healthFill, healthLabel, data.displayStats.health, data.displayStats.maxHealth);
+
                 if (data.displayStats.isHero)
                 {
                     var moraleBar = panel.Q<VisualElement>(className: "morale-bar");
-                    if (moraleBar != null)
-                    {
-                        var fill = moraleBar.Q<VisualElement>(className: "morale-fill");
-                        var label = moraleBar.Q<Label>(className: "morale-label");
-                        if (fill != null && label != null)
-                            UpdateMoraleBar(fill, label, data.displayStats.morale, data.displayStats.maxMorale);
-                    }
-                    if (data.displayStats.isInfected && !infectedLabels.ContainsKey(data.unit))
-                    {
-                        var infectedLabel = new Label("Infected");
-                        infectedLabel.AddToClassList("infected-label");
-                        panel.Insert(1, infectedLabel);
-                        infectedLabels[data.unit] = infectedLabel;
-                    }
-                    else if (!data.displayStats.isInfected && infectedLabels.ContainsKey(data.unit))
-                    {
-                        panel.Remove(infectedLabels[data.unit]);
-                        infectedLabels.Remove(data.unit);
-                    }
+                    var moraleFill = moraleBar?.Q<VisualElement>(className: "morale-fill");
+                    var moraleLabel = moraleBar?.Q<Label>(className: "morale-label");
+                    if (moraleFill != null && moraleLabel != null)
+                        UpdateMoraleBar(moraleFill, moraleLabel, data.displayStats.morale, data.displayStats.maxMorale);
                 }
-                if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
+
+                if (data.displayStats.morale < data.displayStats.maxMorale * 0.3f && data.displayStats.isHero)
                 {
-                    statLabels.atk.text = $"A: {data.displayStats.attack}";
-                    statLabels.def.text = $"D: {data.displayStats.defense}";
-                    statLabels.spd.text = $"S: {data.displayStats.speed}";
-                    statLabels.eva.text = $"E: {data.displayStats.evasion}";
-                    statLabels.rank.text = $"RANK: {data.displayStats.rank}";
-                    if (data.displayStats.isHero && statLabels.morale != null)
-                        statLabels.morale.text = $"Morale: {data.displayStats.morale}/{data.displayStats.maxMorale}";
+                    panel.AddToClassList("low-morale");
+                    StartCoroutine(FlashPanel(panel, new Color(1f, 0.2f, 0.2f), 0.5f));
+                }
+                else if (panel.ClassListContains("low-morale"))
+                {
+                    panel.RemoveFromClassList("low-morale");
+                }
+
+                if (data.displayStats.morale <= 0 && data.displayStats.isHero)
+                {
+                    panel.AddToClassList("retreat-slide");
                 }
             }
         }
@@ -322,25 +336,83 @@ namespace VirulentVentures
             var panel = new VisualElement();
             panel.AddToClassList("unit-panel");
             panel.style.height = new StyleLength(new Length(heightPercent, LengthUnit.Percent));
-            var nameLabel = new Label(stats.name); // Fixed: Changed stats.Id to stats.name
-            nameLabel.AddToClassList("unit-panel");
+
+            var nameLabel = new Label(stats.name);
+            nameLabel.AddToClassList("unit-name-label");  // Corrected class name (was "unit-panel" – likely a typo)
             panel.Add(nameLabel);
+
+            // Create the content container for the three sections
+            var unitContent = new VisualElement();
+            unitContent.AddToClassList("unit-content");
+            panel.Add(unitContent);
+
+            // Rank section (left third)
+            var rankSection = new VisualElement();
+            rankSection.AddToClassList("rank-section");
+
+            var rankLabel = new Label($"RANK: {stats.rank}");
+            rankLabel.AddToClassList("rank-label");
+            rankSection.Add(rankLabel);
+
             if (stats.isInfected)
             {
                 var infectedLabel = new Label("Infected");
                 infectedLabel.AddToClassList("infected-label");
-                panel.Add(infectedLabel);
+                rankSection.Add(infectedLabel);
+                infectedLabels[unit] = infectedLabel;
             }
+
+            unitContent.Add(rankSection);
+
+            // Stats section (center third)
+            var statsSection = new VisualElement();
+            statsSection.AddToClassList("stats-section");
+
+            var statGrid = new VisualElement();
+            statGrid.AddToClassList("stat-grid");
+
+            var atkContainer = new VisualElement();
+            atkContainer.AddToClassList("stat-container");
+            var atkLabel = new Label($"A: {stats.attack}");
+            atkContainer.Add(atkLabel);
+            statGrid.Add(atkContainer);
+
+            var defContainer = new VisualElement();
+            defContainer.AddToClassList("stat-container");
+            var defLabel = new Label($"D: {stats.defense}");
+            defContainer.Add(defLabel);
+            statGrid.Add(defContainer);
+
+            var spdContainer = new VisualElement();
+            spdContainer.AddToClassList("stat-container");
+            var spdLabel = new Label($"S: {stats.speed}");
+            spdContainer.Add(spdLabel);
+            statGrid.Add(spdContainer);
+
+            var evaContainer = new VisualElement();
+            evaContainer.AddToClassList("stat-container");
+            var evaLabel = new Label($"E: {stats.evasion}");
+            evaContainer.Add(evaLabel);
+            statGrid.Add(evaContainer);
+
+            statsSection.Add(statGrid);
+            unitContent.Add(statsSection);
+
+            // Bars section (right third)
+            var barsSection = new VisualElement();
+            barsSection.AddToClassList("bars-section");
+
             var healthBar = new VisualElement();
             healthBar.AddToClassList("health-bar");
             var healthFill = new VisualElement();
             healthFill.AddToClassList("health-fill");
             healthBar.Add(healthFill);
-            var healthLabel = new Label($"{stats.health}/{stats.maxHealth}");
+            var healthLabel = new Label($"{stats.health:F0}/{stats.maxHealth:F0}");
             healthLabel.AddToClassList("health-label");
             healthBar.Add(healthLabel);
             UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
-            panel.Add(healthBar);
+            barsSection.Add(healthBar);
+
             Label moraleLabel = null;
             if (isHero)
             {
@@ -349,38 +421,15 @@ namespace VirulentVentures
                 var moraleFill = new VisualElement();
                 moraleFill.AddToClassList("morale-fill");
                 moraleBar.Add(moraleFill);
-                moraleLabel = new Label($"Morale: {stats.morale}/{stats.maxMorale}");
+                moraleLabel = new Label($"Morale: {stats.morale:F0}/{stats.maxMorale:F0}");
                 moraleLabel.AddToClassList("morale-label");
                 moraleBar.Add(moraleLabel);
                 UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale);
-                panel.Add(moraleBar);
+                barsSection.Add(moraleBar);
             }
-            var rankLabel = new Label($"RANK: {stats.rank}");
-            rankLabel.AddToClassList("rank-label");
-            panel.Add(rankLabel);
-            var statGrid = new VisualElement();
-            statGrid.AddToClassList("stat-grid");
-            var atkContainer = new VisualElement();
-            atkContainer.AddToClassList("stat-container");
-            var atkLabel = new Label($"A: {stats.attack}");
-            atkContainer.Add(atkLabel);
-            statGrid.Add(atkContainer);
-            var defContainer = new VisualElement();
-            defContainer.AddToClassList("stat-container");
-            var defLabel = new Label($"D: {stats.defense}");
-            defContainer.Add(defLabel);
-            statGrid.Add(defContainer);
-            var spdContainer = new VisualElement();
-            spdContainer.AddToClassList("stat-container");
-            var spdLabel = new Label($"S: {stats.speed}");
-            spdContainer.Add(spdLabel);
-            statGrid.Add(spdContainer);
-            var evaContainer = new VisualElement();
-            evaContainer.AddToClassList("stat-container");
-            var evaLabel = new Label($"E: {stats.evasion}");
-            evaContainer.Add(evaLabel);
-            statGrid.Add(evaContainer);
-            panel.Add(statGrid);
+
+            unitContent.Add(barsSection);
+
             unitPanels[unit] = panel;
             unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel, rankLabel);
             return panel;
