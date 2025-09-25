@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+
 namespace VirulentVentures
 {
     public class CombatSceneComponent : MonoBehaviour
@@ -92,7 +93,7 @@ namespace VirulentVentures
             {
                 isPaused = false;
             };
-            eventBus.OnCombatEnded += () => EndCombat(ExpeditionManager, heroPositions.Count == 0);
+            eventBus.OnCombatEnded += (isVictory) => EndCombat(ExpeditionManager, isVictory);
         }
         void Start()
         {
@@ -115,7 +116,7 @@ namespace VirulentVentures
         {
             eventBus.OnCombatPaused -= () => { isPaused = true; };
             eventBus.OnCombatPlayed -= () => { isPaused = false; };
-            eventBus.OnCombatEnded -= () => EndCombat(ExpeditionManager, heroPositions.Count == 0);
+            eventBus.OnCombatEnded -= (isVictory) => EndCombat(ExpeditionManager, isVictory);
         }
         public void PauseCombat()
         {
@@ -330,7 +331,7 @@ namespace VirulentVentures
             {
                 Debug.LogWarning("CombatSceneComponent: Invalid expedition data, ending combat.");
                 isCombatActive = false;
-                eventBus.RaiseCombatEnded();
+                eventBus.RaiseCombatEnded(false);
                 yield break;
             }
             var heroStats = expeditionData.Party.GetHeroes();
@@ -339,7 +340,7 @@ namespace VirulentVentures
             {
                 Debug.LogWarning("CombatSceneComponent: No valid units for combat, ending.");
                 isCombatActive = false;
-                eventBus.RaiseCombatEnded();
+                eventBus.RaiseCombatEnded(false);
                 yield break;
             }
             isCombatActive = true;
@@ -351,7 +352,7 @@ namespace VirulentVentures
                 if (unitList.Count == 0 || heroPositions.Count == 0 || monsterPositions.Count == 0)
                 {
                     isCombatActive = false;
-                    eventBus.RaiseCombatEnded();
+                    eventBus.RaiseCombatEnded(monsterPositions.Count == 0); // Raise with victory condition
                     yield break;
                 }
                 foreach (var unit in unitList.ToList())
@@ -399,7 +400,7 @@ namespace VirulentVentures
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                     {
                         isCombatActive = false;
-                        eventBus.RaiseCombatEnded();
+                        eventBus.RaiseCombatEnded(monsterPositions.Count == 0); // Raise with victory condition
                         yield break;
                     }
                 }
@@ -415,7 +416,7 @@ namespace VirulentVentures
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
                             isCombatActive = false;
-                            eventBus.RaiseCombatEnded();
+                            eventBus.RaiseCombatEnded(monsterPositions.Count == 0); // Raise with victory condition
                             yield break;
                         }
                     }
@@ -463,13 +464,12 @@ namespace VirulentVentures
             allCombatLogs.Add(roundMessage);
             eventBus.RaiseLogMessage(roundMessage, uiConfig.TextColor);
         }
-        private void EndCombat(ExpeditionManager expeditionManager, bool partyDead)
+        private void EndCombat(ExpeditionManager expeditionManager, bool isVictory)
         {
             string endMessage = "Combat ends!";
             allCombatLogs.Add(endMessage);
             eventBus?.RaiseLogMessage(endMessage, uiConfig?.TextColor ?? Color.white);
             expeditionManager.SaveProgress();
-
             // Reset combat state (clears targeting-related data)
             unitAttackStates.Clear(); // Clears AbilityCooldowns, TempStats, etc.
             heroPositions.Clear(); // Clears hero targeting data
@@ -478,11 +478,9 @@ namespace VirulentVentures
             noTargetLogCooldowns.Clear();
             isCombatActive = false;
             roundNumber = 0;
-
             // Removed AbilityDatabase.Reinitialize call
             // Targeting data is reset via unitAttackStates, heroPositions, and monsterPositions
-
-            if (!partyDead)
+            if (isVictory)
             {
                 var expedition = expeditionManager.GetExpedition();
                 if (expedition != null && expedition.CurrentNodeIndex < expedition.NodeData.Count)
@@ -491,7 +489,6 @@ namespace VirulentVentures
                     string victoryMessage = "Party victorious!";
                     allCombatLogs.Add(victoryMessage);
                     eventBus?.RaiseLogMessage(victoryMessage, Color.green);
-                    expeditionManager.TransitionToExpeditionScene();
                 }
                 else
                 {
@@ -503,7 +500,6 @@ namespace VirulentVentures
                 string defeatMessage = "Party defeated!";
                 allCombatLogs.Add(defeatMessage);
                 eventBus?.RaiseLogMessage(defeatMessage, Color.red);
-                expeditionManager.TransitionToExpeditionScene();
             }
         }
         public void ProcessEffect(CharacterStats user, CharacterStats target, string tag, string abilityId)

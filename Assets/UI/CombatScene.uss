@@ -45,6 +45,49 @@
     background-color: rgb(100, 100, 100);
 }
 
+/* End panel */
+.end-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 150px;
+    background-color: rgba(50, 50, 50, 0.9);
+    border-width: 2px;
+    border-color: rgb(255, 255, 255);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+/* End label */
+.end-label {
+    font-size: 18px;
+    color: rgb(255, 255, 255);
+    margin: 10px;
+    -unity-text-align: middle-center;
+}
+
+/* End button */
+.end-button {
+    width: 120px;
+    height: 30px;
+    background-color: rgb(60, 60, 60);
+    color: rgb(255, 255, 255);
+    font-size: 14px;
+    border-width: 1px;
+    border-color: rgb(255, 255, 255);
+    border-radius: 4px;
+    margin: 10px;
+}
+
+/* End button hover effect */
+.end-button:hover {
+    background-color: rgb(100, 100, 100);
+}
+
 /* Bottom panel */
 .bottom-panel {
     position: absolute;

@@ -79,7 +79,7 @@ namespace VirulentVentures
         public event Action<LogData> OnLogMessage;
         public event Action<UnitUpdateData> OnUnitUpdated;
         public event Action<DamagePopupData> OnDamagePopup;
-        public event Action OnCombatEnded;
+        public event Action<bool> OnCombatEnded; // Modified to include isVictory parameter
         public event Action OnRetreatTriggered;
         public event Action<CombatInitData> OnCombatInitialized;
         public event Action<ExpeditionGeneratedData> OnExpeditionGenerated;
@@ -123,9 +123,9 @@ namespace VirulentVentures
             OnCombatInitialized?.Invoke(new CombatInitData { units = units });
         }
 
-        public void RaiseCombatEnded()
+        public void RaiseCombatEnded(bool isVictory) // Modified to include isVictory
         {
-            OnCombatEnded?.Invoke();
+            OnCombatEnded?.Invoke(isVictory);
         }
 
         public void RaiseRetreatTriggered()

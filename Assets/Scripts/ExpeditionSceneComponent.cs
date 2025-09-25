@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
@@ -84,17 +84,15 @@ namespace VirulentVentures
             var currentNode = data.nodes[data.currentIndex];
             if (currentNode.IsCombat && !currentNode.Completed)
             {
-                // In the IsCombat && !Completed block:
                 if (viewComponent != null)
                 {
                     viewComponent.FadeToCombat(() => {
                         var asyncOp = ExpeditionManager.Instance.TransitionToCombatScene();
-                        // If op is null (already transitioning), bail—avoids doubles
                     });
                 }
                 else
                 {
-                    ExpeditionManager.Instance.TransitionToCombatScene();  // Direct, no fade
+                    ExpeditionManager.Instance.TransitionToCombatScene();
                 }
             }
             else
@@ -131,7 +129,7 @@ namespace VirulentVentures
             }
         }
 
-        private void HandleCombatEnded()
+        private void HandleCombatEnded(bool isVictory)
         {
             CheckExpeditionFailure();
         }
@@ -140,8 +138,8 @@ namespace VirulentVentures
         {
             if (partyData.HeroStats.All(h => h.HasRetreated || h.Health <= 0))
             {
-                Debug.Log("ExpeditionSceneComponent: All heroes dead or retreated, transitioning to Temple");
-                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
+                Debug.Log("ExpeditionSceneComponent: All heroes dead or retreated, awaiting UI transition");
+                // Transition handled by CombatUIElementsComponent.cs via Continue button
             }
         }
 
