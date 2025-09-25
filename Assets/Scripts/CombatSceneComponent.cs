@@ -349,11 +349,16 @@ namespace VirulentVentures
             {
                 yield return new WaitUntil(() => !isPaused);
                 var unitList = heroPositions.Cast<ICombatUnit>().Concat(monsterPositions.Cast<ICombatUnit>()).Where(u => u.Health > 0 && !u.HasRetreated).OrderByDescending(u => u.Speed).ToList();
-                if (unitList.Count == 0 || heroPositions.Count == 0 || monsterPositions.Count == 0)
+                if (unitList.Count == 0 || monsterPositions.Count == 0)
                 {
                     isCombatActive = false;
-                    Debug.Log($"CombatSceneComponent: Raising CombatEnded, isVictory: {monsterPositions.Count == 0}");
-                    eventBus.RaiseCombatEnded(monsterPositions.Count == 0); // Added debug log
+                    eventBus.RaiseCombatEnded(true);
+                    yield break;
+                }
+                if (heroPositions.Count == 0)
+                {
+                    isCombatActive = false;
+                    eventBus.RaiseCombatEnded(false);
                     yield break;
                 }
                 foreach (var unit in unitList.ToList())
@@ -401,8 +406,7 @@ namespace VirulentVentures
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                     {
                         isCombatActive = false;
-                        Debug.Log($"CombatSceneComponent: Raising CombatEnded, isVictory: {monsterPositions.Count == 0}");
-                        eventBus.RaiseCombatEnded(monsterPositions.Count == 0); // Added debug log
+                        eventBus.RaiseCombatEnded(monsterPositions.Count == 0);
                         yield break;
                     }
                 }
@@ -418,8 +422,7 @@ namespace VirulentVentures
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
                             isCombatActive = false;
-                            Debug.Log($"CombatSceneComponent: Raising CombatEnded, isVictory: {monsterPositions.Count == 0}");
-                            eventBus.RaiseCombatEnded(monsterPositions.Count == 0); // Added debug log
+                            eventBus.RaiseCombatEnded(monsterPositions.Count == 0);
                             yield break;
                         }
                     }
@@ -481,6 +484,8 @@ namespace VirulentVentures
             noTargetLogCooldowns.Clear();
             isCombatActive = false;
             roundNumber = 0;
+            // Removed AbilityDatabase.Reinitialize call
+            // Targeting data is reset via unitAttackStates, heroPositions, and monsterPositions
             if (isVictory)
             {
                 var expedition = expeditionManager.GetExpedition();
