@@ -79,7 +79,7 @@ namespace VirulentVentures
         public event Action<LogData> OnLogMessage;
         public event Action<UnitUpdateData> OnUnitUpdated;
         public event Action<DamagePopupData> OnDamagePopup;
-        public event Action<bool> OnCombatEnded; // Modified to include isVictory parameter
+        public event Action<bool> OnCombatEnded;
         public event Action OnRetreatTriggered;
         public event Action<CombatInitData> OnCombatInitialized;
         public event Action<ExpeditionGeneratedData> OnExpeditionGenerated;
@@ -95,8 +95,7 @@ namespace VirulentVentures
         public event Action<ICombatUnit> OnUnitDied;
         public event Action<ICombatUnit> OnUnitRetreated;
         public event Action<InfectionData> OnUnitInfected;
-        public event Action OnHealParty;
-        public event Action OnExpeditionEnded;
+        public event Action OnTempleEnteredFromExpedition;
         public event Action OnPlayerProgressUpdated;
         public event Action OnCombatPaused;
         public event Action OnCombatPlayed;
@@ -123,7 +122,7 @@ namespace VirulentVentures
             OnCombatInitialized?.Invoke(new CombatInitData { units = units });
         }
 
-        public void RaiseCombatEnded(bool isVictory) // Modified to include isVictory
+        public void RaiseCombatEnded(bool isVictory)
         {
             OnCombatEnded?.Invoke(isVictory);
         }
@@ -198,14 +197,9 @@ namespace VirulentVentures
             OnUnitInfected?.Invoke(new InfectionData { unit = unit, virusId = virusId });
         }
 
-        public void RaiseHealParty()
+        public void RaiseTempleEnteredFromExpedition()
         {
-            OnHealParty?.Invoke();
-        }
-
-        public void RaiseExpeditionEnded()
-        {
-            OnExpeditionEnded?.Invoke();
+            OnTempleEnteredFromExpedition?.Invoke();
         }
 
         public void RaisePlayerProgressUpdated()

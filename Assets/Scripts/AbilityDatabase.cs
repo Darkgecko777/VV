@@ -167,7 +167,7 @@ namespace VirulentVentures
                         "{user.Id} bashes {target.Id} for {damage} damage, delaying their attack!".Replace("{user.Id}", user.Id).Replace("{target.Id}", (target as CharacterStats).Id).Replace("{damage}", user.Attack.ToString()),
                         sceneComponent.UIConfig.TextColor);
                 },
-                cooldown: 1,
+                cooldown: 2,
                 cooldownType: CooldownType.Rounds,
                 priority: 2,
                 rank: 1,
@@ -266,7 +266,7 @@ namespace VirulentVentures
                         sceneComponent.UIConfig.TextColor);
                     sceneComponent.EventBus.RaiseUnitUpdated(user, user.GetDisplayStats());
                 },
-                cooldown: 2,
+                cooldown: 3,
                 cooldownType: CooldownType.Actions,
                 priority: 2,
                 rank: 1,
@@ -287,7 +287,7 @@ namespace VirulentVentures
                         sceneComponent.UIConfig.TextColor);
                     sceneComponent.EventBus.RaiseUnitUpdated(user, user.GetDisplayStats());
                 },
-                cooldown: 1,
+                cooldown: 2,
                 cooldownType: CooldownType.Rounds,
                 priority: 1,
                 rank: 1,
@@ -348,7 +348,7 @@ namespace VirulentVentures
                         "{user.Id} snipes {target.Id} for {damage} damage!".Replace("{user.Id}", user.Id).Replace("{target.Id}", (target as CharacterStats).Id).Replace("{damage}", user.Attack.ToString()),
                         sceneComponent.UIConfig.TextColor);
                 },
-                cooldown: 1,
+                cooldown: 2,
                 cooldownType: CooldownType.Actions,
                 priority: 2,
                 rank: 1,
@@ -519,7 +519,7 @@ namespace VirulentVentures
                         sceneComponent.UIConfig.TextColor);
                     sceneComponent.EventBus.RaiseUnitUpdated(user, user.GetDisplayStats());
                 },
-                cooldown: 1,
+                cooldown: 3,
                 cooldownType: CooldownType.Actions,
                 priority: 1,
                 rank: 0,
@@ -666,17 +666,17 @@ namespace VirulentVentures
                     }, isMelee: false);
                     foreach (var target in selectedTargets.Cast<CharacterStats>())
                     {
-                        sceneComponent.ApplyMoraleDamage(user, target, 10, "CorvaxMortifyingShriek");
+                        sceneComponent.ApplyMoraleDamage(user, target, 5, "CorvaxMortifyingShriek");
                     }
                     sceneComponent.EventBus.RaiseLogMessage(
-                        "{user.Id} shrieks, draining 10 Morale from heroes!".Replace("{user.Id}", user.Id),
+                        "{user.Id} shrieks, draining 5 Morale from heroes!".Replace("{user.Id}", user.Id),
                         sceneComponent.UIConfig.TextColor);
                 },
                 cooldown: 2,
                 cooldownType: CooldownType.Rounds,
                 priority: 1,
                 rank: 0,
-                logTemplate: "{user.Id} shrieks, draining 10 Morale from heroes!",
+                logTemplate: "{user.Id} shrieks, draining 5 Morale from heroes!",
                 sceneComponent: sceneComponent
             );
             monsterAbilities["CorvaxWindsOfTerror"] = new Ability(

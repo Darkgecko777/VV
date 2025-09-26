@@ -19,17 +19,17 @@ namespace VirulentVentures
         private Button generateButton;
         private Button launchButton;
         private Button seedVirusButton;
-        private Button healButton;
         private Label favourLabel;
         private VisualElement recruitPortraitContainer;
         private VisualElement expeditionPortraitContainer;
-        private VisualElement healPortraitContainer;
         private VisualElement nodeContainer;
         private VisualElement tabContentContainer;
         private Button recruitTabButton;
         private Button expeditionTabButton;
         private Button virusTabButton;
-        private Button healTabButton;
+        private VisualElement autoHealPopup;
+        private Label autoHealLabel;
+        private Button continueButton;
         private List<VisualElement> tabContents;
         private List<Button> tabButtons;
         private bool isInitialized;
@@ -48,35 +48,36 @@ namespace VirulentVentures
             generateButton = root.Q<Button>("GenerateButton");
             launchButton = root.Q<Button>("LaunchButton");
             seedVirusButton = root.Q<Button>("SeedVirusButton");
-            healButton = root.Q<Button>("HealButton");
             favourLabel = root.Q<Label>("FavourLabel");
             recruitPortraitContainer = root.Q<VisualElement>("RecruitPortraitContainer");
             expeditionPortraitContainer = root.Q<VisualElement>("ExpeditionPortraitContainer");
-            healPortraitContainer = root.Q<VisualElement>("HealPortraitContainer");
             nodeContainer = root.Q<VisualElement>("NodeContainer");
             tabContentContainer = root.Q<VisualElement>("TabContentContainer");
             recruitTabButton = root.Q<Button>("RecruitTab");
             expeditionTabButton = root.Q<Button>("ExpeditionTab");
             virusTabButton = root.Q<Button>("VirusTab");
-            healTabButton = root.Q<Button>("HealTab");
+            autoHealPopup = root.Q<VisualElement>("AutoHealPopup");
+            autoHealLabel = root.Q<Label>("AutoHealLabel");
+            continueButton = root.Q<Button>("ContinueButton");
             tabContents = new List<VisualElement>
             {
                 root.Q<VisualElement>("RecruitTabContent"),
                 root.Q<VisualElement>("ExpeditionTabContent"),
-                root.Q<VisualElement>("VirusTabContent"),
-                root.Q<VisualElement>("HealTabContent")
+                root.Q<VisualElement>("VirusTabContent")
             };
-            tabButtons = new List<Button> { recruitTabButton, expeditionTabButton, virusTabButton, healTabButton };
-            if (virusDropdown == null || nodeDropdown == null || generateButton == null || launchButton == null || seedVirusButton == null || healButton == null || favourLabel == null ||
-                recruitPortraitContainer == null || expeditionPortraitContainer == null || healPortraitContainer == null || nodeContainer == null ||
-                tabContentContainer == null || recruitTabButton == null || expeditionTabButton == null || virusTabButton == null || healTabButton == null)
+            tabButtons = new List<Button> { recruitTabButton, expeditionTabButton, virusTabButton };
+            if (virusDropdown == null || nodeDropdown == null || generateButton == null || launchButton == null || seedVirusButton == null ||
+                favourLabel == null || recruitPortraitContainer == null || expeditionPortraitContainer == null || nodeContainer == null ||
+                tabContentContainer == null || recruitTabButton == null || expeditionTabButton == null || virusTabButton == null ||
+                autoHealPopup == null || autoHealLabel == null || continueButton == null)
             {
                 Debug.LogError($"TempleUIComponent: Missing UI elements! VirusDropdown: {virusDropdown != null}, NodeDropdown: {nodeDropdown != null}, " +
-                    $"GenerateButton: {generateButton != null}, LaunchButton: {launchButton != null}, SeedVirusButton: {seedVirusButton != null}, HealButton: {healButton != null}, FavourLabel: {favourLabel != null}, " +
-                    $"RecruitPortraitContainer: {recruitPortraitContainer != null}, ExpeditionPortraitContainer: {expeditionPortraitContainer != null}, " +
-                    $"HealPortraitContainer: {healPortraitContainer != null}, NodeContainer: {nodeContainer != null}, " +
+                    $"GenerateButton: {generateButton != null}, LaunchButton: {launchButton != null}, SeedVirusButton: {seedVirusButton != null}, " +
+                    $"FavourLabel: {favourLabel != null}, RecruitPortraitContainer: {recruitPortraitContainer != null}, " +
+                    $"ExpeditionPortraitContainer: {expeditionPortraitContainer != null}, NodeContainer: {nodeContainer != null}, " +
                     $"TabContentContainer: {tabContentContainer != null}, RecruitTab: {recruitTabButton != null}, " +
-                    $"ExpeditionTab: {expeditionTabButton != null}, VirusTab: {virusTabButton != null}, HealTab: {healTabButton != null}");
+                    $"ExpeditionTab: {expeditionTabButton != null}, VirusTab: {virusTabButton != null}, " +
+                    $"AutoHealPopup: {autoHealPopup != null}, AutoHealLabel: {autoHealLabel != null}, ContinueButton: {continueButton != null}");
                 isInitialized = false;
                 return;
             }
@@ -110,17 +111,17 @@ namespace VirulentVentures
             generateButton = null;
             launchButton = null;
             seedVirusButton = null;
-            healButton = null;
             favourLabel = null;
             recruitPortraitContainer = null;
             expeditionPortraitContainer = null;
-            healPortraitContainer = null;
             nodeContainer = null;
             tabContentContainer = null;
             recruitTabButton = null;
             expeditionTabButton = null;
             virusTabButton = null;
-            healTabButton = null;
+            autoHealPopup = null;
+            autoHealLabel = null;
+            continueButton = null;
         }
 
         private void InitializeUI()
@@ -143,17 +144,18 @@ namespace VirulentVentures
             launchButton.style.unityFont = uiConfig.PixelFont;
             seedVirusButton.style.color = uiConfig.TextColor;
             seedVirusButton.style.unityFont = uiConfig.PixelFont;
-            healButton.style.color = uiConfig.TextColor;
-            healButton.style.unityFont = uiConfig.PixelFont;
             favourLabel.style.color = uiConfig.TextColor;
             favourLabel.style.unityFont = uiConfig.PixelFont;
+            autoHealLabel.style.color = uiConfig.TextColor;
+            autoHealLabel.style.unityFont = uiConfig.PixelFont;
+            continueButton.style.color = uiConfig.TextColor;
+            continueButton.style.unityFont = uiConfig.PixelFont;
             foreach (var button in tabButtons)
             {
                 button.style.color = uiConfig.TextColor;
                 button.style.unityFont = uiConfig.PixelFont;
             }
             generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
-            healButton.SetEnabled(partyData.CanHealParty());
             generateButton.clicked += () => eventBus.RaiseExpeditionGenerated(null, null);
             launchButton.clicked += () => eventBus.RaiseLaunchExpedition();
             seedVirusButton.clicked += () =>
@@ -167,12 +169,10 @@ namespace VirulentVentures
                     Debug.LogWarning("TempleUIComponent: Invalid dropdown selection for virus seeding!");
                 }
             };
-            healButton.clicked += () => eventBus.RaiseHealParty();
+            continueButton.clicked += () => eventBus.RaiseContinueClicked();
             recruitTabButton.clicked += () => SwitchTab(0);
             expeditionTabButton.clicked += () => SwitchTab(1);
             virusTabButton.clicked += () => SwitchTab(2);
-            healTabButton.clicked += () => SwitchTab(3);
-            launchButton.SetEnabled(false);
         }
 
         private void SwitchTab(int index)
@@ -192,40 +192,36 @@ namespace VirulentVentures
         {
             recruitPortraitContainer.Clear();
             expeditionPortraitContainer.Clear();
-            healPortraitContainer.Clear();
             for (int i = 0; i < 4; i++)
             {
                 VisualElement recruitWrapper = new VisualElement();
                 recruitWrapper.AddToClassList("portrait-wrapper");
-                VisualElement recruitPortrait = new VisualElement();
+                Image recruitPortrait = new Image();
                 recruitPortrait.AddToClassList("portrait");
+                recruitPortrait.style.width = 100;
+                recruitPortrait.style.height = 100;
                 recruitWrapper.Add(recruitPortrait);
                 recruitPortraitContainer.Add(recruitWrapper);
                 VisualElement expeditionWrapper = new VisualElement();
                 expeditionWrapper.AddToClassList("portrait-wrapper");
-                VisualElement expeditionPortrait = new VisualElement();
+                Image expeditionPortrait = new Image();
                 expeditionPortrait.AddToClassList("portrait");
+                expeditionPortrait.style.width = 100;
+                expeditionPortrait.style.height = 100;
                 expeditionWrapper.Add(expeditionPortrait);
                 expeditionPortraitContainer.Add(expeditionWrapper);
-                VisualElement healWrapper = new VisualElement();
-                healWrapper.AddToClassList("portrait-wrapper");
-                VisualElement healPortrait = new VisualElement();
-                healPortrait.AddToClassList("portrait");
-                healWrapper.Add(healPortrait);
-                healPortraitContainer.Add(healWrapper);
             }
         }
 
         private void UpdatePartyVisuals(PartyData partyData)
         {
-            if (!isInitialized || partyData == null || recruitPortraitContainer == null || expeditionPortraitContainer == null || healPortraitContainer == null)
+            if (!isInitialized || partyData == null || recruitPortraitContainer == null || expeditionPortraitContainer == null)
             {
                 Debug.LogWarning("TempleUIComponent: PartyData or portrait containers are null, skipping update.");
                 return;
             }
             recruitPortraitContainer.Clear();
             expeditionPortraitContainer.Clear();
-            healPortraitContainer.Clear();
             var heroes = partyData.GetHeroes()?.OrderByDescending(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList() ?? new List<CharacterStats>();
             bool hasActiveParty = partyData.HeroStats != null && partyData.HeroStats.Count > 0;
             if (!hasActiveParty)
@@ -236,7 +232,7 @@ namespace VirulentVentures
             {
                 VisualElement recruitWrapper = new VisualElement();
                 recruitWrapper.AddToClassList("portrait-wrapper");
-                Image recruitPortrait = new Image(); // Use Image instead of VisualElement
+                Image recruitPortrait = new Image();
                 recruitPortrait.AddToClassList("portrait");
                 recruitPortrait.style.width = 100;
                 recruitPortrait.style.height = 100;
@@ -246,12 +242,6 @@ namespace VirulentVentures
                 expeditionPortrait.AddToClassList("portrait");
                 expeditionPortrait.style.width = 100;
                 expeditionPortrait.style.height = 100;
-                VisualElement healWrapper = new VisualElement();
-                healWrapper.AddToClassList("portrait-wrapper");
-                Image healPortrait = new Image();
-                healPortrait.AddToClassList("portrait");
-                healPortrait.style.width = 100;
-                healPortrait.style.height = 100;
                 VisualElement recruitHealthBar = new VisualElement();
                 recruitHealthBar.AddToClassList("health-bar");
                 recruitHealthBar.name = "HealthBar";
@@ -262,8 +252,6 @@ namespace VirulentVentures
                 recruitBarsContainer.AddToClassList("bars-container");
                 recruitBarsContainer.Add(recruitHealthBar);
                 recruitBarsContainer.Add(recruitMoraleBar);
-                recruitWrapper.Add(recruitPortrait); // Add portrait first
-                recruitWrapper.Add(recruitBarsContainer); // Then bars
                 VisualElement expeditionHealthBar = new VisualElement();
                 expeditionHealthBar.AddToClassList("health-bar");
                 expeditionHealthBar.name = "HealthBar";
@@ -274,20 +262,10 @@ namespace VirulentVentures
                 expeditionBarsContainer.AddToClassList("bars-container");
                 expeditionBarsContainer.Add(expeditionHealthBar);
                 expeditionBarsContainer.Add(expeditionMoraleBar);
+                recruitWrapper.Add(recruitPortrait);
+                recruitWrapper.Add(recruitBarsContainer);
                 expeditionWrapper.Add(expeditionPortrait);
                 expeditionWrapper.Add(expeditionBarsContainer);
-                VisualElement healHealthBar = new VisualElement();
-                healHealthBar.AddToClassList("health-bar");
-                healHealthBar.name = "HealthBar";
-                VisualElement healMoraleBar = new VisualElement();
-                healMoraleBar.AddToClassList("morale-bar");
-                healMoraleBar.name = "MoraleBar";
-                VisualElement healBarsContainer = new VisualElement();
-                healBarsContainer.AddToClassList("bars-container");
-                healBarsContainer.Add(healHealthBar);
-                healBarsContainer.Add(healMoraleBar);
-                healWrapper.Add(healPortrait);
-                healWrapper.Add(healBarsContainer);
                 if (hasActiveParty && i < heroes.Count && heroes[i] != null)
                 {
                     string characterID = heroes[i].Id;
@@ -296,55 +274,44 @@ namespace VirulentVentures
                         Debug.LogWarning($"TempleUIComponent: Hero {i + 1} has null/empty Id, using fallback.");
                         recruitPortrait.style.backgroundColor = new StyleColor(Color.gray);
                         expeditionPortrait.style.backgroundColor = new StyleColor(Color.gray);
-                        healPortrait.style.backgroundColor = new StyleColor(Color.gray);
                         recruitPortrait.tooltip = "Empty Slot (Invalid ID)";
                         expeditionPortrait.tooltip = "Empty Slot (Invalid ID)";
-                        healPortrait.tooltip = "Empty Slot (Invalid ID)";
                     }
                     else
                     {
                         var heroData = CharacterLibrary.GetHeroData(characterID);
-                        Sprite sprite = heroData.Portrait; // Access Portrait from CharacterSO
+                        Sprite sprite = heroData.Portrait;
                         if (sprite != null)
                         {
-                            recruitPortrait.image = sprite.texture; // Use Image.texture for UI Toolkit
+                            recruitPortrait.image = sprite.texture;
                             expeditionPortrait.image = sprite.texture;
-                            healPortrait.image = sprite.texture;
-                            recruitPortrait.style.display = DisplayStyle.None; // Force refresh
+                            recruitPortrait.style.display = DisplayStyle.None;
                             recruitPortrait.style.display = DisplayStyle.Flex;
                             expeditionPortrait.style.display = DisplayStyle.None;
                             expeditionPortrait.style.display = DisplayStyle.Flex;
-                            healPortrait.style.display = DisplayStyle.None;
-                            healPortrait.style.display = DisplayStyle.Flex;
                             string tooltip = $"Health: {heroes[i].Health}/{heroes[i].MaxHealth}, Morale: {heroes[i].Morale}/{heroes[i].MaxMorale}";
                             if (heroes[i].Health <= 0)
                             {
                                 recruitPortrait.AddToClassList("portrait-dead");
                                 expeditionPortrait.AddToClassList("portrait-dead");
-                                healPortrait.AddToClassList("portrait-dead");
                                 tooltip = $"Dead: {heroes[i].Id}";
                             }
                             recruitPortrait.tooltip = tooltip;
                             expeditionPortrait.tooltip = tooltip;
-                            healPortrait.tooltip = tooltip;
                             float healthPercent = heroes[i].MaxHealth > 0 ? (float)heroes[i].Health / heroes[i].MaxHealth : 0f;
                             float moralePercent = heroes[i].MaxMorale > 0 ? (float)heroes[i].Morale / heroes[i].MaxMorale : 0f;
                             recruitHealthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
                             recruitMoraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
                             expeditionHealthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
                             expeditionMoraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
-                            healHealthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
-                            healMoraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
                         }
                         else
                         {
                             Debug.LogWarning($"TempleUIComponent: No portrait sprite found for '{characterID}' in CharacterSO, using fallback.");
                             recruitPortrait.style.backgroundColor = new StyleColor(Color.gray);
                             expeditionPortrait.style.backgroundColor = new StyleColor(Color.gray);
-                            healPortrait.style.backgroundColor = new StyleColor(Color.gray);
                             recruitPortrait.tooltip = $"No Sprite: {characterID}";
                             expeditionPortrait.tooltip = $"No Sprite: {characterID}";
-                            healPortrait.tooltip = $"No Sprite: {characterID}";
                         }
                     }
                 }
@@ -352,23 +319,17 @@ namespace VirulentVentures
                 {
                     recruitPortrait.style.backgroundColor = new StyleColor(Color.gray);
                     expeditionPortrait.style.backgroundColor = new StyleColor(Color.gray);
-                    healPortrait.style.backgroundColor = new StyleColor(Color.gray);
                     recruitPortrait.tooltip = "Empty Slot";
                     expeditionPortrait.tooltip = "Empty Slot";
-                    healPortrait.tooltip = "Empty Slot";
                     recruitHealthBar.style.width = new StyleLength(Length.Percent(0));
                     recruitMoraleBar.style.width = new StyleLength(Length.Percent(0));
                     expeditionHealthBar.style.width = new StyleLength(Length.Percent(0));
                     expeditionMoraleBar.style.width = new StyleLength(Length.Percent(0));
-                    healHealthBar.style.width = new StyleLength(Length.Percent(0));
-                    healMoraleBar.style.width = new StyleLength(Length.Percent(0));
                 }
                 recruitPortraitContainer.Add(recruitWrapper);
                 expeditionPortraitContainer.Add(expeditionWrapper);
-                healPortraitContainer.Add(healWrapper);
             }
             generateButton.SetEnabled(!hasActiveParty);
-            healButton.SetEnabled(partyData.CanHealParty());
             UpdateFavourDisplay();
         }
 
@@ -382,7 +343,6 @@ namespace VirulentVentures
         {
             Debug.Log($"TempleUIComponent: HandleExpeditionEnded called, HeroStats count: {(partyData.HeroStats == null ? 0 : partyData.HeroStats.Count)}");
             generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
-            healButton.SetEnabled(partyData.CanHealParty());
             UpdateFavourDisplay();
             UpdatePartyVisuals(partyData);
         }
@@ -392,13 +352,29 @@ namespace VirulentVentures
             UpdateFavourDisplay();
         }
 
+        private void HandleTempleEnteredFromExpedition()
+        {
+            var playerProgress = ExpeditionManager.Instance.GetPlayerProgress();
+            if (playerProgress.Favour > 0)
+            {
+                autoHealPopup.style.display = DisplayStyle.Flex;
+                autoHealLabel.text = $"Earned {playerProgress.Favour} Favour";
+            }
+        }
+
+        private void HandleContinueClicked()
+        {
+            autoHealPopup.style.display = DisplayStyle.None;
+        }
+
         private void SubscribeToEventBus()
         {
             eventBus.OnExpeditionUpdated += UpdateNodeVisuals;
             eventBus.OnVirusSeeded += UpdateVirusNode;
             eventBus.OnPartyUpdated += UpdatePartyVisuals;
-            eventBus.OnExpeditionEnded += HandleExpeditionEnded;
             eventBus.OnPlayerProgressUpdated += HandlePlayerProgressUpdated;
+            eventBus.OnTempleEnteredFromExpedition += HandleTempleEnteredFromExpedition;
+            eventBus.OnContinueClicked += HandleContinueClicked;
         }
 
         private void UnsubscribeFromEventBus()
@@ -406,8 +382,9 @@ namespace VirulentVentures
             eventBus.OnExpeditionUpdated -= UpdateNodeVisuals;
             eventBus.OnVirusSeeded -= UpdateVirusNode;
             eventBus.OnPartyUpdated -= UpdatePartyVisuals;
-            eventBus.OnExpeditionEnded -= HandleExpeditionEnded;
             eventBus.OnPlayerProgressUpdated -= HandlePlayerProgressUpdated;
+            eventBus.OnTempleEnteredFromExpedition -= HandleTempleEnteredFromExpedition;
+            eventBus.OnContinueClicked -= HandleContinueClicked;
         }
 
         private void UpdateNodeVisuals(EventBusSO.ExpeditionGeneratedData data)

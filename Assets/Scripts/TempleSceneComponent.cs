@@ -18,7 +18,6 @@ namespace VirulentVentures
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private HealingConfig healingConfig;
-
         private bool isExpeditionGenerated = false;
 
         void Awake()
@@ -27,13 +26,12 @@ namespace VirulentVentures
             eventBus.OnExpeditionGenerated += GenerateExpedition;
             eventBus.OnVirusSeeded += SeedVirus;
             eventBus.OnLaunchExpedition += LaunchExpedition;
-            eventBus.OnHealParty += HealParty;
+            eventBus.OnTempleEnteredFromExpedition += AutoHealParty;
         }
 
         void Start()
         {
             isExpeditionGenerated = expeditionData.IsValid();
-            // Reload partyData if empty to preserve surviving heroes
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
                 Debug.Log("TempleSceneComponent: HeroStats is empty on Start, attempting to load from SaveManager");
@@ -57,65 +55,46 @@ namespace VirulentVentures
                 eventBus.OnExpeditionGenerated -= GenerateExpedition;
                 eventBus.OnVirusSeeded -= SeedVirus;
                 eventBus.OnLaunchExpedition -= LaunchExpedition;
-                eventBus.OnHealParty -= HealParty;
+                eventBus.OnTempleEnteredFromExpedition -= AutoHealParty;
             }
         }
 
-        private void HealParty()
+        private void AutoHealParty()
         {
             if (partyData == null || partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
                 Debug.LogWarning("TempleSceneComponent: No party to heal!");
                 return;
             }
-
             int totalFavour = 0;
             foreach (var hero in partyData.HeroStats)
             {
                 if (hero.Health <= 0 || hero.HasRetreated) continue;
-
                 int hpHealed = hero.MaxHealth - hero.Health;
                 int moraleRestored = hero.MaxMorale - hero.Morale;
                 float favour = (healingConfig.HPFavourPerPoint * hpHealed) + (healingConfig.MoraleFavourPerPoint * moraleRestored);
-
                 hero.Health = hero.MaxHealth;
                 hero.Morale = hero.MaxMorale;
                 totalFavour += Mathf.RoundToInt(favour);
             }
-
             if (totalFavour > 0)
             {
                 playerProgress.AddFavour(totalFavour);
-                Debug.Log($"TempleSceneComponent: Healed party, earned {totalFavour} favour");
+                Debug.Log($"TempleSceneComponent: Auto-healed party, earned {totalFavour} favour");
                 eventBus.RaisePlayerProgressUpdated();
             }
             eventBus.RaisePartyUpdated(partyData);
         }
 
-        public bool CanHealParty()
-        {
-            if (partyData == null || partyData.HeroStats == null || partyData.HeroStats.Count == 0)
-            {
-                return false;
-            }
-
-            return partyData.HeroStats.Any(hero =>
-                !hero.HasRetreated && hero.Health > 0 &&
-                (hero.Health < hero.MaxHealth || hero.Morale < hero.MaxMorale));
-        }
-
         private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData data)
         {
             if (data.expeditionData != null || data.partyData != null) return;
-
             List<NodeData> nodes = new List<NodeData>();
             nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1, isTempleNode: true));
-
             int totalNodeCount = testMode ? 8 : Random.Range(0, 3) * 2 + 8;
             int combatNodeCount = totalNodeCount / 2;
             int nonCombatNodeCount = totalNodeCount / 2;
             int level = 2;
-
             for (int i = 0; i < combatNodeCount; i++)
             {
                 nodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", level, combatEncounterData));
@@ -124,7 +103,6 @@ namespace VirulentVentures
             {
                 nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", level));
             }
-
             partyData.Reset();
             partyData.HeroIds = new List<string>();
             var positionMap = new Dictionary<int, string>
@@ -134,7 +112,6 @@ namespace VirulentVentures
                 { 3, "Scout" },
                 { 4, "Healer" }
             };
-
             foreach (var pos in positionMap.Keys)
             {
                 string selectedHero = positionMap[pos];
@@ -148,14 +125,12 @@ namespace VirulentVentures
                 }
             }
             partyData.PartyID = System.Guid.NewGuid().ToString();
-
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
             foreach (var hero in partyData.HeroStats)
             {
                 hero.Health = hero.MaxHealth;
                 hero.Morale = hero.MaxMorale;
             }
-
             if (expeditionData == null)
             {
                 Debug.LogError("TempleSceneComponent: expeditionData is null in GenerateExpedition!");
@@ -165,7 +140,6 @@ namespace VirulentVentures
             expeditionData.SetParty(partyData);
             expeditionData.CurrentNodeIndex = 0;
             isExpeditionGenerated = expeditionData.IsValid();
-
             eventBus.RaisePartyUpdated(partyData);
             eventBus.RaiseExpeditionUpdated(expeditionData, partyData);
         }
@@ -187,14 +161,12 @@ namespace VirulentVentures
                 Debug.LogWarning($"TempleSceneComponent: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {data.nodeIndex}");
                 return;
             }
-
             VirusData virus = availableViruses.Find(v => v.VirusID == data.virusID);
             if (virus == null)
             {
                 Debug.LogWarning($"TempleSceneComponent: Virus {data.virusID} not found!");
                 return;
             }
-
             expeditionData.NodeData[data.nodeIndex].SeededViruses.Add(virus);
             Debug.Log($"TempleSceneComponent: Seeded {virus.VirusID} to Node {data.nodeIndex}");
             eventBus.RaiseExpeditionUpdated(expeditionData, partyData);

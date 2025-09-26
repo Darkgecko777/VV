@@ -42,7 +42,7 @@
     -unity-background-scale-mode: scale-to-fit;
     width: 100px;
     height: 100px;
-    background-color: rgba(128, 128, 128, 0.5); /* Fallback to confirm rendering */
+    background-color: rgba(128, 128, 128, 0.5);
 }
 
 .bars-container {
@@ -83,7 +83,7 @@
 .node-label {
     color: white;
     font-size: 12px;
-    -unity-text-align: middle-center; /* Fixed: Changed 'center' to 'middle-center' */
+    -unity-text-align: middle-center;
 }
 
 .button {
@@ -99,7 +99,7 @@
     margin-bottom: 10px;
 }
 
-#RecruitPortraitContainer, #ExpeditionPortraitContainer, #HealPortraitContainer, #NodeContainer {
+#RecruitPortraitContainer, #ExpeditionPortraitContainer, #NodeContainer {
     display: flex;
     flex-direction: row;
 }
@@ -113,5 +113,10 @@
 .favour-label {
     color: white;
     font-size: 16px;
-    -unity-text-align: middle-center; /* Fixed: Changed 'center' to 'middle-center' */
+    -unity-text-align: middle-center;
+}
+
+.auto-heal-popup {
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
 }
