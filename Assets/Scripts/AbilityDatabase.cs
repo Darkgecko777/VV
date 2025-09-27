@@ -8,23 +8,7 @@ namespace VirulentVentures
 {
     public static class AbilityDatabase
     {
-        private static readonly Dictionary<string, IAbility> heroAbilities = new Dictionary<string, IAbility>();
-        private static readonly Dictionary<string, IAbility> monsterAbilities = new Dictionary<string, IAbility>();
-        private static readonly Dictionary<string, string[]> heroAbilityMap = new Dictionary<string, string[]>
-        {
-            { "Fighter", new[] { "FighterMeleeAttack", "FighterShieldBash", "FighterCoupDeGrace", "BasicAttack" } },
-            { "Monk", new[] { "MonkBasicAttack", "MonkChiStrike", "MonkMeditate", "BasicAttack" } },
-            { "Scout", new[] { "ScoutBasicAttack", "ScoutSniperShot", "ScoutEnhanceWeaponry", "BasicAttack" } },
-            { "Healer", new[] { "HealerBasicAttack", "HealerHeal", "HealerSteelResolve", "BasicAttack" } }
-        };
-        private static readonly Dictionary<string, string[]> monsterAbilityMap = new Dictionary<string, string[]>
-        {
-            { "Mire Shambler", new[] { "ShamblerThornNeedle", "ShamblerSwampBrambles", "BasicAttack" } },
-            { "Bog Fiend", new[] { "FiendMeleeAttack", "FiendSludgeSlam", "FiendDrainHealth", "BasicAttack" } },
-            { "Umbral Corvax", new[] { "CorvaxBasicAttack", "CorvaxMortifyingShriek", "CorvaxWindsOfTerror", "BasicAttack" } },
-            { "Wraith", new[] { "WraithStrike", "WraithHoaryGrasp", "BasicAttack" } }
-        };
-
+        private static readonly Dictionary<string, IAbility> abilities = new Dictionary<string, IAbility>();
         private static bool isInitialized = false;
 
         public static void InitializeAbilities(CombatSceneComponent sceneComponent)
@@ -38,8 +22,7 @@ namespace VirulentVentures
                 return;
             }
 
-            heroAbilities.Clear();
-            monsterAbilities.Clear();
+            abilities.Clear();
 
             var abilityTypes = Assembly.GetExecutingAssembly()
                 .GetTypes()
@@ -52,12 +35,7 @@ namespace VirulentVentures
                     var ability = Activator.CreateInstance(type) as IAbility;
                     if (ability == null) continue;
 
-                    bool isHero = heroAbilityMap.Values.Any(ids => ids.Contains(ability.Id));
-                    bool isMonster = monsterAbilityMap.Values.Any(ids => ids.Contains(ability.Id));
-
-                    if (isHero) heroAbilities[ability.Id] = ability;
-                    if (isMonster) monsterAbilities[ability.Id] = ability;
-
+                    abilities[ability.Id] = ability;
                     Debug.Log($"AbilityDatabase: Registered {ability.Id} ({type.Name}).");
                 }
                 catch (Exception ex)
@@ -65,45 +43,14 @@ namespace VirulentVentures
                     Debug.LogError($"AbilityDatabase: Failed to instantiate {type.Name}: {ex.Message}");
                 }
             }
-
-            foreach (var entry in heroAbilityMap)
-            {
-                foreach (var id in entry.Value)
-                {
-                    if (!heroAbilities.ContainsKey(id))
-                        Debug.LogWarning($"AbilityDatabase: Hero ability {id} for {entry.Key} not found.");
-                }
-            }
-            foreach (var entry in monsterAbilityMap)
-            {
-                foreach (var id in entry.Value)
-                {
-                    if (!monsterAbilities.ContainsKey(id))
-                        Debug.LogWarning($"AbilityDatabase: Monster ability {id} for {entry.Key} not found.");
-                }
-            }
         }
 
-        public static string[] GetCharacterAbilityIds(string characterId, CharacterType type)
+        public static IAbility GetAbility(string id)
         {
-            var map = type == CharacterType.Hero ? heroAbilityMap : monsterAbilityMap;
-            if (map.TryGetValue(characterId, out var ids)) return ids;
-            Debug.LogWarning($"AbilityDatabase: No abilities mapped for {characterId} ({type}). Returning empty.");
-            return new string[0];
-        }
-
-        public static IAbility GetHeroAbility(string id)
-        {
-            heroAbilities.TryGetValue(id, out var ability);
-            if (ability == null) Debug.LogWarning($"AbilityDatabase: Hero ability {id} not found.");
-            return ability;
-        }
-
-        public static IAbility GetMonsterAbility(string id)
-        {
-            monsterAbilities.TryGetValue(id, out var ability);
-            if (ability == null) Debug.LogWarning($"AbilityDatabase: Monster ability {id} not found.");
-            return ability;
+            if (abilities.TryGetValue(id, out var ability))
+                return ability;
+            Debug.LogWarning($"AbilityDatabase: Ability {id} not found.");
+            return null;
         }
 
         public static void Reinitialize(CombatSceneComponent sceneComponent)
@@ -123,7 +70,7 @@ namespace VirulentVentures
 
             if (unit.abilityIds == null || unit.abilityIds.Length == 0)
             {
-                string msg = $"No abilities assigned to {unit.Id}.";
+                string msg = $"No abilities assigned to {unit.Id} in CharacterSO.";
                 Debug.LogError(msg);
                 return (null, msg);
             }
@@ -134,7 +81,7 @@ namespace VirulentVentures
 
             foreach (var id in unit.abilityIds)
             {
-                var ability = unit.Type == CharacterType.Hero ? GetHeroAbility(id) : GetMonsterAbility(id);
+                var ability = GetAbility(id);
                 if (ability == null)
                 {
                     Debug.LogWarning($"Invalid ability ID {id} for {unit.Id}. Skipping.");

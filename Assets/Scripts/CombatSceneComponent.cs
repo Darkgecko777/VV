@@ -125,7 +125,8 @@ namespace VirulentVentures
             {
                 if (hero.abilityIds == null || hero.abilityIds.Length == 0)
                 {
-                    hero.abilityIds = AbilityDatabase.GetCharacterAbilityIds(hero.Id, CharacterType.Hero);
+                    Debug.LogError($"CombatSceneComponent: No abilities defined in CharacterSO for hero {hero.Id}.");
+                    hero.abilityIds = new string[0]; // Ensure non-null for safety
                 }
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
@@ -148,7 +149,8 @@ namespace VirulentVentures
             {
                 if (monster.abilityIds == null || monster.abilityIds.Length == 0)
                 {
-                    monster.abilityIds = AbilityDatabase.GetCharacterAbilityIds(monster.Id, CharacterType.Monster);
+                    Debug.LogError($"CombatSceneComponent: No abilities defined in CharacterSO for monster {monster.Id}.");
+                    monster.abilityIds = new string[0];
                 }
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
@@ -210,6 +212,11 @@ namespace VirulentVentures
 
         public List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, bool isMelee, CombatTypes.ConditionTarget targetType)
         {
+            if (targetType == default)
+            {
+                Debug.LogWarning($"CombatSceneComponent: TargetType not set for {user.Id}. Defaulting to Enemy.");
+                targetType = CombatTypes.ConditionTarget.Enemy;
+            }
             rule.Validate();
             if (targetPool == null || targetPool.Count == 0)
             {
@@ -263,7 +270,7 @@ namespace VirulentVentures
                 targetPool = targetPool.Where(t =>
                 {
                     var stats = t as CharacterStats;
-                    bool isInfected = stats != null && stats.IsInfected; // Assumes CharacterStats has IsInfected
+                    bool isInfected = stats != null && stats.IsInfected;
                     return rule.MustBeInfected ? isInfected : rule.MustNotBeInfected ? !isInfected : true;
                 }).ToList();
             }
@@ -739,7 +746,7 @@ namespace VirulentVentures
                 yield break;
             }
 
-            var ability = stats.Type == CharacterType.Hero ? AbilityDatabase.GetHeroAbility(abilityId) : AbilityDatabase.GetMonsterAbility(abilityId);
+            var ability = AbilityDatabase.GetAbility(abilityId);
             if (ability == null)
             {
                 string noAbilityMessage = $"{stats.Id} cannot use {abilityId}: ability not found!";
@@ -769,9 +776,8 @@ namespace VirulentVentures
 
             var rule = ability.GetTargetingRule();
             var isMelee = rule.MeleeOnly;
-            // Determine target type from ability conditions (default to Enemy if none specified)
             var targetType = ability.Conditions.FirstOrDefault(c => c.Target != CombatTypes.ConditionTarget.User).Target;
-            if (targetType == default) targetType = CombatTypes.ConditionTarget.Enemy; // Fallback for abilities like BasicAttack
+            if (targetType == default) targetType = CombatTypes.ConditionTarget.Enemy;
             var selectedTargets = SelectTargets(stats, targets, partyData, rule, isMelee, targetType);
             if (selectedTargets.Count == 0)
             {

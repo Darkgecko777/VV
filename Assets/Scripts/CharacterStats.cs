@@ -59,7 +59,11 @@ namespace VirulentVentures
             MaxMorale = Type == CharacterType.Hero ? data.MaxMorale : 0;
             Infectivity = data.Infectivity;
             PartyPosition = data.PartyPosition;
-            abilityIds = AbilityDatabase.GetCharacterAbilityIds(data.Id, data.Type); // Fetch from AbilityDatabase
+            abilityIds = data.AbilityIds != null && data.AbilityIds.Length > 0 ? data.AbilityIds : new string[] { "BasicAttack" };
+            if (data.AbilityIds == null || data.AbilityIds.Length == 0)
+            {
+                Debug.LogWarning($"CharacterStats: No AbilityIds defined in CharacterSO for {data.Id}. Defaulting to BasicAttack.");
+            }
             Rank = data.Rank;
             CombatSprite = data.CombatSprite;
         }
