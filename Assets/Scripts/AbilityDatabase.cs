@@ -88,8 +88,16 @@ namespace VirulentVentures
                     continue;
                 }
 
-                if (state.AbilityCooldowns.TryGetValue(id, out int actionCd) && actionCd > 0) continue;
-                if (state.RoundCooldowns.TryGetValue(id, out int roundCd) && roundCd > 0) continue;
+                if (state.AbilityCooldowns.TryGetValue(id, out int actionCd) && actionCd > 0)
+                {
+                    Debug.Log($"Ability {id} for {unit.Id} on cooldown ({actionCd} actions remaining).");
+                    continue;
+                }
+                if (state.RoundCooldowns.TryGetValue(id, out int roundCd) && roundCd > 0)
+                {
+                    Debug.Log($"Ability {id} for {unit.Id} on cooldown ({roundCd} rounds remaining).");
+                    continue;
+                }
                 if (ability.Rank > 0 && unit.Rank < ability.Rank)
                 {
                     failMessage = $"Ability {id} requires Rank {ability.Rank}, unit has {unit.Rank}.";
@@ -98,6 +106,11 @@ namespace VirulentVentures
                 }
 
                 bool met = ability.Conditions.All(c => EvaluateCondition(c, unit, partyData, targets));
+                if (!met)
+                {
+                    Debug.Log($"Conditions not met for {id} by {unit.Id}.");
+                    continue;
+                }
                 if (met && ability.Priority < lowestPriority)
                 {
                     selected = ability;
@@ -117,6 +130,7 @@ namespace VirulentVentures
             {
                 var cds = selected.CooldownType == CombatTypes.CooldownType.Actions ? state.AbilityCooldowns : state.RoundCooldowns;
                 cds[selectedId] = selected.Cooldown;
+                Debug.Log($"Applied cooldown for {selectedId}: {selected.Cooldown} {selected.CooldownType}.");
             }
 
             return (selectedId, failMessage);
@@ -124,17 +138,28 @@ namespace VirulentVentures
 
         private static bool EvaluateCondition(CombatTypes.AbilityCondition cond, CharacterStats unit, PartyData party, List<ICombatUnit> targets)
         {
-            float value = GetStatValue(cond.Stat, unit);
-            if (cond.TeamCondition != CombatTypes.TeamCondition.None)
+            float value;
+            if (cond.Target == CombatTypes.ConditionTarget.User)
             {
-                var team = GetTeam(cond.TeamTarget, unit, party, targets);
-                if (team.Count == 0) return false;
-                value = cond.TeamCondition == CombatTypes.TeamCondition.AverageStat
-                    ? team.Average(u => GetStatValue(cond.Stat, u as CharacterStats))
-                    : team.Sum(u => GetStatValue(cond.Stat, u as CharacterStats));
+                value = GetStatValue(cond.Stat, unit);
+                if (cond.IsPercentage)
+                {
+                    float maxValue = cond.Stat == CombatTypes.Stat.Health ? unit.MaxHealth : cond.Stat == CombatTypes.Stat.Morale ? unit.MaxMorale : 1f;
+                    value = maxValue > 0 ? value / maxValue : 0f;
+                }
+            }
+            else
+            {
+                var team = GetTeam(cond.Target == CombatTypes.ConditionTarget.Ally ? CombatTypes.TeamTarget.Allies : CombatTypes.TeamTarget.Enemies, unit, party, targets);
+                if (team.Count == 0)
+                {
+                    Debug.Log($"No valid targets for condition {cond.Stat} (Target={cond.Target}) for {unit.Id}.");
+                    return false;
+                }
+                value = team.Any(t => MeetsCondition(t as CharacterStats, cond)) ? 1f : 0f; // 1 if any target meets condition, 0 otherwise
             }
 
-            float threshold = cond.IsPercentage ? cond.Threshold * GetStatValue(CombatTypes.Stat.MaxHealth, unit) : cond.Threshold;
+            float threshold = cond.IsPercentage && cond.Target == CombatTypes.ConditionTarget.User ? cond.Threshold : cond.Threshold;
 
             bool statMet = cond.Comparison switch
             {
@@ -147,11 +172,33 @@ namespace VirulentVentures
             var filteredTargets = targets.Where(t => MeetsTargetCriteria(t, cond)).ToList();
             bool countMet = filteredTargets.Count >= cond.MinTargetCount && (cond.MaxTargetCount == 0 || filteredTargets.Count <= cond.MaxTargetCount);
 
-            return statMet && countMet;
+            bool result = statMet && countMet;
+            Debug.Log($"EvaluateCondition for {unit.Id}: Stat={cond.Stat}, Target={cond.Target}, Value={value}, Threshold={threshold}, StatMet={statMet}, CountMet={countMet}, Result={result}");
+            return result;
+        }
+
+        private static bool MeetsCondition(CharacterStats target, CombatTypes.AbilityCondition cond)
+        {
+            if (target == null) return false;
+            float value = GetStatValue(cond.Stat, target);
+            if (cond.IsPercentage)
+            {
+                float maxValue = cond.Stat == CombatTypes.Stat.Health ? target.MaxHealth : cond.Stat == CombatTypes.Stat.Morale ? target.MaxMorale : 1f;
+                value = maxValue > 0 ? value / maxValue : 0f;
+            }
+            bool met = cond.Comparison switch
+            {
+                CombatTypes.Comparison.Greater => value > cond.Threshold,
+                CombatTypes.Comparison.Lesser => value < cond.Threshold,
+                CombatTypes.Comparison.Equal => Mathf.Approximately(value, cond.Threshold),
+                _ => false
+            };
+            return met;
         }
 
         private static float GetStatValue(CombatTypes.Stat stat, CharacterStats unit)
         {
+            if (unit == null) return 0f;
             return stat switch
             {
                 CombatTypes.Stat.Health => unit.Health,
@@ -173,9 +220,9 @@ namespace VirulentVentures
         {
             return team switch
             {
-                CombatTypes.TeamTarget.Allies => unit.Type == CharacterType.Hero ? party.HeroStats.Cast<ICombatUnit>().ToList() : targets.Where(t => !t.IsHero).ToList(),
-                CombatTypes.TeamTarget.Enemies => unit.Type == CharacterType.Hero ? targets.Where(t => !t.IsHero).ToList() : party.HeroStats.Cast<ICombatUnit>().ToList(),
-                CombatTypes.TeamTarget.Both => party.HeroStats.Cast<ICombatUnit>().Concat(targets.Where(t => !t.IsHero)).ToList(),
+                CombatTypes.TeamTarget.Allies => unit.Type == CharacterType.Hero ? party.HeroStats.Cast<ICombatUnit>().Where(h => h.Health > 0 && !h.HasRetreated).ToList() : targets.Where(t => !t.IsHero && t.Health > 0 && !t.HasRetreated).ToList(),
+                CombatTypes.TeamTarget.Enemies => unit.Type == CharacterType.Hero ? targets.Where(t => !t.IsHero && t.Health > 0 && !t.HasRetreated).ToList() : party.HeroStats.Cast<ICombatUnit>().Where(h => h.Health > 0 && !h.HasRetreated).ToList(),
+                CombatTypes.TeamTarget.Both => party.HeroStats.Cast<ICombatUnit>().Concat(targets.Where(t => !t.IsHero)).Where(u => u.Health > 0 && !u.HasRetreated).ToList(),
                 _ => new List<ICombatUnit>()
             };
         }
