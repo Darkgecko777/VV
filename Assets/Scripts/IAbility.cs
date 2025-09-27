@@ -13,6 +13,7 @@ namespace VirulentVentures
         string AnimationTrigger { get; }
         string LogTemplate { get; }
         List<CombatTypes.AbilityCondition> Conditions { get; }
+
         CombatTypes.TargetingRule GetTargetingRule();
         List<(string tag, int value, int duration)> GetEffects();
         void Execute(CharacterStats user, PartyData party, List<ICombatUnit> targets, CombatSceneComponent context);

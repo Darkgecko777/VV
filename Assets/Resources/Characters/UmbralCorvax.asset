@@ -25,8 +25,8 @@ MonoBehaviour:
   infectivity: 55
   canBeCultist: 0
   partyPosition: 3
-  abilities:
-  - {fileID: 11400000, guid: 2cc76595a164f224c8d56b6ee7a0cf36, type: 2}
   rank: 1
   portrait: {fileID: 21300000, guid: 2d215bfcf1fb5e84f9b1c065a8ca1110, type: 3}
   combatSprite: {fileID: 21300000, guid: 2d215bfcf1fb5e84f9b1c065a8ca1110, type: 3}
+  abilityIds:
+  - BasicAttack
