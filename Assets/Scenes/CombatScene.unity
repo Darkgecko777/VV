@@ -147,13 +147,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 289561820}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b7a2b224dd53c35489072d4ce23454eb, type: 3}
+  m_Script: {fileID: 11500000, guid: df06ea0f3a98a6845b158b04b858c45e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
+  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
-  characterPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
 --- !u!4 &289561822
 Transform:
   m_ObjectHideFlags: 0
@@ -178,12 +177,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 289561820}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aebc016e2b206f249abe95673ea1bc1d, type: 3}
+  m_Script: {fileID: 11500000, guid: f77751b1a9c15e442be300e1518f9421, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
+  visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}
+  characterPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
 --- !u!114 &289561824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -465,7 +465,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 621176279}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c1ef0a5f66e3e949b0d0150a1ea111f, type: 3}
+  m_Script: {fileID: 11500000, guid: 72ce1e4f0649ea54daa04c5176a2004d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   combatConfig: {fileID: 11400000, guid: 59bbe27730e3e0e46bd9c7a3916db8a3, type: 2}

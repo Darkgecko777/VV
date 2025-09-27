@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dd4e70ff8c494454eab785aebda6a448, type: 3}
+  m_Script: {fileID: 11500000, guid: f85d73afffc493343a076772a9f93c4c, type: 3}
   m_Name: CombatConfig
   m_EditorClassIdentifier: 
   combatSpeed: 1
