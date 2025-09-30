@@ -136,7 +136,7 @@ namespace VirulentVentures
             return (selectedId, failMessage);
         }
 
-        private static bool EvaluateCondition(CombatTypes.AbilityCondition cond, CharacterStats unit, PartyData party, List<ICombatUnit> targets)
+        public static bool EvaluateCondition(CombatTypes.AbilityCondition cond, CharacterStats unit, PartyData party, List<ICombatUnit> targets)
         {
             float value;
             if (cond.Target == CombatTypes.ConditionTarget.User)

@@ -7,54 +7,49 @@ namespace VirulentVentures
     public class AbilitySO : ScriptableObject
     {
         [System.Serializable]
-        public struct Attack
+        public struct AbilityAction
         {
-            public int NumberOfTargets; // Clamped: 2 for Melee, 4 for Ranged
-            public bool Enemy; // True for enemies, false for allies/self
-            public bool Melee; // True for frontline (CombatPosition 1-2), false for Ranged (1-4)
-            public DefenseCheck Defense; // Full, Partial, or No defense calculation
-            public bool Dodgeable; // True if target.Evasion applies
-            public float PartialDefenseMultiplier; // Multiplier for Partial defense (e.g., 0.025)
-        }
-
-        [System.Serializable]
-        public struct Effect
-        {
-            public int NumberOfTargets; // Clamped: 2 for Melee, 4 for Ranged
-            public bool Enemy; // True for enemies, false for allies/self
-            public bool Melee; // True for frontline (CombatPosition 1-2), false for Ranged (1-4)
-            public string[] Tags; // Effect IDs (e.g., "TrueStrike:10", "VirusSpread")
+            [Tooltip("Target of the action (User, Ally, Enemy)")]
+            public CombatTypes.ConditionTarget Target;
+            [Tooltip("Number of targets (1-4, clamped by Melee)")]
+            public int NumberOfTargets;
+            [Tooltip("True: targets positions 1-2, False: 1-4")]
+            public bool Melee;
+            [Tooltip("Effect ID from EffectReference (e.g., Heal, Reflect, Damage)")]
+            public string EffectId;
+            [Tooltip("Value to scale effect (e.g., 0.15 for 15% heal)")]
+            public float EffectValue;
+            [Tooltip("Duration in rounds for buffs (0 for instant effects)")]
+            public int EffectDuration;
+            [Tooltip("Targeting rule (e.g., LowestHealth, Random)")]
+            public CombatTypes.TargetingRule.RuleType RuleType;
+            [Tooltip("Defense check for damage effects")]
+            public CombatTypes.DefenseCheck Defense;
+            [Tooltip("True if damage can be dodged")]
+            public bool Dodgeable;
+            [Tooltip("Multiplier for partial defense (e.g., 0.025)")]
+            public float PartialDefenseMultiplier;
         }
 
         [SerializeField] private string id;
-        [SerializeField] private int priority; // Lower value = higher priority
-        [SerializeField] private int cooldown; // Actions before reuse
-        [SerializeField] private int rank; // Required hero rank (1-3), 0 for monsters
-        [SerializeField] private List<AbilityCondition> conditions;
-        [SerializeField] private List<Attack> attacks;
-        [SerializeField] private List<Effect> effects;
-        [SerializeField] private int costAmount;
+        [SerializeField] private int cooldown;
+        [SerializeField] private CombatTypes.CooldownType cooldownType;
+        [SerializeField] private int rank;
+        [SerializeField] private List<CombatTypes.AbilityCondition> conditions;
+        [SerializeField] private AbilityAction action;
+        [SerializeField] private string animationTrigger;
 
         public string Id => id;
-        public int Priority => priority;
         public int Cooldown => cooldown;
+        public CombatTypes.CooldownType CooldownType => cooldownType;
         public int Rank => rank;
-        public List<AbilityCondition> Conditions => conditions;
-        public List<Attack> Attacks => attacks;
-        public List<Effect> Effects => effects;
-        public int CostAmount => costAmount;
+        public List<CombatTypes.AbilityCondition> Conditions => conditions;
+        public AbilityAction Action => action;
+        public string AnimationTrigger => animationTrigger;
 
         private void OnValidate()
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                Debug.LogWarning($"AbilitySO {name}: ID is empty.");
-            }
-            if (priority < 1)
-            {
-                Debug.LogWarning($"AbilitySO {id}: Priority must be >= 1.");
-                priority = 1;
-            }
+            if (string.IsNullOrEmpty(id)) Debug.LogWarning($"AbilitySO {name}: ID is empty.");
             if (cooldown < 0)
             {
                 Debug.LogWarning($"AbilitySO {id}: Cooldown must be >= 0.");
@@ -62,43 +57,49 @@ namespace VirulentVentures
             }
             if (rank < 0 || rank > 3)
             {
-                Debug.LogWarning($"AbilitySO {id}: Rank must be 0-3 (0 for monsters, 1-3 for heroes).");
+                Debug.LogWarning($"AbilitySO {id}: Rank must be 0-3.");
                 rank = Mathf.Clamp(rank, 0, 3);
             }
-            foreach (var attack in attacks)
+            if (action.NumberOfTargets < 1)
             {
-                if (attack.NumberOfTargets < 1)
-                {
-                    Debug.LogWarning($"AbilitySO {id}: Attack NumberOfTargets must be >= 1.");
-                }
-                if (attack.Defense == DefenseCheck.Partial && attack.PartialDefenseMultiplier <= 0)
-                {
-                    Debug.LogWarning($"AbilitySO {id}: Partial Defense requires positive PartialDefenseMultiplier.");
-                }
+                Debug.LogWarning($"AbilitySO {id}: NumberOfTargets must be >= 1.");
+                action.NumberOfTargets = 1;
             }
-            foreach (var effect in effects)
+            if (string.IsNullOrEmpty(action.EffectId))
             {
-                if (effect.NumberOfTargets < 1)
-                {
-                    Debug.LogWarning($"AbilitySO {id}: Effect NumberOfTargets must be >= 1.");
-                }
-                if (effect.Tags == null || effect.Tags.Length == 0)
-                {
-                    Debug.LogWarning($"AbilitySO {id}: Effect Tags array is empty.");
-                }
+                Debug.LogWarning($"AbilitySO {id}: EffectId is empty.");
             }
-            foreach (var condition in conditions)
+            if (action.Defense == CombatTypes.DefenseCheck.Partial && action.PartialDefenseMultiplier <= 0)
             {
+                Debug.LogWarning($"AbilitySO {id}: Partial Defense requires positive PartialDefenseMultiplier.");
+                action.PartialDefenseMultiplier = 0.025f;
+            }
+            for (int i = 0; i < conditions.Count; i++)
+            {
+                var condition = conditions[i];
                 if (condition.IsPercentage && (condition.Threshold < 0 || condition.Threshold > 1))
                 {
-                    Debug.LogWarning($"AbilitySO {id}: Percentage Threshold must be 0-1.");
+                    Debug.LogWarning($"AbilitySO {id}: Percentage Threshold must be 0-1 for condition {i}.");
+                    condition.Threshold = Mathf.Clamp(condition.Threshold, 0f, 1f);
+                    conditions[i] = condition;
                 }
             }
-            if (costAmount < 0)
+            if (string.IsNullOrEmpty(animationTrigger))
             {
-                Debug.LogWarning($"AbilitySO {id}: CostAmount must be >= 0.");
-                costAmount = 0;
+                Debug.LogWarning($"AbilitySO {id}: AnimationTrigger is empty.");
             }
+        }
+
+        public CombatTypes.TargetingRule GetTargetingRule()
+        {
+            return new CombatTypes.TargetingRule
+            {
+                Type = action.RuleType,
+                Target = action.Target,
+                MeleeOnly = action.Melee,
+                MinPosition = action.Melee ? 1 : 0,
+                MaxPosition = action.Melee ? 2 : 4
+            };
         }
     }
 }

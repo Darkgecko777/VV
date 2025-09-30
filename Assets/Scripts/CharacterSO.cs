@@ -22,7 +22,7 @@ namespace VirulentVentures
         [SerializeField] private int rank = 1; // Default 1
         [SerializeField] private Sprite portrait; // For Temple scene
         [SerializeField] private Sprite combatSprite; // For Combat scene
-        [SerializeField] private string[] abilityIds = new string[0]; // New field for ability IDs
+        [SerializeField] private AbilitySO[] abilities = new AbilitySO[0]; // Changed: string[] abilityIds to AbilitySO[]
 
         public string Id => id;
         public CharacterType Type => type;
@@ -40,7 +40,7 @@ namespace VirulentVentures
         public int Rank => rank;
         public Sprite Portrait => portrait;
         public Sprite CombatSprite => combatSprite;
-        public string[] AbilityIds => abilityIds; // Getter for ability IDs
+        public AbilitySO[] Abilities => abilities; // Changed: Getter for AbilitySO[]
 
         public CharacterStats.DisplayStats GetDisplayStats(bool isHero)
         {
@@ -88,9 +88,9 @@ namespace VirulentVentures
             {
                 Debug.LogWarning($"CharacterSO: Id is empty or null.");
             }
-            if (abilityIds == null || abilityIds.Length == 0)
+            if (abilities == null || abilities.Length == 0)
             {
-                Debug.LogWarning($"CharacterSO {id}: No AbilityIds assigned; will use defaults from AbilityDatabase.");
+                Debug.LogWarning($"CharacterSO {id}: No Abilities assigned; will use defaults from AbilityDatabase.");
             }
         }
     }

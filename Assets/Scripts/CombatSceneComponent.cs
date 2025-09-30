@@ -26,7 +26,6 @@ namespace VirulentVentures
         private float lastEndCombatTime;
         private const float logDuplicateWindow = 1f;
         private static bool hasSubscribed;
-
         public ExpeditionManager ExpeditionManager => ExpeditionManager.Instance;
         public List<string> AllCombatLogs => allCombatLogs;
         public bool IsPaused => isPaused;
@@ -125,8 +124,8 @@ namespace VirulentVentures
             {
                 if (hero.abilityIds == null || hero.abilityIds.Length == 0)
                 {
-                    Debug.LogError($"CombatSceneComponent: No abilities defined in CharacterSO for hero {hero.Id}.");
-                    hero.abilityIds = new string[0]; // Ensure non-null for safety
+                    Debug.LogError($"CombatSceneComponent: No abilities defined for hero {hero.Id}.");
+                    hero.abilityIds = new string[] { "BasicAttack" }; // Fixed: hero to heroStats
                 }
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
@@ -149,8 +148,8 @@ namespace VirulentVentures
             {
                 if (monster.abilityIds == null || monster.abilityIds.Length == 0)
                 {
-                    Debug.LogError($"CombatSceneComponent: No abilities defined in CharacterSO for monster {monster.Id}.");
-                    monster.abilityIds = new string[0];
+                    Debug.LogError($"CombatSceneComponent: No abilities defined for monster {monster.Id}.");
+                    monster.abilityIds = new string[] { "BasicAttack" }; // Fixed: hero to monster
                 }
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
@@ -444,7 +443,7 @@ namespace VirulentVentures
                     }
                     if (!CanAttackThisRound(unit, state) || unit.Health <= 0 || unit.HasRetreated) continue;
                     state.AttacksThisRound++;
-                    yield return ProcessAttack(unit, expeditionData.Party, unitList);
+                    yield return ExecuteAbility(unit, expeditionData.Party, unitList);
                     yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                     {
@@ -460,7 +459,7 @@ namespace VirulentVentures
                     if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && stats.Speed >= combatConfig.SpeedTwoAttacksThreshold && state.AttacksThisRound < 2)
                     {
                         state.AttacksThisRound++;
-                        yield return ProcessAttack(unit, expeditionData.Party, unitList);
+                        yield return ExecuteAbility(unit, expeditionData.Party, unitList);
                         yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
@@ -568,282 +567,273 @@ namespace VirulentVentures
             }
         }
 
-        public void ProcessEffect(CharacterStats user, CharacterStats target, string tag, string abilityId)
+        private IEnumerator ExecuteAbility(ICombatUnit unit, PartyData partyData, List<ICombatUnit> targets)
         {
-            if (user == null || target == null)
+            var stats = unit as CharacterStats;
+            var state = GetUnitAttackState(unit);
+            if (stats == null || state == null)
             {
-                Debug.LogWarning($"CombatSceneComponent: Null user or target for effect {tag} in ability {abilityId}.");
-                return;
+                Debug.LogWarning($"ExecuteAbility: Invalid stats or state for unit {unit?.Id}");
+                yield break;
             }
-            string[] tagParts = tag.Split(':');
-            string effectType = tagParts[0];
-            int value = tagParts.Length > 1 && int.TryParse(tagParts[1], out int parsedValue) ? parsedValue : 0;
-            float floatValue = tagParts.Length > 1 && float.TryParse(tagParts[1], out float parsedFloat) ? parsedFloat : 0f;
-            var targetState = GetUnitAttackState(target);
-            string effectMessage = string.Empty;
-            Color messageColor = uiConfig.TextColor;
-            switch (effectType)
+            foreach (var abilityId in stats.abilityIds)
             {
-                case "TrueStrike":
-                    if (value > 0)
-                    {
-                        target.Health = Mathf.Max(0, target.Health - value);
-                        effectMessage = $"{user.Id} deals {value} direct damage to {target.Id} with {abilityId}! <color=#FFFF00>[TrueStrike]</color>";
-                        messageColor = Color.red;
-                        eventBus.RaiseUnitDamaged(target, effectMessage);
-                    }
-                    break;
-                case "Heal":
-                    if (floatValue > 0)
-                    {
-                        int healAmount = Mathf.RoundToInt(user.Attack * floatValue);
-                        target.Health = Mathf.Min(target.MaxHealth, target.Health + healAmount);
-                        effectMessage = $"{user.Id} heals {target.Id} for {healAmount} HP with {abilityId}! <color=#00FF00>[Heal]</color>";
-                        messageColor = Color.green;
-                        eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-                    }
-                    break;
-                case "SkipNextAttack":
-                    if (targetState != null)
-                    {
-                        targetState.SkipNextAttack = true;
-                        effectMessage = $"{target.Id} will skip their next attack due to {abilityId}! <color=#FFFF00>[SkipNextAttack]</color>";
-                        messageColor = Color.yellow;
-                        eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"CombatSceneComponent: No UnitAttackState for {target.Id} for SkipNextAttack {tag}.");
-                    }
-                    break;
-                case "Thorns":
-                    if (value > 0 && targetState != null)
-                    {
-                        int reflectDamage = Mathf.RoundToInt(value * 0.5f);
-                        user.Health = Mathf.Max(0, user.Health - reflectDamage);
-                        effectMessage = $"{user.Id} takes {reflectDamage} reflected damage from {target.Id}'s Thorns! <color=#FFFF00>[Thorns]</color>";
-                        messageColor = Color.red;
-                        eventBus.RaiseUnitDamaged(user, effectMessage);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"CombatSceneComponent: No UnitAttackState for {target.Id} for ThornsInfection {tag}.");
-                    }
-                    break;
-                case "MoraleShield":
-                    if (targetState != null && !targetState.TempStats.ContainsKey("MoraleShield"))
-                    {
-                        targetState.TempStats["MoraleShield"] = (0, -1);
-                        effectMessage = $"{target.Id} gains MoraleShield from {abilityId}! <color=#00FF00>[MoraleShield]</color>";
-                        messageColor = Color.green;
-                        eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-                    }
-                    break;
-                default:
-                    Debug.LogWarning($"CombatSceneComponent: Unrecognized effect tag {tag} for {abilityId}.");
-                    effectMessage = $"Unknown effect {tag} applied by {user.Id} on {target.Id} with {abilityId}!";
-                    break;
-            }
-            if (!string.IsNullOrEmpty(effectMessage))
-            {
-                allCombatLogs.Add(effectMessage);
-                eventBus.RaiseLogMessage(effectMessage, messageColor);
-            }
-        }
-
-        public void ApplyMoraleDamage(CharacterStats user, CharacterStats target, int moraleLoss, string abilityId)
-        {
-            if (target == null) return;
-            var targetState = GetUnitAttackState(target);
-            bool shielded = false;
-            if (targetState != null && targetState.TempStats.TryGetValue("MoraleShield", out var shield))
-            {
-                targetState.TempStats.Remove("MoraleShield");
-                shielded = true;
-                string shieldMessage = $"{target.Id}’s MoraleShield absorbs {moraleLoss} Morale loss from {user.Id}’s {abilityId}!";
-                allCombatLogs.Add(shieldMessage);
-                eventBus.RaiseLogMessage(shieldMessage, uiConfig.TextColor);
-                eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-            }
-            if (!shielded)
-            {
-                target.Morale = Mathf.Max(0, target.Morale - moraleLoss);
-                string moraleMessage = $"{user.Id} reduces {target.Id}'s Morale by {moraleLoss}! <color=#FFFF00>[Morale: {target.Morale}/{target.MaxMorale}]</color>";
-                allCombatLogs.Add(moraleMessage);
-                eventBus.RaiseLogMessage(moraleMessage, Color.yellow);
-                eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-            }
-        }
-
-        public void ApplyAttackDamage(CharacterStats user, CharacterStats target, CombatTypes.AttackParams attackParams, string abilityId)
-        {
-            if (target == null) return;
-            var targetState = GetUnitAttackState(target);
-            int originalDefense = target.Defense;
-            int currentEvasion = target.Evasion;
-            if (targetState != null)
-            {
-                if (targetState.TempStats.TryGetValue("Defense", out var defMod)) target.Defense += defMod.value;
-                if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) target.Evasion += evaMod.value;
-            }
-            bool attackDodged = false;
-            if (attackParams.Dodgeable)
-            {
-                float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
-                float randomRoll = UnityEngine.Random.value;
-                if (randomRoll <= dodgeChance)
+                var ability = AbilityDatabase.GetAbility(abilityId) as AbilitySO;
+                if (ability == null)
                 {
-                    string dodgeMessage = $"{target.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} <= {dodgeChance:F2}]</color>";
-                    allCombatLogs.Add(dodgeMessage);
-                    eventBus.RaiseLogMessage(dodgeMessage, Color.green);
-                    attackDodged = true;
+                    Debug.LogWarning($"ExecuteAbility: Ability {abilityId} not found for {stats.Id}");
+                    continue;
+                }
+                if (state.AbilityCooldowns.GetValueOrDefault(abilityId, 0) > 0 || state.RoundCooldowns.GetValueOrDefault(abilityId, 0) > 0)
+                {
+                    Debug.Log($"ExecuteAbility: {abilityId} on cooldown for {stats.Id}");
+                    continue;
+                }
+                if (stats.Rank < ability.Rank)
+                {
+                    Debug.Log($"ExecuteAbility: {stats.Id} rank {stats.Rank} too low for {abilityId} (requires {ability.Rank})");
+                    continue;
+                }
+                if (ability.Conditions.All(c => AbilityDatabase.EvaluateCondition(c, stats, partyData, targets)))
+                {
+                    var rule = ability.GetTargetingRule();
+                    var selectedTargets = SelectTargets(stats, targets, partyData, rule, ability.Action.Melee, ability.Action.Target);
+                    if (selectedTargets.Any())
+                    {
+                        string abilityMessage = $"{stats.Id} uses {abilityId}!";
+                        allCombatLogs.Add(abilityMessage);
+                        eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
+                        eventBus.RaiseUnitAttacking(unit, null, abilityId);
+                        eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = unit, target = null, abilityId = abilityId });
+                        yield return new WaitUntil(() => !isPaused);
+                        yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                        if (ability.Action.Defense != CombatTypes.DefenseCheck.None)
+                        {
+                            ApplyAttackDamage(stats, selectedTargets, ability.Action, abilityId);
+                        }
+                        else
+                        {
+                            ProcessAction(stats, selectedTargets, ability.Action, abilityId);
+                        }
+                        if (ability.Cooldown > 0)
+                        {
+                            var cds = ability.CooldownType == CombatTypes.CooldownType.Actions ? state.AbilityCooldowns : state.RoundCooldowns;
+                            cds[abilityId] = ability.Cooldown;
+                            Debug.Log($"ExecuteAbility: Applied cooldown for {abilityId}: {ability.Cooldown} {ability.CooldownType}");
+                        }
+                        foreach (var target in selectedTargets.ToList())
+                        {
+                            if (target.Health <= 0)
+                            {
+                                if (!allCombatLogs.Contains($"{target.Id} dies!"))
+                                {
+                                    eventBus.RaiseUnitDied(target);
+                                    string deathMessage = $"{target.Id} dies!";
+                                    allCombatLogs.Add(deathMessage);
+                                    eventBus.RaiseLogMessage(deathMessage, Color.red);
+                                    UpdateUnit(target, deathMessage);
+                                    if (target is CharacterStats statsTarget)
+                                    {
+                                        if (statsTarget.Type == CharacterType.Hero)
+                                            heroPositions.Remove(statsTarget);
+                                        else
+                                            monsterPositions.Remove(statsTarget);
+                                    }
+                                }
+                            }
+                            else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
+                            {
+                                partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig); // Fixed: Added allCombatLogs
+                                UpdateUnit(target);
+                            }
+                        }
+                        if (stats.Health <= 0)
+                        {
+                            if (!allCombatLogs.Contains($"{stats.Id} dies!"))
+                            {
+                                eventBus.RaiseUnitDied(unit);
+                                string deathMessage = $"{stats.Id} dies!";
+                                allCombatLogs.Add(deathMessage);
+                                eventBus.RaiseLogMessage(deathMessage, Color.red);
+                                UpdateUnit(unit, deathMessage);
+                                if (stats.Type == CharacterType.Hero)
+                                    heroPositions.Remove(stats);
+                                else
+                                    monsterPositions.Remove(stats);
+                            }
+                        }
+                        else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
+                        {
+                            partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig); // Fixed: Added allCombatLogs
+                            UpdateUnit(unit);
+                        }
+                        yield break;
+                    }
+                    else
+                    {
+                        string noTargetMessage = $"No legal targets for {abilityId} by {stats.Id}.";
+                        allCombatLogs.Add(noTargetMessage);
+                        eventBus.RaiseLogMessage(noTargetMessage, Color.red);
+                    }
+                }
+            }
+            // Fallback: Last ability (BasicAttack)
+            var fallbackId = stats.abilityIds.Last();
+            var fallback = AbilityDatabase.GetAbility(fallbackId) as AbilitySO;
+            if (fallback != null)
+            {
+                var rule = fallback.GetTargetingRule();
+                var selectedTargets = SelectTargets(stats, targets, partyData, rule, fallback.Action.Melee, fallback.Action.Target);
+                if (selectedTargets.Any())
+                {
+                    string abilityMessage = $"{stats.Id} uses fallback {fallbackId}!";
+                    allCombatLogs.Add(abilityMessage);
+                    eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
+                    eventBus.RaiseUnitAttacking(unit, null, fallbackId);
+                    eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = unit, target = null, abilityId = fallbackId });
+                    yield return new WaitUntil(() => !isPaused);
+                    yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                    if (fallback.Action.Defense != CombatTypes.DefenseCheck.None)
+                    {
+                        ApplyAttackDamage(stats, selectedTargets, fallback.Action, fallbackId);
+                    }
+                    else
+                    {
+                        ProcessAction(stats, selectedTargets, fallback.Action, fallbackId);
+                    }
+                    foreach (var target in selectedTargets.ToList())
+                    {
+                        if (target.Health <= 0)
+                        {
+                            if (!allCombatLogs.Contains($"{target.Id} dies!"))
+                            {
+                                eventBus.RaiseUnitDied(target);
+                                string deathMessage = $"{target.Id} dies!";
+                                allCombatLogs.Add(deathMessage);
+                                eventBus.RaiseLogMessage(deathMessage, Color.red);
+                                UpdateUnit(target, deathMessage);
+                                if (target is CharacterStats statsTarget)
+                                {
+                                    if (statsTarget.Type == CharacterType.Hero)
+                                        heroPositions.Remove(statsTarget);
+                                    else
+                                        monsterPositions.Remove(statsTarget);
+                                }
+                            }
+                        }
+                        else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
+                        {
+                            partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig); // Fixed: Added allCombatLogs
+                            UpdateUnit(target);
+                        }
+                    }
+                    if (stats.Health <= 0)
+                    {
+                        if (!allCombatLogs.Contains($"{stats.Id} dies!"))
+                        {
+                            eventBus.RaiseUnitDied(unit);
+                            string deathMessage = $"{stats.Id} dies!";
+                            allCombatLogs.Add(deathMessage);
+                            eventBus.RaiseLogMessage(deathMessage, Color.red);
+                            UpdateUnit(unit, deathMessage);
+                            if (stats.Type == CharacterType.Hero)
+                                heroPositions.Remove(stats);
+                            else
+                                monsterPositions.Remove(stats);
+                        }
+                    }
+                    else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
+                    {
+                        partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig); // Fixed: Added allCombatLogs
+                        UpdateUnit(unit);
+                    }
                 }
                 else
                 {
-                    string failDodgeMessage = $"{target.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} > {dodgeChance:F2}]</color>";
-                    allCombatLogs.Add(failDodgeMessage);
-                    eventBus.RaiseLogMessage(failDodgeMessage, Color.red);
+                    string noTargetMessage = $"No legal targets for fallback {fallbackId} by {stats.Id}.";
+                    allCombatLogs.Add(noTargetMessage);
+                    eventBus.RaiseLogMessage(noTargetMessage, Color.red);
                 }
             }
-            if (!attackDodged)
-            {
-                int damage = 0;
-                if (attackParams.Defense == CombatTypes.DefenseCheck.Standard)
-                    damage = Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - 0.05f * target.Defense)));
-                else if (attackParams.Defense == CombatTypes.DefenseCheck.Partial)
-                    damage = Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - attackParams.PartialDefenseMultiplier * target.Defense)));
-                else if (attackParams.Defense == CombatTypes.DefenseCheck.None)
-                    damage = Mathf.Max(0, user.Attack);
-                string damageFormula = $"[{user.Attack} ATK - {target.Defense} DEF * {(attackParams.Defense == CombatTypes.DefenseCheck.Partial ? attackParams.PartialDefenseMultiplier : 0.05f) * 100}%]";
-                if (damage > 0)
-                {
-                    target.Health -= damage;
-                    string damageMessage = $"{user.Id} hits {target.Id} for {damage} damage with {abilityId} <color=#FFFF00>{damageFormula}</color>";
-                    allCombatLogs.Add(damageMessage);
-                    eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
-                    eventBus.RaiseUnitDamaged(target, damageMessage);
-                    UpdateUnit(target, damageMessage);
-                }
-            }
-            target.Defense = originalDefense;
+            yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
         }
 
-        private IEnumerator ProcessAttack(ICombatUnit unit, PartyData partyData, List<ICombatUnit> targets)
+        private void ApplyAttackDamage(CharacterStats user, List<ICombatUnit> targets, AbilitySO.AbilityAction action, string abilityId)
         {
-            if (unit == null || unit.Health <= 0 || unit.HasRetreated) yield break;
-            if (unit is not CharacterStats stats) yield break;
-            var state = GetUnitAttackState(unit);
-            if (state == null) yield break;
-
-            var (abilityId, failMessage) = AbilityDatabase.SelectAbility(stats, partyData, targets, state);
-            if (abilityId == null)
+            foreach (var target in targets.ToList())
             {
-                if (!string.IsNullOrEmpty(failMessage))
+                var targetStats = target as CharacterStats;
+                var targetState = GetUnitAttackState(target);
+                if (targetStats == null || targetState == null) continue;
+                int originalDefense = targetStats.Defense;
+                int currentEvasion = targetStats.Evasion;
+                if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats.Defense += defMod.value;
+                if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) targetStats.Evasion += evaMod.value;
+                bool attackDodged = false;
+                if (action.Dodgeable)
                 {
-                    allCombatLogs.Add(failMessage);
-                    eventBus.RaiseLogMessage(failMessage, Color.red);
-                }
-                yield break;
-            }
-
-            var ability = AbilityDatabase.GetAbility(abilityId);
-            if (ability == null)
-            {
-                string noAbilityMessage = $"{stats.Id} cannot use {abilityId}: ability not found!";
-                allCombatLogs.Add(noAbilityMessage);
-                eventBus.RaiseLogMessage(noAbilityMessage, Color.red);
-                yield break;
-            }
-
-            string abilityMessage = $"{stats.Id} uses {abilityId}!";
-            allCombatLogs.Add(abilityMessage);
-            eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
-            eventBus.RaiseUnitAttacking(unit, null, abilityId);
-            eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = unit, target = null, abilityId = abilityId });
-
-            int originalAttack = stats.Attack;
-            int originalSpeed = stats.Speed;
-            int originalEvasion = stats.Evasion;
-            if (state != null)
-            {
-                if (state.TempStats.TryGetValue("Attack", out var attackMod)) stats.Attack += attackMod.value;
-                if (state.TempStats.TryGetValue("Speed", out var speedMod)) stats.Speed += speedMod.value;
-                if (state.TempStats.TryGetValue("Evasion", out var evaMod)) stats.Evasion += evaMod.value;
-            }
-
-            yield return new WaitUntil(() => !isPaused);
-            yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-
-            var rule = ability.GetTargetingRule();
-            var isMelee = rule.MeleeOnly;
-            var targetType = ability.Conditions.FirstOrDefault(c => c.Target != CombatTypes.ConditionTarget.User).Target;
-            if (targetType == default) targetType = CombatTypes.ConditionTarget.Enemy;
-            var selectedTargets = SelectTargets(stats, targets, partyData, rule, isMelee, targetType);
-            if (selectedTargets.Count == 0)
-            {
-                string noTargetMessage = $"No legal targets for {abilityId} by {stats.Id}.";
-                allCombatLogs.Add(noTargetMessage);
-                eventBus.RaiseLogMessage(noTargetMessage, Color.red);
-                yield break;
-            }
-
-            ability.Execute(stats, partyData, selectedTargets, this);
-
-            var processedTargets = new HashSet<ICombatUnit>();
-            foreach (var target in selectedTargets.ToList())
-            {
-                if (processedTargets.Contains(target)) continue;
-                processedTargets.Add(target);
-                if (target.Health <= 0)
-                {
-                    if (!allCombatLogs.Contains($"{target.Id} dies!"))
+                    float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
+                    float randomRoll = UnityEngine.Random.value;
+                    if (randomRoll <= dodgeChance)
                     {
-                        eventBus.RaiseUnitDied(target);
-                        string deathMessage = $"{target.Id} dies!";
-                        allCombatLogs.Add(deathMessage);
-                        eventBus.RaiseLogMessage(deathMessage, Color.red);
-                        UpdateUnit(target, deathMessage);
-                        if (target is CharacterStats statsTarget)
-                        {
-                            if (statsTarget.Type == CharacterType.Hero)
-                                heroPositions.Remove(statsTarget);
-                            else
-                                monsterPositions.Remove(statsTarget);
-                        }
+                        string dodgeMessage = $"{targetStats.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} <= {dodgeChance:F2}]</color>";
+                        allCombatLogs.Add(dodgeMessage);
+                        eventBus.RaiseLogMessage(dodgeMessage, Color.green);
+                        attackDodged = true;
+                    }
+                    else
+                    {
+                        string failDodgeMessage = $"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} > {dodgeChance:F2}]</color>";
+                        allCombatLogs.Add(failDodgeMessage);
+                        eventBus.RaiseLogMessage(failDodgeMessage, Color.red);
                     }
                 }
-                else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
+                int damage = 0;
+                if (!attackDodged)
                 {
-                    partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig);
-                    UpdateUnit(target);
-                }
-            }
-
-            if (stats.Health <= 0)
-            {
-                if (!allCombatLogs.Contains($"{stats.Id} dies!"))
-                {
-                    eventBus.RaiseUnitDied(unit);
-                    string deathMessage = $"{stats.Id} dies!";
-                    allCombatLogs.Add(deathMessage);
-                    eventBus.RaiseLogMessage(deathMessage, Color.red);
-                    UpdateUnit(unit, deathMessage);
-                    if (stats.Type == CharacterType.Hero)
-                        heroPositions.Remove(stats);
+                    if (action.Defense == CombatTypes.DefenseCheck.Standard)
+                        damage = Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - 0.05f * targetStats.Defense)));
+                    else if (action.Defense == CombatTypes.DefenseCheck.Partial)
+                        damage = Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - action.PartialDefenseMultiplier * targetStats.Defense)));
                     else
-                        monsterPositions.Remove(stats);
+                        damage = Mathf.Max(0, user.Attack);
+                    string damageFormula = $"[{user.Attack} ATK - {targetStats.Defense} DEF * {(action.Defense == CombatTypes.DefenseCheck.Partial ? action.PartialDefenseMultiplier : 0.05f) * 100}%]";
+                    if (damage > 0)
+                    {
+                        targetStats.Health -= damage;
+                        string damageMessage = $"{user.Id} hits {targetStats.Id} for {damage} damage with {abilityId} <color=#FFFF00>{damageFormula}</color>";
+                        allCombatLogs.Add(damageMessage);
+                        eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
+                        eventBus.RaiseUnitDamaged(target, damageMessage);
+                        UpdateUnit(target, damageMessage);
+                    }
+                    // Check for Reflect buff
+                    if (targetState.TempStats.TryGetValue("Reflect", out var reflect) && !attackDodged && damage > 0)
+                    {
+                        int reflectDamage = Mathf.RoundToInt(damage * reflect.value / 100f);
+                        user.Health = Mathf.Max(0, user.Health - reflectDamage);
+                        string reflectMessage = $"{user.Id} takes {reflectDamage} reflected damage from {targetStats.Id}!";
+                        allCombatLogs.Add(reflectMessage);
+                        eventBus.RaiseLogMessage(reflectMessage, Color.red);
+                        eventBus.RaiseUnitDamaged(user, reflectMessage);
+                        UpdateUnit(user, reflectMessage);
+                    }
                 }
+                targetStats.Defense = originalDefense;
+                targetStats.Evasion = currentEvasion;
             }
-            else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
-            {
-                partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig);
-                UpdateUnit(unit);
-            }
+        }
 
-            stats.Attack = originalAttack;
-            stats.Speed = originalSpeed;
-            stats.Evasion = originalEvasion;
-            UpdateUnit(unit);
+        private void ProcessAction(CharacterStats user, List<ICombatUnit> targets, AbilitySO.AbilityAction action, string abilityId)
+        {
+            foreach (var target in targets)
+            {
+                var targetStats = target as CharacterStats;
+                var targetState = GetUnitAttackState(target);
+                if (targetStats == null || targetState == null) continue;
+                EffectReference.Apply(action.EffectId, user, targetStats, action.EffectValue, action.EffectDuration, targetState, eventBus, uiConfig);
+                UpdateUnit(targetStats);
+            }
         }
 
         private bool ValidateReferences()
