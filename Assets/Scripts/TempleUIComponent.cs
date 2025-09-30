@@ -224,10 +224,6 @@ namespace VirulentVentures
             expeditionPortraitContainer.Clear();
             var heroes = partyData.GetHeroes()?.OrderByDescending(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList() ?? new List<CharacterStats>();
             bool hasActiveParty = partyData.HeroStats != null && partyData.HeroStats.Count > 0;
-            if (!hasActiveParty)
-            {
-                Debug.Log("TempleUIComponent: No active party (HeroStats null or empty), showing default portraits.");
-            }
             for (int i = 0; i < 4; i++)
             {
                 VisualElement recruitWrapper = new VisualElement();

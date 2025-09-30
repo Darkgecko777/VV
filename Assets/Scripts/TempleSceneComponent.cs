@@ -34,7 +34,6 @@ namespace VirulentVentures
             isExpeditionGenerated = expeditionData.IsValid();
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
-                Debug.Log("TempleSceneComponent: HeroStats is empty on Start, attempting to load from SaveManager");
                 SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
                 if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
                 {

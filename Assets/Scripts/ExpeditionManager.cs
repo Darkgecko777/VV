@@ -113,7 +113,6 @@ namespace VirulentVentures
             StartCoroutine(FadeAndLoad("TemplePlanningScene", () =>
             {
                 OnSceneTransitionCompleted?.Invoke(null, 0);
-                Debug.Log("ExpeditionManager: Transition to TemplePlanningScene complete");
             }));
             return CurrentAsyncOp;
         }
@@ -152,7 +151,6 @@ namespace VirulentVentures
             {
                 Debug.LogError("ExpeditionManager: SaveManager.Instance is null, cannot clear progress.");
             }
-            Debug.Log("ExpeditionManager: Ending expedition, raising OnTempleEnteredFromExpedition");
             eventBus.RaiseTempleEnteredFromExpedition();
             TransitionToTemplePlanningScene();
         }

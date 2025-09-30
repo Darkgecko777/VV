@@ -212,6 +212,7 @@ namespace VirulentVentures
 
         public List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, bool isMelee, CombatTypes.ConditionTarget targetType, int numberOfTargets)
         {
+            Debug.Log($"SelectTargets for {user.Id}: Initial targetPool count = {targetPool.Count}");
             if (targetType == default)
             {
                 Debug.LogWarning($"CombatSceneComponent: TargetType not set for {user.Id}. Defaulting to Enemy.");
@@ -223,39 +224,61 @@ namespace VirulentVentures
                 Debug.LogWarning($"CombatSceneComponent: Empty targetPool for {user.Id}. Returning empty list.");
                 return new List<ICombatUnit>();
             }
-            var orderedHeroes = heroPositions
-                .Where(h => h.Health > 0 && !h.HasRetreated)
-                .OrderBy(h => h.PartyPosition)
-                .Select((h, i) => new { Unit = (ICombatUnit)h, CombatPosition = i + 1 })
-                .ToList();
-            var orderedMonsters = monsterPositions
-                .Where(m => m.Health > 0 && !m.HasRetreated)
-                .OrderBy(m => m.PartyPosition)
-                .Select((m, i) => new { Unit = (ICombatUnit)m, CombatPosition = i + 1 })
-                .ToList();
-            List<ICombatUnit> filteredPool = targetType == CombatTypes.ConditionTarget.Ally
-                ? (user.Type == CharacterType.Hero ? orderedHeroes.Select(h => h.Unit).ToList() : orderedMonsters.Select(m => m.Unit).ToList())
-                : (user.Type == CharacterType.Hero ? orderedMonsters.Select(m => m.Unit).ToList() : orderedHeroes.Select(h => h.Unit).ToList());
+
+            List<ICombatUnit> filteredPool;
+            if (targetType == CombatTypes.ConditionTarget.Ally && user.Type == CharacterType.Hero)
+            {
+                filteredPool = partyData.HeroStats
+                    .Where(h => h.Health > 0 && !h.HasRetreated)
+                    .Cast<ICombatUnit>()
+                    .ToList(); // Use party.HeroStats directly for allies
+                Debug.Log($"FilteredPool (Allies) count = {filteredPool.Count}");
+            }
+            else if (targetType == CombatTypes.ConditionTarget.Ally && user.Type == CharacterType.Monster)
+            {
+                filteredPool = targetPool.Where(t => t is CharacterStats && !(t as CharacterStats).IsHero && t.Health > 0 && !t.HasRetreated).ToList();
+                Debug.Log($"FilteredPool (Monster Allies) count = {filteredPool.Count}");
+            }
+            else if (targetType == CombatTypes.ConditionTarget.Enemy && user.Type == CharacterType.Hero)
+            {
+                filteredPool = monsterPositions
+                    .Where(m => m.Health > 0 && !m.HasRetreated)
+                    .Cast<ICombatUnit>()
+                    .ToList();
+                Debug.Log($"FilteredPool (Enemies) count = {filteredPool.Count}");
+            }
+            else
+            {
+                filteredPool = heroPositions
+                    .Where(h => h.Health > 0 && !h.HasRetreated)
+                    .Cast<ICombatUnit>()
+                    .ToList();
+                Debug.Log($"FilteredPool (Hero Enemies) count = {filteredPool.Count}");
+            }
             targetPool = targetPool.Where(t => filteredPool.Contains(t)).ToList();
+            Debug.Log($"TargetPool after filtering count = {targetPool.Count}");
+
             if (rule.MinPosition > 0 || rule.MaxPosition > 0)
             {
                 targetPool = targetPool.Where(t =>
                 {
                     var pos = user.Type == CharacterType.Hero
-                        ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
-                        : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition;
+                        ? monsterPositions.FirstOrDefault(m => m == t as CharacterStats)?.PartyPosition
+                        : heroPositions.FirstOrDefault(h => h == t as CharacterStats)?.PartyPosition;
                     return pos.HasValue && pos.Value >= rule.MinPosition && (rule.MaxPosition == 0 || pos.Value <= rule.MaxPosition);
                 }).ToList();
+                Debug.Log($"TargetPool after position filter count = {targetPool.Count}");
             }
+
             if (isMelee || rule.MeleeOnly)
             {
-                if (targetPool.Count > 0) // Changed: Only apply melee filter if targets exist
+                if (targetPool.Count > 0)
                 {
                     targetPool = targetPool.Where(t =>
                     {
                         var pos = user.Type == CharacterType.Hero
-                            ? orderedMonsters.FirstOrDefault(m => m.Unit == t)?.CombatPosition
-                            : orderedHeroes.FirstOrDefault(h => h.Unit == t)?.CombatPosition;
+                            ? monsterPositions.FirstOrDefault(m => m == t as CharacterStats)?.PartyPosition
+                            : heroPositions.FirstOrDefault(h => h == t as CharacterStats)?.PartyPosition;
                         return pos.HasValue && pos.Value <= 2;
                     }).ToList();
                     if (targetPool.Count == 0)
@@ -263,8 +286,10 @@ namespace VirulentVentures
                         Debug.LogWarning($"CombatSceneComponent: No frontline targets for {user.Id}'s melee attack.");
                         return new List<ICombatUnit>();
                     }
+                    Debug.Log($"TargetPool after melee filter count = {targetPool.Count}");
                 }
             }
+
             if (rule.MustBeInfected || rule.MustNotBeInfected)
             {
                 targetPool = targetPool.Where(t =>
@@ -273,7 +298,9 @@ namespace VirulentVentures
                     bool isInfected = stats != null && stats.IsInfected;
                     return rule.MustBeInfected ? isInfected : rule.MustNotBeInfected ? !isInfected : true;
                 }).ToList();
+                Debug.Log($"TargetPool after infection filter count = {targetPool.Count}");
             }
+
             switch (rule.Type)
             {
                 case CombatTypes.TargetingRule.RuleType.LowestHealth:
@@ -313,10 +340,11 @@ namespace VirulentVentures
                     targetPool = targetPool.OrderBy(t => UnityEngine.Random.value).ToList();
                     break;
             }
-            int maxTargets = Mathf.Min(numberOfTargets, targetPool.Count); // Updated: Use AbilitySO.NumberOfTargets
+            int maxTargets = Mathf.Min(numberOfTargets, targetPool.Count);
             if (rule.Type == CombatTypes.TargetingRule.RuleType.AllAllies && targetType == CombatTypes.ConditionTarget.Ally)
                 maxTargets = targetPool.Count;
             var selected = targetPool.Take(maxTargets).ToList();
+            Debug.Log($"Selected targets count = {selected.Count}");
             return selected;
         }
 
