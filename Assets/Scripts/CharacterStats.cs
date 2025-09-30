@@ -21,6 +21,7 @@ namespace VirulentVentures
         public bool IsInfected { get; set; } = false;
         public int PartyPosition { get; set; }
         public string[] abilityIds { get; set; }
+        public AbilitySO[] abilities { get; set; } // Added: Direct AbilitySO references
         public bool IsHero => Type == CharacterType.Hero;
         public int Rank { get; set; }
         public Sprite CombatSprite { get; set; }
@@ -43,6 +44,7 @@ namespace VirulentVentures
                 Infectivity = 20;
                 PartyPosition = 1;
                 abilityIds = new string[] { "BasicAttack" }; // Fallback
+                abilities = new AbilitySO[0]; // Fallback
                 Rank = 1;
                 CombatSprite = null;
                 return;
@@ -60,7 +62,8 @@ namespace VirulentVentures
             MaxMorale = Type == CharacterType.Hero ? data.MaxMorale : 0;
             Infectivity = data.Infectivity;
             PartyPosition = data.PartyPosition;
-            abilityIds = data.Abilities != null && data.Abilities.Length > 0 ? data.Abilities.Select(a => a.Id).ToArray() : new string[] { "BasicAttack" }; // Updated: Use Abilities
+            abilityIds = data.Abilities != null && data.Abilities.Length > 0 ? data.Abilities.Select(a => a.Id).ToArray() : new string[] { "BasicAttack" };
+            abilities = data.Abilities != null ? data.Abilities : new AbilitySO[0]; // Added: Set AbilitySO array
             if (data.Abilities == null || data.Abilities.Length == 0)
             {
                 Debug.LogWarning($"CharacterStats: No Abilities defined in CharacterSO for {data.Id}. Defaulting to BasicAttack.");

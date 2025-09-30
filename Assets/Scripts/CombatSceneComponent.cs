@@ -55,7 +55,6 @@ namespace VirulentVentures
 
         void Start()
         {
-            AbilityDatabase.Reinitialize(this);
             if (!ValidateReferences())
             {
                 Debug.LogError("CombatSceneComponent: Validation failed, aborting Start.");
@@ -122,10 +121,11 @@ namespace VirulentVentures
             eventBus.RaiseLogMessage(initMessage, uiConfig.TextColor);
             foreach (var hero in heroStats.Where(h => h.Type == CharacterType.Hero && h.Health > 0))
             {
-                if (hero.abilityIds == null || hero.abilityIds.Length == 0)
+                if (hero.abilities == null || hero.abilities.Length == 0)
                 {
                     Debug.LogError($"CombatSceneComponent: No abilities defined for hero {hero.Id}.");
-                    hero.abilityIds = new string[] { "BasicAttack" }; // Fixed: hero to heroStats
+                    hero.abilityIds = new string[] { "BasicAttack" }; // Fallback for compatibility
+                    hero.abilities = new AbilitySO[0];
                 }
                 var stats = hero.GetDisplayStats();
                 units.Add((hero, null, stats));
@@ -146,10 +146,11 @@ namespace VirulentVentures
             }
             foreach (var monster in monsterStats.Where(m => m.Type == CharacterType.Monster && m.Health > 0 && !m.HasRetreated))
             {
-                if (monster.abilityIds == null || monster.abilityIds.Length == 0)
+                if (monster.abilities == null || monster.abilities.Length == 0)
                 {
                     Debug.LogError($"CombatSceneComponent: No abilities defined for monster {monster.Id}.");
-                    monster.abilityIds = new string[] { "BasicAttack" }; // Fixed: hero to monster
+                    monster.abilityIds = new string[] { "BasicAttack" }; // Fallback for compatibility
+                    monster.abilities = new AbilitySO[0];
                 }
                 var stats = monster.GetDisplayStats();
                 units.Add((monster, null, stats));
@@ -209,7 +210,7 @@ namespace VirulentVentures
             return monsterPositions;
         }
 
-        public List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, bool isMelee, CombatTypes.ConditionTarget targetType)
+        public List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, bool isMelee, CombatTypes.ConditionTarget targetType, int numberOfTargets)
         {
             if (targetType == default)
             {
@@ -248,7 +249,7 @@ namespace VirulentVentures
             }
             if (isMelee || rule.MeleeOnly)
             {
-                if (targetPool.Count > 1)
+                if (targetPool.Count > 0) // Changed: Only apply melee filter if targets exist
                 {
                     targetPool = targetPool.Where(t =>
                     {
@@ -312,7 +313,7 @@ namespace VirulentVentures
                     targetPool = targetPool.OrderBy(t => UnityEngine.Random.value).ToList();
                     break;
             }
-            int maxTargets = isMelee ? Mathf.Min(2, targetPool.Count) : Mathf.Min(4, targetPool.Count);
+            int maxTargets = Mathf.Min(numberOfTargets, targetPool.Count); // Updated: Use AbilitySO.NumberOfTargets
             if (rule.Type == CombatTypes.TargetingRule.RuleType.AllAllies && targetType == CombatTypes.ConditionTarget.Ally)
                 maxTargets = targetPool.Count;
             var selected = targetPool.Take(maxTargets).ToList();
@@ -576,14 +577,14 @@ namespace VirulentVentures
                 Debug.LogWarning($"ExecuteAbility: Invalid stats or state for unit {unit?.Id}");
                 yield break;
             }
-            foreach (var abilityId in stats.abilityIds)
+            foreach (var ability in stats.abilities)
             {
-                var ability = AbilityDatabase.GetAbility(abilityId) as AbilitySO;
                 if (ability == null)
                 {
-                    Debug.LogWarning($"ExecuteAbility: Ability {abilityId} not found for {stats.Id}");
+                    Debug.LogWarning($"ExecuteAbility: Null AbilitySO for {stats.Id}");
                     continue;
                 }
+                var abilityId = ability.Id;
                 if (state.AbilityCooldowns.GetValueOrDefault(abilityId, 0) > 0 || state.RoundCooldowns.GetValueOrDefault(abilityId, 0) > 0)
                 {
                     Debug.Log($"ExecuteAbility: {abilityId} on cooldown for {stats.Id}");
@@ -594,10 +595,10 @@ namespace VirulentVentures
                     Debug.Log($"ExecuteAbility: {stats.Id} rank {stats.Rank} too low for {abilityId} (requires {ability.Rank})");
                     continue;
                 }
-                if (ability.Conditions.All(c => AbilityDatabase.EvaluateCondition(c, stats, partyData, targets)))
+                if (ability.Conditions.All(c => ability.EvaluateCondition(c, stats, partyData, targets)))
                 {
                     var rule = ability.GetTargetingRule();
-                    var selectedTargets = SelectTargets(stats, targets, partyData, rule, ability.Action.Melee, ability.Action.Target);
+                    var selectedTargets = SelectTargets(stats, targets, partyData, rule, ability.Action.Melee, ability.Action.Target, ability.Action.NumberOfTargets); // Updated: Pass NumberOfTargets
                     if (selectedTargets.Any())
                     {
                         string abilityMessage = $"{stats.Id} uses {abilityId}!";
@@ -643,7 +644,7 @@ namespace VirulentVentures
                             }
                             else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
                             {
-                                partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig); // Fixed: Added allCombatLogs
+                                partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig);
                                 UpdateUnit(target);
                             }
                         }
@@ -664,7 +665,7 @@ namespace VirulentVentures
                         }
                         else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
                         {
-                            partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig); // Fixed: Added allCombatLogs
+                            partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig);
                             UpdateUnit(unit);
                         }
                         yield break;
@@ -678,12 +679,12 @@ namespace VirulentVentures
                 }
             }
             // Fallback: Last ability (BasicAttack)
-            var fallbackId = stats.abilityIds.Last();
-            var fallback = AbilityDatabase.GetAbility(fallbackId) as AbilitySO;
+            var fallback = stats.abilities.LastOrDefault();
             if (fallback != null)
             {
+                var fallbackId = fallback.Id;
                 var rule = fallback.GetTargetingRule();
-                var selectedTargets = SelectTargets(stats, targets, partyData, rule, fallback.Action.Melee, fallback.Action.Target);
+                var selectedTargets = SelectTargets(stats, targets, partyData, rule, fallback.Action.Melee, fallback.Action.Target, fallback.Action.NumberOfTargets); // Updated: Pass NumberOfTargets
                 if (selectedTargets.Any())
                 {
                     string abilityMessage = $"{stats.Id} uses fallback {fallbackId}!";
@@ -723,7 +724,7 @@ namespace VirulentVentures
                         }
                         else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
                         {
-                            partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig); // Fixed: Added allCombatLogs
+                            partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig);
                             UpdateUnit(target);
                         }
                     }
@@ -744,7 +745,7 @@ namespace VirulentVentures
                     }
                     else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
                     {
-                        partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig); // Fixed: Added allCombatLogs
+                        partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig);
                         UpdateUnit(unit);
                     }
                 }

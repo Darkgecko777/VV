@@ -9,20 +9,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f3f4502e65a4a8499f567392527fad2, type: 3}
+  m_Script: {fileID: 11500000, guid: 29faf0b94ba308b4ea591377b8c912b3, type: 3}
   m_Name: ScoutAttack
   m_EditorClassIdentifier: 
-  id: Basic Attack
-  priority: 1
+  id: 
   cooldown: 0
-  rank: 1
+  cooldownType: 0
+  rank: 0
   conditions: []
-  attacks:
-  - NumberOfTargets: 1
-    Enemy: 1
-    Melee: 1
+  action:
+    Target: 0
+    NumberOfTargets: 1
+    Melee: 0
+    EffectId: 
+    EffectValue: 0
+    EffectDuration: 0
+    RuleType: 0
     Defense: 0
     Dodgeable: 0
     PartialDefenseMultiplier: 0
-  effects: []
-  costAmount: 0
+  animationTrigger: 

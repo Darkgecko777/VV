@@ -28,5 +28,5 @@ MonoBehaviour:
   rank: 1
   portrait: {fileID: 21300000, guid: 7aaeaf835bbd5134590edd5a5e7d332c, type: 3}
   combatSprite: {fileID: 21300000, guid: 7aaeaf835bbd5134590edd5a5e7d332c, type: 3}
-  abilityIds:
-  - BasicAttack
+  abilities:
+  - {fileID: 11400000, guid: 3f31297c48b9a884d9c8c621bb6f0455, type: 2}

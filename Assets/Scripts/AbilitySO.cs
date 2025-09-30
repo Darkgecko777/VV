@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace VirulentVentures
 {
@@ -100,6 +101,124 @@ namespace VirulentVentures
                 MinPosition = action.Melee ? 1 : 0,
                 MaxPosition = action.Melee ? 2 : 4
             };
+        }
+
+        public bool EvaluateCondition(CombatTypes.AbilityCondition cond, CharacterStats unit, PartyData party, List<ICombatUnit> targets)
+        {
+            float value = 0f;
+            bool statMet = false;
+            bool countMet = true;
+
+            if (cond.Target == CombatTypes.ConditionTarget.User)
+            {
+                statMet = MeetsCondition(unit, cond);
+            }
+            else
+            {
+                var team = GetTeam(cond.TeamTarget, unit, party, targets);
+                var filteredTargets = team.Where(t => MeetsTargetCriteria(t, cond)).ToList();
+
+                if (cond.MinTargetCount > 0 && filteredTargets.Count < cond.MinTargetCount)
+                {
+                    countMet = false;
+                }
+                if (cond.MaxTargetCount > 0 && filteredTargets.Count > cond.MaxTargetCount)
+                {
+                    countMet = false;
+                }
+
+                if (cond.TeamCondition == CombatTypes.TeamCondition.None)
+                {
+                    statMet = filteredTargets.Any(t => MeetsCondition(t as CharacterStats, cond));
+                }
+                else
+                {
+                    float totalValue = 0f;
+                    int count = filteredTargets.Count;
+                    foreach (var target in filteredTargets)
+                    {
+                        if (target is CharacterStats stats)
+                        {
+                            totalValue += GetStatValue(cond.Stat, stats);
+                        }
+                    }
+                    value = cond.TeamCondition == CombatTypes.TeamCondition.AverageStat && count > 0 ? totalValue / count : totalValue;
+
+                    if (cond.IsPercentage)
+                    {
+                        float maxValue = cond.Stat == CombatTypes.Stat.Health ? unit.MaxHealth : cond.Stat == CombatTypes.Stat.Morale ? unit.MaxMorale : 1f;
+                        value = maxValue > 0 ? value / maxValue : 0f;
+                    }
+
+                    statMet = cond.Comparison switch
+                    {
+                        CombatTypes.Comparison.Greater => value > cond.Threshold,
+                        CombatTypes.Comparison.Lesser => value < cond.Threshold,
+                        CombatTypes.Comparison.Equal => Mathf.Approximately(value, cond.Threshold),
+                        _ => false
+                    };
+                }
+            }
+
+            bool result = statMet && countMet;
+            Debug.Log($"EvaluateCondition for {unit.Id}: Stat={cond.Stat}, Target={cond.Target}, Value={value}, Threshold={cond.Threshold}, StatMet={statMet}, CountMet={countMet}, Result={result}");
+            return result;
+        }
+
+        private bool MeetsCondition(CharacterStats target, CombatTypes.AbilityCondition cond)
+        {
+            if (target == null) return false;
+            float value = GetStatValue(cond.Stat, target);
+            if (cond.IsPercentage)
+            {
+                float maxValue = cond.Stat == CombatTypes.Stat.Health ? target.MaxHealth : cond.Stat == CombatTypes.Stat.Morale ? target.MaxMorale : 1f;
+                value = maxValue > 0 ? value / maxValue : 0f;
+            }
+            bool met = cond.Comparison switch
+            {
+                CombatTypes.Comparison.Greater => value > cond.Threshold,
+                CombatTypes.Comparison.Lesser => value < cond.Threshold,
+                CombatTypes.Comparison.Equal => Mathf.Approximately(value, cond.Threshold),
+                _ => false
+            };
+            return met;
+        }
+
+        private float GetStatValue(CombatTypes.Stat stat, CharacterStats unit)
+        {
+            if (unit == null) return 0f;
+            return stat switch
+            {
+                CombatTypes.Stat.Health => unit.Health,
+                CombatTypes.Stat.MaxHealth => unit.MaxHealth,
+                CombatTypes.Stat.Morale => unit.Morale,
+                CombatTypes.Stat.MaxMorale => unit.MaxMorale,
+                CombatTypes.Stat.Speed => unit.Speed,
+                CombatTypes.Stat.Attack => unit.Attack,
+                CombatTypes.Stat.Defense => unit.Defense,
+                CombatTypes.Stat.Evasion => unit.Evasion,
+                CombatTypes.Stat.Rank => unit.Rank,
+                CombatTypes.Stat.Infectivity => unit.Infectivity,
+                CombatTypes.Stat.PartyPosition => unit.PartyPosition,
+                _ => 0f
+            };
+        }
+
+        private List<ICombatUnit> GetTeam(CombatTypes.TeamTarget team, CharacterStats unit, PartyData party, List<ICombatUnit> targets)
+        {
+            return team switch
+            {
+                CombatTypes.TeamTarget.Allies => unit.Type == CharacterType.Hero ? party.HeroStats.Cast<ICombatUnit>().Where(h => h.Health > 0 && !h.HasRetreated).ToList() : targets.Where(t => !t.IsHero && t.Health > 0 && !t.HasRetreated).ToList(),
+                CombatTypes.TeamTarget.Enemies => unit.Type == CharacterType.Hero ? targets.Where(t => !t.IsHero && t.Health > 0 && !t.HasRetreated).ToList() : party.HeroStats.Cast<ICombatUnit>().Where(h => h.Health > 0 && !h.HasRetreated).ToList(),
+                CombatTypes.TeamTarget.Both => party.HeroStats.Cast<ICombatUnit>().Concat(targets.Where(t => !t.IsHero)).Where(u => u.Health > 0 && !u.HasRetreated).ToList(),
+                _ => new List<ICombatUnit>()
+            };
+        }
+
+        private bool MeetsTargetCriteria(ICombatUnit target, CombatTypes.AbilityCondition cond)
+        {
+            if (target.PartyPosition < cond.MinPosition || (cond.MaxPosition > 0 && target.PartyPosition > cond.MaxPosition)) return false;
+            return true;
         }
     }
 }
