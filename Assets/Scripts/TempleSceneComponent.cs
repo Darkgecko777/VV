@@ -35,14 +35,6 @@ namespace VirulentVentures
             if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
             {
                 SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
-                if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
-                {
-                    Debug.LogWarning("TempleSceneComponent: HeroStats still empty after load, may need to generate new party");
-                }
-                else
-                {
-                    Debug.Log($"TempleSceneComponent: Loaded {partyData.HeroStats.Count} heroes: {string.Join(", ", partyData.HeroStats.Select(h => h.Id))}");
-                }
             }
             eventBus.RaisePartyUpdated(partyData);
         }

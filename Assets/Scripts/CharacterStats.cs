@@ -152,14 +152,9 @@ namespace VirulentVentures
                     Debug.Log($"PerformAbility: {abilityId} on cooldown for {Id}");
                     continue;
                 }
-                if (Rank < ability.Rank)
+                if (ability.Conditions.All(c => ability.EvaluateCondition(c, this, partyData, allTargets, combatScene)))
                 {
-                    Debug.Log($"PerformAbility: {Id} rank {Rank} too low for {abilityId} (requires {ability.Rank})");
-                    continue;
-                }
-                if (ability.Conditions.All(c => ability.EvaluateCondition(c, this, partyData, allTargets)))
-                {
-                    var filteredPool = ability.GetConditionFilteredTargets(this, partyData, allTargets);
+                    var filteredPool = ability.GetConditionFilteredTargets(this, partyData, allTargets, combatScene);
                     if (filteredPool.Count == 0)
                     {
                         string noTargetMessage = $"No qualifying targets for {abilityId} by {Id}.";
@@ -168,7 +163,7 @@ namespace VirulentVentures
                         continue;
                     }
                     var rule = ability.GetTargetingRule();
-                    var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, rule, ability.Action.Melee, ability.Action.Target, ability.Action.NumberOfTargets, heroPositions, monsterPositions);
+                    var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, rule, heroPositions, monsterPositions);
 
                     if (selectedTargets.Any())
                     {
@@ -259,7 +254,7 @@ namespace VirulentVentures
             if (fallback != null)
             {
                 var fallbackId = fallback.Id;
-                var filteredPool = fallback.GetConditionFilteredTargets(this, partyData, allTargets);
+                var filteredPool = fallback.GetConditionFilteredTargets(this, partyData, allTargets, combatScene);
                 if (filteredPool.Count == 0)
                 {
                     string noTargetMessage = $"No qualifying targets for fallback {fallbackId} by {Id}.";
@@ -269,7 +264,7 @@ namespace VirulentVentures
                     yield break;
                 }
                 var rule = fallback.GetTargetingRule();
-                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, rule, fallback.Action.Melee, fallback.Action.Target, fallback.Action.NumberOfTargets, heroPositions, monsterPositions);
+                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, rule, heroPositions, monsterPositions);
 
                 if (selectedTargets.Any())
                 {

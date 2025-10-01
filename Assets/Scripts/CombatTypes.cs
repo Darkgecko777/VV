@@ -8,7 +8,6 @@ namespace VirulentVentures
         public enum DefenseCheck
         {
             Standard,
-            Partial,
             None
         }
 
@@ -45,21 +44,6 @@ namespace VirulentVentures
             Enemy
         }
 
-        public enum TeamCondition
-        {
-            None,
-            AverageStat,
-            TotalStat
-        }
-
-        public enum TeamTarget
-        {
-            None,
-            Allies,
-            Enemies,
-            Both
-        }
-
         public enum CooldownType
         {
             Actions,
@@ -74,13 +58,6 @@ namespace VirulentVentures
             public float Threshold;
             public bool IsPercentage;
             public ConditionTarget Target;
-            public int MinTargetCount;
-            public int MaxTargetCount;
-            public int MinPosition;
-            public int MaxPosition;
-            public string StatusEffect;
-            public TeamCondition TeamCondition;
-            public TeamTarget TeamTarget;
         }
 
         [Serializable]
@@ -88,7 +65,6 @@ namespace VirulentVentures
         {
             public DefenseCheck Defense;
             public bool Dodgeable;
-            public float PartialDefenseMultiplier;
         }
 
         [Serializable]
@@ -96,15 +72,10 @@ namespace VirulentVentures
         {
             public enum RuleType
             {
-                Random,
-                LowestHealth,
-                HighestHealth,
-                LowestMorale,
-                HighestMorale,
-                LowestAttack,
-                HighestAttack,
-                AllAllies,
-                WeightedRandom
+                Single,
+                All,
+                MeleeSingle,
+                MeleeAll
             }
 
             public RuleType Type;
@@ -114,8 +85,6 @@ namespace VirulentVentures
             public bool MeleeOnly;
             public int MinPosition;
             public int MaxPosition;
-            public Stat WeightStat;
-            public float WeightFactor;
 
             public void Validate()
             {
@@ -125,9 +94,9 @@ namespace VirulentVentures
                     MustBeInfected = false;
                     MustNotBeInfected = false;
                 }
-                if (Type == RuleType.AllAllies && Target != ConditionTarget.Ally)
+                if ((Type == RuleType.All || Type == RuleType.MeleeAll) && Target != ConditionTarget.Ally)
                 {
-                    Debug.LogWarning("TargetingRule: AllAllies rule requires Target = Ally.");
+                    Debug.LogWarning("TargetingRule: All/MeleeAll rule requires Target = Ally.");
                     Target = ConditionTarget.Ally;
                 }
                 if (MinPosition < 0 || MaxPosition < 0 || (MinPosition > MaxPosition && MaxPosition != 0))
@@ -135,11 +104,6 @@ namespace VirulentVentures
                     Debug.LogWarning("TargetingRule: Invalid position range, resetting.");
                     MinPosition = 0;
                     MaxPosition = 0;
-                }
-                if (Type == RuleType.WeightedRandom && WeightStat == default(Stat))
-                {
-                    Debug.LogWarning("TargetingRule: WeightedRandom requires a valid WeightStat, defaulting to Health.");
-                    WeightStat = Stat.Health;
                 }
             }
         }
