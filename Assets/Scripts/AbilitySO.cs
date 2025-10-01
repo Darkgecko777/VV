@@ -103,6 +103,34 @@ namespace VirulentVentures
             };
         }
 
+        public List<ICombatUnit> GetConditionFilteredTargets(CharacterStats user, PartyData party, List<ICombatUnit> allTargets)
+        {
+            List<ICombatUnit> basePool;
+            if (Action.Target == CombatTypes.ConditionTarget.Ally)
+            {
+                basePool = user.Type == CharacterType.Hero
+                    ? party.HeroStats.Cast<ICombatUnit>().Where(h => h.Health > 0 && !h.HasRetreated).ToList()
+                    : allTargets.Where(t => !t.IsHero && t.Health > 0 && !t.HasRetreated).ToList();
+            }
+            else
+            {
+                basePool = user.Type == CharacterType.Hero
+                    ? allTargets.Where(t => !t.IsHero && t.Health > 0 && !t.HasRetreated).ToList()
+                    : party.HeroStats.Cast<ICombatUnit>().Where(h => h.Health > 0 && !h.HasRetreated).ToList();
+            }
+
+            var filtered = new HashSet<ICombatUnit>(basePool);
+            foreach (var cond in Conditions.Where(c => c.Target == Action.Target && c.TeamCondition == CombatTypes.TeamCondition.None))
+            {
+                var team = GetTeam(cond.TeamTarget, user, party, allTargets);
+                var condFiltered = team.Where(t => MeetsTargetCriteria(t, cond) && MeetsCondition(t as CharacterStats, cond)).ToHashSet();
+                filtered.IntersectWith(condFiltered);
+                if (filtered.Count == 0) return new List<ICombatUnit>();
+            }
+
+            return filtered.ToList();
+        }
+
         public bool EvaluateCondition(CombatTypes.AbilityCondition cond, CharacterStats unit, PartyData party, List<ICombatUnit> targets)
         {
             float value = 0f;

@@ -12,19 +12,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29faf0b94ba308b4ea591377b8c912b3, type: 3}
   m_Name: HealerHeal
   m_EditorClassIdentifier: 
-  id: 
-  cooldown: 0
+  id: Heal
+  cooldown: 2
   cooldownType: 0
-  rank: 0
-  conditions: []
+  rank: 1
+  conditions:
+  - Comparison: 1
+    Stat: 0
+    Threshold: 0.8
+    IsPercentage: 1
+    Target: 1
+    MinTargetCount: 1
+    MaxTargetCount: 0
+    MinPosition: 0
+    MaxPosition: 0
+    StatusEffect: 
+    TeamCondition: 0
+    TeamTarget: 1
   action:
-    Target: 0
+    Target: 1
     NumberOfTargets: 1
     Melee: 0
-    EffectId: 
-    EffectValue: 0
+    EffectId: Heal
+    EffectValue: 0.2
     EffectDuration: 0
-    RuleType: 0
+    RuleType: 1
     Defense: 0
     Dodgeable: 0
     PartialDefenseMultiplier: 0

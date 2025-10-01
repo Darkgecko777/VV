@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,11 +25,17 @@ namespace VirulentVentures
         private float lastEndCombatTime;
         private const float logDuplicateWindow = 1f;
         private static bool hasSubscribed;
+
         public ExpeditionManager ExpeditionManager => ExpeditionManager.Instance;
         public List<string> AllCombatLogs => allCombatLogs;
         public bool IsPaused => isPaused;
         public EventBusSO EventBus => eventBus;
         public UIConfig UIConfig => uiConfig;
+
+        public UnitAttackState GetUnitAttackState(ICombatUnit unit)
+        {
+            return unitAttackStates.Find(s => s.Unit == unit);
+        }
 
         void Awake()
         {
@@ -124,7 +129,7 @@ namespace VirulentVentures
                 if (hero.abilities == null || hero.abilities.Length == 0)
                 {
                     Debug.LogError($"CombatSceneComponent: No abilities defined for hero {hero.Id}.");
-                    hero.abilityIds = new string[] { "BasicAttack" }; // Fallback for compatibility
+                    hero.abilityIds = new string[] { "BasicAttack" };
                     hero.abilities = new AbilitySO[0];
                 }
                 var stats = hero.GetDisplayStats();
@@ -149,7 +154,7 @@ namespace VirulentVentures
                 if (monster.abilities == null || monster.abilities.Length == 0)
                 {
                     Debug.LogError($"CombatSceneComponent: No abilities defined for monster {monster.Id}.");
-                    monster.abilityIds = new string[] { "BasicAttack" }; // Fallback for compatibility
+                    monster.abilityIds = new string[] { "BasicAttack" };
                     monster.abilities = new AbilitySO[0];
                 }
                 var stats = monster.GetDisplayStats();
@@ -198,175 +203,6 @@ namespace VirulentVentures
                         monsterPositions.Remove(stats);
                 }
             }
-        }
-
-        public UnitAttackState GetUnitAttackState(ICombatUnit unit)
-        {
-            return unitAttackStates.Find(s => s.Unit == unit);
-        }
-
-        public List<CharacterStats> GetMonsterUnits()
-        {
-            return monsterPositions;
-        }
-
-        public List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, bool isMelee, CombatTypes.ConditionTarget targetType, int numberOfTargets)
-        {
-            Debug.Log($"SelectTargets for {user.Id}: Initial targetPool count = {targetPool.Count}");
-            if (targetType == default)
-            {
-                Debug.LogWarning($"CombatSceneComponent: TargetType not set for {user.Id}. Defaulting to Enemy.");
-                targetType = CombatTypes.ConditionTarget.Enemy;
-            }
-            rule.Validate();
-            if (targetPool == null || targetPool.Count == 0)
-            {
-                Debug.LogWarning($"CombatSceneComponent: Empty targetPool for {user.Id}. Returning empty list.");
-                return new List<ICombatUnit>();
-            }
-
-            List<ICombatUnit> filteredPool;
-            if (targetType == CombatTypes.ConditionTarget.Ally && user.Type == CharacterType.Hero)
-            {
-                filteredPool = partyData.HeroStats
-                    .Where(h => h.Health > 0 && !h.HasRetreated)
-                    .Cast<ICombatUnit>()
-                    .ToList(); // Use party.HeroStats directly for allies
-                Debug.Log($"FilteredPool (Allies) count = {filteredPool.Count}");
-            }
-            else if (targetType == CombatTypes.ConditionTarget.Ally && user.Type == CharacterType.Monster)
-            {
-                filteredPool = targetPool.Where(t => t is CharacterStats && !(t as CharacterStats).IsHero && t.Health > 0 && !t.HasRetreated).ToList();
-                Debug.Log($"FilteredPool (Monster Allies) count = {filteredPool.Count}");
-            }
-            else if (targetType == CombatTypes.ConditionTarget.Enemy && user.Type == CharacterType.Hero)
-            {
-                filteredPool = monsterPositions
-                    .Where(m => m.Health > 0 && !m.HasRetreated)
-                    .Cast<ICombatUnit>()
-                    .ToList();
-                Debug.Log($"FilteredPool (Enemies) count = {filteredPool.Count}");
-            }
-            else
-            {
-                filteredPool = heroPositions
-                    .Where(h => h.Health > 0 && !h.HasRetreated)
-                    .Cast<ICombatUnit>()
-                    .ToList();
-                Debug.Log($"FilteredPool (Hero Enemies) count = {filteredPool.Count}");
-            }
-            targetPool = targetPool.Where(t => filteredPool.Contains(t)).ToList();
-            Debug.Log($"TargetPool after filtering count = {targetPool.Count}");
-
-            if (rule.MinPosition > 0 || rule.MaxPosition > 0)
-            {
-                targetPool = targetPool.Where(t =>
-                {
-                    var pos = user.Type == CharacterType.Hero
-                        ? monsterPositions.FirstOrDefault(m => m == t as CharacterStats)?.PartyPosition
-                        : heroPositions.FirstOrDefault(h => h == t as CharacterStats)?.PartyPosition;
-                    return pos.HasValue && pos.Value >= rule.MinPosition && (rule.MaxPosition == 0 || pos.Value <= rule.MaxPosition);
-                }).ToList();
-                Debug.Log($"TargetPool after position filter count = {targetPool.Count}");
-            }
-
-            if (isMelee || rule.MeleeOnly)
-            {
-                if (targetPool.Count > 0)
-                {
-                    targetPool = targetPool.Where(t =>
-                    {
-                        var pos = user.Type == CharacterType.Hero
-                            ? monsterPositions.FirstOrDefault(m => m == t as CharacterStats)?.PartyPosition
-                            : heroPositions.FirstOrDefault(h => h == t as CharacterStats)?.PartyPosition;
-                        return pos.HasValue && pos.Value <= 2;
-                    }).ToList();
-                    if (targetPool.Count == 0)
-                    {
-                        Debug.LogWarning($"CombatSceneComponent: No frontline targets for {user.Id}'s melee attack.");
-                        return new List<ICombatUnit>();
-                    }
-                    Debug.Log($"TargetPool after melee filter count = {targetPool.Count}");
-                }
-            }
-
-            if (rule.MustBeInfected || rule.MustNotBeInfected)
-            {
-                targetPool = targetPool.Where(t =>
-                {
-                    var stats = t as CharacterStats;
-                    bool isInfected = stats != null && stats.IsInfected;
-                    return rule.MustBeInfected ? isInfected : rule.MustNotBeInfected ? !isInfected : true;
-                }).ToList();
-                Debug.Log($"TargetPool after infection filter count = {targetPool.Count}");
-            }
-
-            switch (rule.Type)
-            {
-                case CombatTypes.TargetingRule.RuleType.LowestHealth:
-                    targetPool = targetPool.OrderBy(t => (t as CharacterStats)?.Health ?? int.MaxValue).ToList();
-                    break;
-                case CombatTypes.TargetingRule.RuleType.HighestHealth:
-                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats)?.Health ?? 0).ToList();
-                    break;
-                case CombatTypes.TargetingRule.RuleType.LowestMorale:
-                    targetPool = targetPool.OrderBy(t => (t as CharacterStats)?.Morale ?? 0).ToList();
-                    break;
-                case CombatTypes.TargetingRule.RuleType.HighestMorale:
-                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats)?.Morale ?? 0).ToList();
-                    break;
-                case CombatTypes.TargetingRule.RuleType.LowestAttack:
-                    targetPool = targetPool.OrderBy(t => (t as CharacterStats)?.Attack ?? 0).ToList();
-                    break;
-                case CombatTypes.TargetingRule.RuleType.HighestAttack:
-                    targetPool = targetPool.OrderByDescending(t => (t as CharacterStats)?.Attack ?? 0).ToList();
-                    break;
-                case CombatTypes.TargetingRule.RuleType.AllAllies:
-                    if (targetType != CombatTypes.ConditionTarget.Ally)
-                    {
-                        Debug.LogWarning($"CombatSceneComponent: AllAllies rule requires Ally target for {user.Id}. Returning empty list.");
-                        targetPool = new List<ICombatUnit>();
-                    }
-                    break;
-                case CombatTypes.TargetingRule.RuleType.WeightedRandom:
-                    if (rule.WeightStat == default)
-                    {
-                        Debug.LogWarning($"CombatSceneComponent: WeightedRandom for {user.Id} has no WeightStat. Defaulting to Health.");
-                        rule.WeightStat = CombatTypes.Stat.Health;
-                    }
-                    targetPool = targetPool.OrderBy(t => UnityEngine.Random.value * GetWeight(t as CharacterStats, rule.WeightStat, rule.WeightFactor)).ToList();
-                    break;
-                default:
-                    targetPool = targetPool.OrderBy(t => UnityEngine.Random.value).ToList();
-                    break;
-            }
-            int maxTargets = Mathf.Min(numberOfTargets, targetPool.Count);
-            if (rule.Type == CombatTypes.TargetingRule.RuleType.AllAllies && targetType == CombatTypes.ConditionTarget.Ally)
-                maxTargets = targetPool.Count;
-            var selected = targetPool.Take(maxTargets).ToList();
-            Debug.Log($"Selected targets count = {selected.Count}");
-            return selected;
-        }
-
-        private float GetWeight(CharacterStats unit, CombatTypes.Stat stat, float factor)
-        {
-            if (unit == null) return 1f;
-            float value = stat switch
-            {
-                CombatTypes.Stat.Health => unit.Health,
-                CombatTypes.Stat.MaxHealth => unit.MaxHealth,
-                CombatTypes.Stat.Morale => unit.Morale,
-                CombatTypes.Stat.MaxMorale => unit.MaxMorale,
-                CombatTypes.Stat.Speed => unit.Speed,
-                CombatTypes.Stat.Attack => unit.Attack,
-                CombatTypes.Stat.Defense => unit.Defense,
-                CombatTypes.Stat.Evasion => unit.Evasion,
-                CombatTypes.Stat.Rank => unit.Rank,
-                CombatTypes.Stat.Infectivity => unit.Infectivity,
-                CombatTypes.Stat.PartyPosition => unit.PartyPosition,
-                _ => 1f
-            };
-            return value * factor;
         }
 
         public void StartCombatLoop(PartyData party)
@@ -472,7 +308,10 @@ namespace VirulentVentures
                     }
                     if (!CanAttackThisRound(unit, state) || unit.Health <= 0 || unit.HasRetreated) continue;
                     state.AttacksThisRound++;
-                    yield return ExecuteAbility(unit, expeditionData.Party, unitList);
+                    if (unit is CharacterStats stats)
+                    {
+                        yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
+                    }
                     yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                     {
@@ -488,7 +327,7 @@ namespace VirulentVentures
                     if (unit is CharacterStats stats && stats.Type == CharacterType.Hero && stats.Speed >= combatConfig.SpeedTwoAttacksThreshold && state.AttacksThisRound < 2)
                     {
                         state.AttacksThisRound++;
-                        yield return ExecuteAbility(unit, expeditionData.Party, unitList);
+                        yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
                         yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
@@ -593,275 +432,6 @@ namespace VirulentVentures
                     allCombatLogs.Add(defeatMessage);
                     eventBus?.RaiseLogMessage(defeatMessage, Color.red);
                 }
-            }
-        }
-
-        private IEnumerator ExecuteAbility(ICombatUnit unit, PartyData partyData, List<ICombatUnit> targets)
-        {
-            var stats = unit as CharacterStats;
-            var state = GetUnitAttackState(unit);
-            if (stats == null || state == null)
-            {
-                Debug.LogWarning($"ExecuteAbility: Invalid stats or state for unit {unit?.Id}");
-                yield break;
-            }
-            foreach (var ability in stats.abilities)
-            {
-                if (ability == null)
-                {
-                    Debug.LogWarning($"ExecuteAbility: Null AbilitySO for {stats.Id}");
-                    continue;
-                }
-                var abilityId = ability.Id;
-                if (state.AbilityCooldowns.GetValueOrDefault(abilityId, 0) > 0 || state.RoundCooldowns.GetValueOrDefault(abilityId, 0) > 0)
-                {
-                    Debug.Log($"ExecuteAbility: {abilityId} on cooldown for {stats.Id}");
-                    continue;
-                }
-                if (stats.Rank < ability.Rank)
-                {
-                    Debug.Log($"ExecuteAbility: {stats.Id} rank {stats.Rank} too low for {abilityId} (requires {ability.Rank})");
-                    continue;
-                }
-                if (ability.Conditions.All(c => ability.EvaluateCondition(c, stats, partyData, targets)))
-                {
-                    var rule = ability.GetTargetingRule();
-                    var selectedTargets = SelectTargets(stats, targets, partyData, rule, ability.Action.Melee, ability.Action.Target, ability.Action.NumberOfTargets); // Updated: Pass NumberOfTargets
-                    if (selectedTargets.Any())
-                    {
-                        string abilityMessage = $"{stats.Id} uses {abilityId}!";
-                        allCombatLogs.Add(abilityMessage);
-                        eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
-                        eventBus.RaiseUnitAttacking(unit, null, abilityId);
-                        eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = unit, target = null, abilityId = abilityId });
-                        yield return new WaitUntil(() => !isPaused);
-                        yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-                        if (ability.Action.Defense != CombatTypes.DefenseCheck.None)
-                        {
-                            ApplyAttackDamage(stats, selectedTargets, ability.Action, abilityId);
-                        }
-                        else
-                        {
-                            ProcessAction(stats, selectedTargets, ability.Action, abilityId);
-                        }
-                        if (ability.Cooldown > 0)
-                        {
-                            var cds = ability.CooldownType == CombatTypes.CooldownType.Actions ? state.AbilityCooldowns : state.RoundCooldowns;
-                            cds[abilityId] = ability.Cooldown;
-                            Debug.Log($"ExecuteAbility: Applied cooldown for {abilityId}: {ability.Cooldown} {ability.CooldownType}");
-                        }
-                        foreach (var target in selectedTargets.ToList())
-                        {
-                            if (target.Health <= 0)
-                            {
-                                if (!allCombatLogs.Contains($"{target.Id} dies!"))
-                                {
-                                    eventBus.RaiseUnitDied(target);
-                                    string deathMessage = $"{target.Id} dies!";
-                                    allCombatLogs.Add(deathMessage);
-                                    eventBus.RaiseLogMessage(deathMessage, Color.red);
-                                    UpdateUnit(target, deathMessage);
-                                    if (target is CharacterStats statsTarget)
-                                    {
-                                        if (statsTarget.Type == CharacterType.Hero)
-                                            heroPositions.Remove(statsTarget);
-                                        else
-                                            monsterPositions.Remove(statsTarget);
-                                    }
-                                }
-                            }
-                            else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
-                            {
-                                partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig);
-                                UpdateUnit(target);
-                            }
-                        }
-                        if (stats.Health <= 0)
-                        {
-                            if (!allCombatLogs.Contains($"{stats.Id} dies!"))
-                            {
-                                eventBus.RaiseUnitDied(unit);
-                                string deathMessage = $"{stats.Id} dies!";
-                                allCombatLogs.Add(deathMessage);
-                                eventBus.RaiseLogMessage(deathMessage, Color.red);
-                                UpdateUnit(unit, deathMessage);
-                                if (stats.Type == CharacterType.Hero)
-                                    heroPositions.Remove(stats);
-                                else
-                                    monsterPositions.Remove(stats);
-                            }
-                        }
-                        else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
-                        {
-                            partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig);
-                            UpdateUnit(unit);
-                        }
-                        yield break;
-                    }
-                    else
-                    {
-                        string noTargetMessage = $"No legal targets for {abilityId} by {stats.Id}.";
-                        allCombatLogs.Add(noTargetMessage);
-                        eventBus.RaiseLogMessage(noTargetMessage, Color.red);
-                    }
-                }
-            }
-            // Fallback: Last ability (BasicAttack)
-            var fallback = stats.abilities.LastOrDefault();
-            if (fallback != null)
-            {
-                var fallbackId = fallback.Id;
-                var rule = fallback.GetTargetingRule();
-                var selectedTargets = SelectTargets(stats, targets, partyData, rule, fallback.Action.Melee, fallback.Action.Target, fallback.Action.NumberOfTargets); // Updated: Pass NumberOfTargets
-                if (selectedTargets.Any())
-                {
-                    string abilityMessage = $"{stats.Id} uses fallback {fallbackId}!";
-                    allCombatLogs.Add(abilityMessage);
-                    eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
-                    eventBus.RaiseUnitAttacking(unit, null, fallbackId);
-                    eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = unit, target = null, abilityId = fallbackId });
-                    yield return new WaitUntil(() => !isPaused);
-                    yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-                    if (fallback.Action.Defense != CombatTypes.DefenseCheck.None)
-                    {
-                        ApplyAttackDamage(stats, selectedTargets, fallback.Action, fallbackId);
-                    }
-                    else
-                    {
-                        ProcessAction(stats, selectedTargets, fallback.Action, fallbackId);
-                    }
-                    foreach (var target in selectedTargets.ToList())
-                    {
-                        if (target.Health <= 0)
-                        {
-                            if (!allCombatLogs.Contains($"{target.Id} dies!"))
-                            {
-                                eventBus.RaiseUnitDied(target);
-                                string deathMessage = $"{target.Id} dies!";
-                                allCombatLogs.Add(deathMessage);
-                                eventBus.RaiseLogMessage(deathMessage, Color.red);
-                                UpdateUnit(target, deathMessage);
-                                if (target is CharacterStats statsTarget)
-                                {
-                                    if (statsTarget.Type == CharacterType.Hero)
-                                        heroPositions.Remove(statsTarget);
-                                    else
-                                        monsterPositions.Remove(statsTarget);
-                                }
-                            }
-                        }
-                        else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
-                        {
-                            partyData.ProcessRetreat(target, eventBus, uiConfig, allCombatLogs, combatConfig);
-                            UpdateUnit(target);
-                        }
-                    }
-                    if (stats.Health <= 0)
-                    {
-                        if (!allCombatLogs.Contains($"{stats.Id} dies!"))
-                        {
-                            eventBus.RaiseUnitDied(unit);
-                            string deathMessage = $"{stats.Id} dies!";
-                            allCombatLogs.Add(deathMessage);
-                            eventBus.RaiseLogMessage(deathMessage, Color.red);
-                            UpdateUnit(unit, deathMessage);
-                            if (stats.Type == CharacterType.Hero)
-                                heroPositions.Remove(stats);
-                            else
-                                monsterPositions.Remove(stats);
-                        }
-                    }
-                    else if (partyData.CheckRetreat(unit, eventBus, uiConfig, combatConfig))
-                    {
-                        partyData.ProcessRetreat(unit, eventBus, uiConfig, allCombatLogs, combatConfig);
-                        UpdateUnit(unit);
-                    }
-                }
-                else
-                {
-                    string noTargetMessage = $"No legal targets for fallback {fallbackId} by {stats.Id}.";
-                    allCombatLogs.Add(noTargetMessage);
-                    eventBus.RaiseLogMessage(noTargetMessage, Color.red);
-                }
-            }
-            yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
-        }
-
-        private void ApplyAttackDamage(CharacterStats user, List<ICombatUnit> targets, AbilitySO.AbilityAction action, string abilityId)
-        {
-            foreach (var target in targets.ToList())
-            {
-                var targetStats = target as CharacterStats;
-                var targetState = GetUnitAttackState(target);
-                if (targetStats == null || targetState == null) continue;
-                int originalDefense = targetStats.Defense;
-                int currentEvasion = targetStats.Evasion;
-                if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats.Defense += defMod.value;
-                if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) targetStats.Evasion += evaMod.value;
-                bool attackDodged = false;
-                if (action.Dodgeable)
-                {
-                    float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
-                    float randomRoll = UnityEngine.Random.value;
-                    if (randomRoll <= dodgeChance)
-                    {
-                        string dodgeMessage = $"{targetStats.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} <= {dodgeChance:F2}]</color>";
-                        allCombatLogs.Add(dodgeMessage);
-                        eventBus.RaiseLogMessage(dodgeMessage, Color.green);
-                        attackDodged = true;
-                    }
-                    else
-                    {
-                        string failDodgeMessage = $"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} > {dodgeChance:F2}]</color>";
-                        allCombatLogs.Add(failDodgeMessage);
-                        eventBus.RaiseLogMessage(failDodgeMessage, Color.red);
-                    }
-                }
-                int damage = 0;
-                if (!attackDodged)
-                {
-                    if (action.Defense == CombatTypes.DefenseCheck.Standard)
-                        damage = Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - 0.05f * targetStats.Defense)));
-                    else if (action.Defense == CombatTypes.DefenseCheck.Partial)
-                        damage = Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - action.PartialDefenseMultiplier * targetStats.Defense)));
-                    else
-                        damage = Mathf.Max(0, user.Attack);
-                    string damageFormula = $"[{user.Attack} ATK - {targetStats.Defense} DEF * {(action.Defense == CombatTypes.DefenseCheck.Partial ? action.PartialDefenseMultiplier : 0.05f) * 100}%]";
-                    if (damage > 0)
-                    {
-                        targetStats.Health -= damage;
-                        string damageMessage = $"{user.Id} hits {targetStats.Id} for {damage} damage with {abilityId} <color=#FFFF00>{damageFormula}</color>";
-                        allCombatLogs.Add(damageMessage);
-                        eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
-                        eventBus.RaiseUnitDamaged(target, damageMessage);
-                        UpdateUnit(target, damageMessage);
-                    }
-                    // Check for Reflect buff
-                    if (targetState.TempStats.TryGetValue("Reflect", out var reflect) && !attackDodged && damage > 0)
-                    {
-                        int reflectDamage = Mathf.RoundToInt(damage * reflect.value / 100f);
-                        user.Health = Mathf.Max(0, user.Health - reflectDamage);
-                        string reflectMessage = $"{user.Id} takes {reflectDamage} reflected damage from {targetStats.Id}!";
-                        allCombatLogs.Add(reflectMessage);
-                        eventBus.RaiseLogMessage(reflectMessage, Color.red);
-                        eventBus.RaiseUnitDamaged(user, reflectMessage);
-                        UpdateUnit(user, reflectMessage);
-                    }
-                }
-                targetStats.Defense = originalDefense;
-                targetStats.Evasion = currentEvasion;
-            }
-        }
-
-        private void ProcessAction(CharacterStats user, List<ICombatUnit> targets, AbilitySO.AbilityAction action, string abilityId)
-        {
-            foreach (var target in targets)
-            {
-                var targetStats = target as CharacterStats;
-                var targetState = GetUnitAttackState(target);
-                if (targetStats == null || targetState == null) continue;
-                EffectReference.Apply(action.EffectId, user, targetStats, action.EffectValue, action.EffectDuration, targetState, eventBus, uiConfig);
-                UpdateUnit(targetStats);
             }
         }
 
