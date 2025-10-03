@@ -13,19 +13,10 @@ MonoBehaviour:
   m_Name: BasicAttack
   m_EditorClassIdentifier: 
   id: Strike
-  cooldown: 0
-  cooldownType: 0
-  rank: 1
-  conditions: []
-  action:
-    Target: 2
-    NumberOfTargets: 1
-    Melee: 1
-    EffectId: Damage
-    EffectValue: 0
-    EffectDuration: 0
-    RuleType: 0
-    Defense: 0
-    Dodgeable: 0
-    PartialDefenseMultiplier: 0
   animationTrigger: 
+  rule:
+    Type: 0
+    Target: 2
+    MeleeOnly: 1
+  attackParams:
+    Defense: 0

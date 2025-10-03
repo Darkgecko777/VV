@@ -1,8 +1,8 @@
 using System;
-using UnityEngine;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace VirulentVentures
 {
@@ -45,13 +45,12 @@ namespace VirulentVentures
                 MaxMorale = 100;
                 Infectivity = 20;
                 PartyPosition = 1;
-                abilityIds = new string[] { "BasicAttack" };
+                abilityIds = new string[] { "MeleeStrike" };
                 abilities = new AbilitySO[0];
                 Rank = 1;
                 CombatSprite = null;
                 return;
             }
-
             Id = data.Id;
             Type = data.Type;
             Health = Type == CharacterType.Hero ? data.Health : data.MaxHealth;
@@ -64,11 +63,11 @@ namespace VirulentVentures
             MaxMorale = Type == CharacterType.Hero ? data.MaxMorale : 0;
             Infectivity = data.Infectivity;
             PartyPosition = data.PartyPosition;
-            abilityIds = data.Abilities != null && data.Abilities.Length > 0 ? data.Abilities.Select(a => a.Id).ToArray() : new string[] { "BasicAttack" };
+            abilityIds = data.Abilities != null && data.Abilities.Length > 0 ? data.Abilities.Select(a => a.Id).ToArray() : new string[] { "MeleeStrike" };
             abilities = data.Abilities != null ? data.Abilities : new AbilitySO[0];
             if (data.Abilities == null || data.Abilities.Length == 0)
             {
-                Debug.LogWarning($"CharacterStats: No Abilities defined in CharacterSO for {data.Id}. Defaulting to BasicAttack.");
+                Debug.LogWarning($"CharacterStats: No Abilities defined in CharacterSO for {data.Id}. Defaulting to MeleeStrike.");
             }
             Rank = data.Rank;
             CombatSprite = data.CombatSprite;
@@ -145,146 +144,34 @@ namespace VirulentVentures
                     Debug.LogWarning($"PerformAbility: Null AbilitySO for {Id}");
                     continue;
                 }
+
                 var abilityId = ability.Id;
-
-                if (state.AbilityCooldowns.GetValueOrDefault(abilityId, 0) > 0 || state.RoundCooldowns.GetValueOrDefault(abilityId, 0) > 0)
+                if (state.AbilityCooldowns.ContainsKey(abilityId) && state.AbilityCooldowns[abilityId] > 0)
                 {
-                    Debug.Log($"PerformAbility: {abilityId} on cooldown for {Id}");
-                    continue;
+                    continue; // Skip if ability is on cooldown
                 }
-                if (ability.Conditions.All(c => ability.EvaluateCondition(c, this, partyData, allTargets, combatScene)))
-                {
-                    var filteredPool = ability.GetConditionFilteredTargets(this, partyData, allTargets, combatScene);
-                    if (filteredPool.Count == 0)
-                    {
-                        string noTargetMessage = $"No qualifying targets for {abilityId} by {Id}.";
-                        combatLogs.Add(noTargetMessage);
-                        eventBus.RaiseLogMessage(noTargetMessage, Color.red);
-                        continue;
-                    }
-                    var rule = ability.GetTargetingRule();
-                    var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, rule, heroPositions, monsterPositions);
 
-                    if (selectedTargets.Any())
-                    {
-                        string abilityMessage = $"{Id} uses {abilityId}!";
-                        combatLogs.Add(abilityMessage);
-                        eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
-                        eventBus.RaiseUnitAttacking(this, null, abilityId);
-                        eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = this, target = null, abilityId = abilityId });
-
-                        yield return new WaitUntil(() => !combatScene.IsPaused);
-                        yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
-
-                        if (ability.Action.Defense != CombatTypes.DefenseCheck.None)
-                        {
-                            CombatUtils.ApplyAttackDamage(this, selectedTargets, ability.Action, abilityId, eventBus, uiConfig, combatLogs, state, updateUnitCallback);
-                        }
-                        else
-                        {
-                            CombatUtils.ProcessAction(this, selectedTargets, ability.Action, abilityId, eventBus, uiConfig, combatLogs, state);
-                        }
-
-                        if (ability.Cooldown > 0)
-                        {
-                            var cds = ability.CooldownType == CombatTypes.CooldownType.Actions ? state.AbilityCooldowns : state.RoundCooldowns;
-                            cds[abilityId] = ability.Cooldown;
-                            Debug.Log($"PerformAbility: Applied cooldown for {abilityId}: {ability.Cooldown} {ability.CooldownType}");
-                        }
-
-                        foreach (var target in selectedTargets.ToList())
-                        {
-                            if (target.Health <= 0)
-                            {
-                                if (!combatLogs.Contains($"{target.Id} dies!"))
-                                {
-                                    eventBus.RaiseUnitDied(target);
-                                    string deathMessage = $"{target.Id} dies!";
-                                    combatLogs.Add(deathMessage);
-                                    eventBus.RaiseLogMessage(deathMessage, Color.red);
-                                    updateUnitCallback(target);
-                                    if (target is CharacterStats statsTarget)
-                                    {
-                                        if (statsTarget.Type == CharacterType.Hero)
-                                            heroPositions.Remove(statsTarget);
-                                        else
-                                            monsterPositions.Remove(statsTarget);
-                                    }
-                                }
-                            }
-                            else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
-                            {
-                                partyData.ProcessRetreat(target, eventBus, uiConfig, combatLogs, combatConfig);
-                                updateUnitCallback(target);
-                            }
-                        }
-                        if (Health <= 0)
-                        {
-                            if (!combatLogs.Contains($"{Id} dies!"))
-                            {
-                                eventBus.RaiseUnitDied(this);
-                                string deathMessage = $"{Id} dies!";
-                                combatLogs.Add(deathMessage);
-                                eventBus.RaiseLogMessage(deathMessage, Color.red);
-                                updateUnitCallback(this);
-                                if (Type == CharacterType.Hero)
-                                    heroPositions.Remove(this);
-                                else
-                                    monsterPositions.Remove(this);
-                            }
-                        }
-                        else if (partyData.CheckRetreat(this, eventBus, uiConfig, combatConfig))
-                        {
-                            partyData.ProcessRetreat(this, eventBus, uiConfig, combatLogs, combatConfig);
-                            updateUnitCallback(this);
-                        }
-
-                        yield break;
-                    }
-                    else
-                    {
-                        string noTargetMessage = $"No legal targets for {abilityId} by {Id} after filtering.";
-                        combatLogs.Add(noTargetMessage);
-                        eventBus.RaiseLogMessage(noTargetMessage, Color.red);
-                    }
-                }
-            }
-
-            var fallback = abilities.LastOrDefault();
-            if (fallback != null)
-            {
-                var fallbackId = fallback.Id;
-                var filteredPool = fallback.GetConditionFilteredTargets(this, partyData, allTargets, combatScene);
+                var filteredPool = ability.GetTargets(this, partyData, allTargets);
                 if (filteredPool.Count == 0)
                 {
-                    string noTargetMessage = $"No qualifying targets for fallback {fallbackId} by {Id}.";
+                    string noTargetMessage = $"No qualifying targets for {abilityId} by {Id}.";
                     combatLogs.Add(noTargetMessage);
                     eventBus.RaiseLogMessage(noTargetMessage, Color.red);
-                    yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
-                    yield break;
+                    continue;
                 }
-                var rule = fallback.GetTargetingRule();
-                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, rule, heroPositions, monsterPositions);
 
+                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, ability.Rule, heroPositions, monsterPositions);
                 if (selectedTargets.Any())
                 {
-                    string abilityMessage = $"{Id} uses fallback {fallbackId}!";
+                    string abilityMessage = $"{Id} uses {abilityId}!";
                     combatLogs.Add(abilityMessage);
                     eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
-                    eventBus.RaiseUnitAttacking(this, null, fallbackId);
-                    eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = this, target = null, abilityId = fallbackId });
-
+                    eventBus.RaiseUnitAttacking(this, null, abilityId);
+                    eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = this, target = null, abilityId = abilityId });
                     yield return new WaitUntil(() => !combatScene.IsPaused);
                     yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
 
-                    if (fallback.Action.Defense != CombatTypes.DefenseCheck.None)
-                    {
-                        CombatUtils.ApplyAttackDamage(this, selectedTargets, fallback.Action, fallbackId, eventBus, uiConfig, combatLogs, state, updateUnitCallback);
-                    }
-                    else
-                    {
-                        CombatUtils.ProcessAction(this, selectedTargets, fallback.Action, fallbackId, eventBus, uiConfig, combatLogs, state);
-                    }
+                    CombatUtils.ApplyEffect(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback);
 
                     foreach (var target in selectedTargets.ToList())
                     {
@@ -312,6 +199,7 @@ namespace VirulentVentures
                             updateUnitCallback(target);
                         }
                     }
+
                     if (Health <= 0)
                     {
                         if (!combatLogs.Contains($"{Id} dies!"))
@@ -332,15 +220,16 @@ namespace VirulentVentures
                         partyData.ProcessRetreat(this, eventBus, uiConfig, combatLogs, combatConfig);
                         updateUnitCallback(this);
                     }
-                }
-                else
-                {
-                    string noTargetMessage = $"No legal targets for fallback {fallbackId} by {Id} after filtering.";
-                    combatLogs.Add(noTargetMessage);
-                    eventBus.RaiseLogMessage(noTargetMessage, Color.red);
+
+                    yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
+                    yield break; // Exit after successful ability use
                 }
             }
 
+            // Fallback if no ability was used
+            string noAbilityMessage = $"No usable abilities for {Id}.";
+            combatLogs.Add(noAbilityMessage);
+            eventBus.RaiseLogMessage(noAbilityMessage, Color.red);
             yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
         }
     }

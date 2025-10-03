@@ -9,149 +9,51 @@ namespace VirulentVentures
     {
         public static List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions)
         {
-            Debug.Log($"SelectTargets for {user.Id}: Initial targetPool count = {targetPool.Count}");
             if (targetPool == null || targetPool.Count == 0)
             {
                 Debug.LogWarning($"CombatUtils: Empty targetPool for {user.Id}. Returning empty list.");
                 return new List<ICombatUnit>();
             }
 
-            var filteredPool = targetPool;
-            if (rule.MinPosition > 0 || rule.MaxPosition > 0)
-            {
-                filteredPool = filteredPool.Where(t =>
-                {
-                    var pos = user.Type == CharacterType.Hero
-                        ? monsterPositions.FirstOrDefault(m => m == t as CharacterStats)?.PartyPosition
-                        : heroPositions.FirstOrDefault(h => h == t as CharacterStats)?.PartyPosition;
-                    return pos.HasValue && pos.Value >= rule.MinPosition && (rule.MaxPosition == 0 || pos.Value <= rule.MaxPosition);
-                }).ToList();
-                Debug.Log($"TargetPool after position filter count = {filteredPool.Count}");
-            }
+            var selectedPool = targetPool;
             if (rule.MeleeOnly)
             {
-                filteredPool = filteredPool.Where(t =>
-                {
-                    var pos = user.Type == CharacterType.Hero
-                        ? monsterPositions.FirstOrDefault(m => m == t as CharacterStats)?.PartyPosition
-                        : heroPositions.FirstOrDefault(h => h == t as CharacterStats)?.PartyPosition;
-                    return pos.HasValue && pos.Value <= 2;
-                }).ToList();
-                if (filteredPool.Count == 0)
-                {
-                    Debug.LogWarning($"CombatUtils: No frontline targets for {user.Id}'s melee attack.");
-                    return new List<ICombatUnit>();
-                }
-                Debug.Log($"TargetPool after melee filter count = {filteredPool.Count}");
-            }
-            if (rule.MustBeInfected || rule.MustNotBeInfected)
-            {
-                filteredPool = filteredPool.Where(t =>
+                var enemyList = user.Type == CharacterType.Hero ? monsterPositions : heroPositions;
+                selectedPool = selectedPool.Where(t =>
                 {
                     var stats = t as CharacterStats;
-                    bool isInfected = stats != null && stats.IsInfected;
-                    return rule.MustBeInfected ? isInfected : rule.MustNotBeInfected ? !isInfected : true;
+                    return stats != null && enemyList.IndexOf(stats) < 2; // Dynamic: First 2 in ordered living list are melee-eligible
                 }).ToList();
-                Debug.Log($"TargetPool after infection filter count = {filteredPool.Count}");
             }
 
-            switch (rule.Type)
-            {
-                case CombatTypes.TargetingRule.RuleType.Single:
-                    filteredPool = filteredPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
-                    break;
-                case CombatTypes.TargetingRule.RuleType.MeleeSingle:
-                    filteredPool = filteredPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
-                    break;
-                case CombatTypes.TargetingRule.RuleType.All:
-                    break;
-                case CombatTypes.TargetingRule.RuleType.MeleeAll:
-                    break;
-                default:
-                    filteredPool = filteredPool.OrderBy(t => UnityEngine.Random.value).ToList();
-                    break;
-            }
-
-            int maxTargets = rule.Type == CombatTypes.TargetingRule.RuleType.Single || rule.Type == CombatTypes.TargetingRule.RuleType.MeleeSingle ? 1 : filteredPool.Count;
-            var selected = filteredPool.Take(maxTargets).ToList();
-            Debug.Log($"Selected targets count = {selected.Count}");
-            return selected;
+            selectedPool = selectedPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
+            return selectedPool.Take(1).ToList();
         }
 
-        public static void ApplyAttackDamage(CharacterStats user, List<ICombatUnit> targets, AbilitySO.AbilityAction action, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, UnitAttackState targetState, Action<ICombatUnit> updateUnitCallback)
+        public static void ApplyEffect(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback)
         {
             foreach (var target in targets.ToList())
             {
                 var targetStats = target as CharacterStats;
-                if (targetStats == null || targetState == null) continue;
+                if (targetStats == null) continue;
 
-                int originalDefense = targetStats.Defense;
-                int currentEvasion = targetStats.Evasion;
-                if (targetState.TempStats.TryGetValue("Defense", out var defMod)) targetStats.Defense += defMod.value;
-                if (targetState.TempStats.TryGetValue("Evasion", out var evaMod)) targetStats.Evasion += evaMod.value;
-
-                bool attackDodged = false;
-                if (action.Dodgeable)
+                if (ability.EffectId == "Damage")
                 {
-                    float dodgeChance = Mathf.Clamp(currentEvasion, 0, 100) / 100f;
-                    float randomRoll = UnityEngine.Random.value;
-                    if (randomRoll <= dodgeChance)
-                    {
-                        string dodgeMessage = $"{targetStats.Id} dodges the attack! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} <= {dodgeChance:F2}]</color>";
-                        combatLogs.Add(dodgeMessage);
-                        eventBus.RaiseLogMessage(dodgeMessage, Color.green);
-                        attackDodged = true;
-                    }
-                    else
-                    {
-                        string failDodgeMessage = $"{targetStats.Id} fails to dodge! <color=#FFFF00>[{currentEvasion}% Evasion Chance, Roll: {randomRoll:F2} > {dodgeChance:F2}]</color>";
-                        combatLogs.Add(failDodgeMessage);
-                        eventBus.RaiseLogMessage(failDodgeMessage, Color.red);
-                    }
-                }
+                    // Calculate damage: attack * (100 - defense * 5) / 100
+                    int damage = (user.Attack * (100 - targetStats.Defense * 5)) / 100;
+                    damage = Mathf.Max(0, Mathf.RoundToInt(damage * ability.EffectParameters.Multiplier)); // Fixed: Use EffectParameters
 
-                int damage = 0;
-                if (!attackDodged)
-                {
-                    damage = action.Defense == CombatTypes.DefenseCheck.Standard
-                        ? Mathf.Max(0, Mathf.RoundToInt(user.Attack * (1f - 0.05f * targetStats.Defense)))
-                        : Mathf.Max(0, user.Attack);
-
-                    string damageFormula = $"[{user.Attack} ATK - {targetStats.Defense} DEF * 0.05]";
                     if (damage > 0)
                     {
                         targetStats.Health -= damage;
-                        string damageMessage = $"{user.Id} hits {targetStats.Id} for {damage} damage with {abilityId} <color=#FFFF00>{damageFormula}</color>";
+                        string damageMessage = $"{user.Id} hits {targetStats.Id} for {damage} damage with {abilityId} <color=#FFFF00>[{user.Attack} ATK * (100 - {targetStats.Defense} DEF * 5) / 100]</color>";
                         combatLogs.Add(damageMessage);
                         eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
                         eventBus.RaiseUnitDamaged(target, damageMessage);
                         updateUnitCallback(target);
                     }
-
-                    if (targetState.TempStats.TryGetValue("Reflect", out var reflect) && !attackDodged && damage > 0)
-                    {
-                        int reflectDamage = Mathf.RoundToInt(damage * reflect.value / 100f);
-                        user.Health = Mathf.Max(0, user.Health - reflectDamage);
-                        string reflectMessage = $"{user.Id} takes {reflectDamage} reflected damage from {targetStats.Id}!";
-                        combatLogs.Add(reflectMessage);
-                        eventBus.RaiseLogMessage(reflectMessage, Color.red);
-                        eventBus.RaiseUnitDamaged(user, reflectMessage);
-                        updateUnitCallback(user);
-                    }
                 }
-
-                targetStats.Defense = originalDefense;
-                targetStats.Evasion = currentEvasion;
-            }
-        }
-
-        public static void ProcessAction(CharacterStats user, List<ICombatUnit> targets, AbilitySO.AbilityAction action, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, UnitAttackState targetState)
-        {
-            foreach (var target in targets)
-            {
-                var targetStats = target as CharacterStats;
-                if (targetStats == null || targetState == null) continue;
-                EffectReference.Apply(action.EffectId, user, targetStats, 0f, 0, targetState, eventBus, uiConfig);
+                // Future effect types can be added here
             }
         }
     }
