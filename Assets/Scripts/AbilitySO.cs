@@ -16,7 +16,8 @@ namespace VirulentVentures
         {
             Type = CombatTypes.TargetingRule.RuleType.Single,
             Target = CombatTypes.ConditionTarget.Enemy,
-            MeleeOnly = true
+            MeleeOnly = true,
+            Criteria = CombatTypes.TargetingRule.SelectionCriteria.Default // New: Default criteria
         };
         [SerializeField]
         private CombatTypes.AttackParams attackParams = new CombatTypes.AttackParams
@@ -27,7 +28,7 @@ namespace VirulentVentures
         public string Id => id;
         public string AnimationTrigger => animationTrigger;
         public string EffectId => effectId;
-        public EffectParams EffectParameters => effectParams; // Renamed property to EffectParameters to avoid name conflict
+        public EffectParams EffectParameters => effectParams;
         public CombatTypes.TargetingRule Rule => rule;
         public CombatTypes.AttackParams AttackParams => attackParams;
 
