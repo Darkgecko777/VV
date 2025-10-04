@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 29faf0b94ba308b4ea591377b8c912b3, type: 3}
-  m_Name: BasicAttack
+  m_Name: CoupDeGrace
   m_EditorClassIdentifier: 
-  id: Strike
-  animationTrigger: 
-  effectId: Damage
+  id: Coup De Grace
+  animationTrigger: Attack
+  effectId: CoupDeGrace
   effectParams:
     Multiplier: 1
-    HealthThresholdPercent: 80
+    HealthThresholdPercent: 20
   rule:
-    Type: 0
+    Type: 1
     Target: 2
     MeleeOnly: 1
-    Criteria: 2
+    Criteria: 1
   attackParams:
-    Defense: 0
-    Dodgeable: 1
+    Defense: 1
+    Dodgeable: 0
