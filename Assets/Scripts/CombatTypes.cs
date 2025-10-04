@@ -29,10 +29,11 @@ namespace VirulentVentures
         {
             public enum RuleType
             {
-                Single
+                Single,
+                SingleConditional // New: Scan for first target meeting condition
             }
 
-            public enum SelectionCriteria // New: Controls how final target is chosen
+            public enum SelectionCriteria
             {
                 Default, // First valid unit (e.g., frontmost)
                 LowestHealth // Unit with lowest health-to-max-health ratio
@@ -41,7 +42,7 @@ namespace VirulentVentures
             public RuleType Type;
             public ConditionTarget Target;
             public bool MeleeOnly;
-            public SelectionCriteria Criteria; // New: Selection criteria field
+            public SelectionCriteria Criteria;
         }
     }
 }

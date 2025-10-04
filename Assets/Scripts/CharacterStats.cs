@@ -160,69 +160,73 @@ namespace VirulentVentures
                     continue;
                 }
 
-                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, ability.Rule, heroPositions, monsterPositions);
+                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, ability.Rule, heroPositions, monsterPositions, ability);
                 if (selectedTargets.Any())
                 {
-                    string abilityMessage = $"{Id} uses {abilityId}!";
-                    combatLogs.Add(abilityMessage);
-                    eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
-                    eventBus.RaiseUnitAttacking(this, null, abilityId);
-                    eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = this, target = null, abilityId = abilityId });
-                    yield return new WaitUntil(() => !combatScene.IsPaused);
-                    yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                    bool applied = CombatUtils.ApplyEffect(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback); // Get success flag
 
-                    CombatUtils.ApplyEffect(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback);
-
-                    foreach (var target in selectedTargets.ToList())
+                    if (applied)
                     {
-                        if (target.Health <= 0)
+                        string abilityMessage = $"{Id} uses {abilityId}!";
+                        combatLogs.Add(abilityMessage);
+                        eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
+                        eventBus.RaiseUnitAttacking(this, null, abilityId);
+                        eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = this, target = null, abilityId = abilityId });
+                        yield return new WaitUntil(() => !combatScene.IsPaused);
+                        yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+
+                        foreach (var target in selectedTargets.ToList())
                         {
-                            if (!combatLogs.Contains($"{target.Id} dies!"))
+                            if (target.Health <= 0)
                             {
-                                eventBus.RaiseUnitDied(target);
-                                string deathMessage = $"{target.Id} dies!";
-                                combatLogs.Add(deathMessage);
-                                eventBus.RaiseLogMessage(deathMessage, Color.red);
-                                updateUnitCallback(target);
-                                if (target is CharacterStats statsTarget)
+                                if (!combatLogs.Contains($"{target.Id} dies!"))
                                 {
-                                    if (statsTarget.Type == CharacterType.Hero)
-                                        heroPositions.Remove(statsTarget);
-                                    else
-                                        monsterPositions.Remove(statsTarget);
+                                    eventBus.RaiseUnitDied(target);
+                                    string deathMessage = $"{target.Id} dies!";
+                                    combatLogs.Add(deathMessage);
+                                    eventBus.RaiseLogMessage(deathMessage, Color.red);
+                                    updateUnitCallback(target);
+                                    if (target is CharacterStats statsTarget)
+                                    {
+                                        if (statsTarget.Type == CharacterType.Hero)
+                                            heroPositions.Remove(statsTarget);
+                                        else
+                                            monsterPositions.Remove(statsTarget);
+                                    }
                                 }
                             }
+                            else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
+                            {
+                                partyData.ProcessRetreat(target, eventBus, uiConfig, combatLogs, combatConfig);
+                                updateUnitCallback(target);
+                            }
                         }
-                        else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
-                        {
-                            partyData.ProcessRetreat(target, eventBus, uiConfig, combatLogs, combatConfig);
-                            updateUnitCallback(target);
-                        }
-                    }
 
-                    if (Health <= 0)
-                    {
-                        if (!combatLogs.Contains($"{Id} dies!"))
+                        if (Health <= 0)
                         {
-                            eventBus.RaiseUnitDied(this);
-                            string deathMessage = $"{Id} dies!";
-                            combatLogs.Add(deathMessage);
-                            eventBus.RaiseLogMessage(deathMessage, Color.red);
+                            if (!combatLogs.Contains($"{Id} dies!"))
+                            {
+                                eventBus.RaiseUnitDied(this);
+                                string deathMessage = $"{Id} dies!";
+                                combatLogs.Add(deathMessage);
+                                eventBus.RaiseLogMessage(deathMessage, Color.red);
+                                updateUnitCallback(this);
+                                if (Type == CharacterType.Hero)
+                                    heroPositions.Remove(this);
+                                else
+                                    monsterPositions.Remove(this);
+                            }
+                        }
+                        else if (partyData.CheckRetreat(this, eventBus, uiConfig, combatConfig))
+                        {
+                            partyData.ProcessRetreat(this, eventBus, uiConfig, combatLogs, combatConfig);
                             updateUnitCallback(this);
-                            if (Type == CharacterType.Hero)
-                                heroPositions.Remove(this);
-                            else
-                                monsterPositions.Remove(this);
                         }
-                    }
-                    else if (partyData.CheckRetreat(this, eventBus, uiConfig, combatConfig))
-                    {
-                        partyData.ProcessRetreat(this, eventBus, uiConfig, combatLogs, combatConfig);
-                        updateUnitCallback(this);
-                    }
 
-                    yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
-                    yield break; // Exit after successful ability use
+                        yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
+                        yield break; // Exit only on success
+                    }
+                    // If not applied, continue to next ability
                 }
             }
 

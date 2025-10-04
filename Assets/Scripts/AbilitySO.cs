@@ -10,14 +10,14 @@ namespace VirulentVentures
         [SerializeField] private string id = "MeleeStrike";
         [SerializeField] private string animationTrigger = "Attack";
         [SerializeField] private string effectId = "Damage";
-        [SerializeField] private EffectParams effectParams = new EffectParams { Multiplier = 1f };
+        [SerializeField] private EffectParams effectParams = new EffectParams { Multiplier = 1f, HealthThresholdPercent = 80f }; // Updated: Default 80% for MinorHeal
         [SerializeField]
         private CombatTypes.TargetingRule rule = new CombatTypes.TargetingRule
         {
             Type = CombatTypes.TargetingRule.RuleType.Single,
             Target = CombatTypes.ConditionTarget.Enemy,
             MeleeOnly = true,
-            Criteria = CombatTypes.TargetingRule.SelectionCriteria.Default // New: Default criteria
+            Criteria = CombatTypes.TargetingRule.SelectionCriteria.Default
         };
         [SerializeField]
         private CombatTypes.AttackParams attackParams = new CombatTypes.AttackParams
@@ -35,7 +35,8 @@ namespace VirulentVentures
         [System.Serializable]
         public struct EffectParams
         {
-            public float Multiplier; // Kept as float for flexibility, cast to int in calculations
+            public float Multiplier; // For scaling damage, healing, etc.
+            public float HealthThresholdPercent; // Max health % for effects like MinorHeal or CoupDeGrace (0 = disabled)
         }
 
         public List<ICombatUnit> GetTargets(CharacterStats user, PartyData party, List<ICombatUnit> allTargets)
