@@ -22,6 +22,7 @@ namespace VirulentVentures
         public struct AttackParams
         {
             public DefenseCheck Defense;
+            public bool Dodgeable; // Indicates if the attack can be dodged
         }
 
         [Serializable]
@@ -37,7 +38,7 @@ namespace VirulentVentures
             {
                 Default, // First valid unit (frontmost)
                 LowestHealth, // Unit with lowest health-to-max-health ratio
-                Random // New: Randomly select from valid targets
+                Random // Randomly select from valid targets
             }
 
             public RuleType Type;

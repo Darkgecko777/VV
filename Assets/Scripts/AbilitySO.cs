@@ -22,7 +22,8 @@ namespace VirulentVentures
         [SerializeField]
         private CombatTypes.AttackParams attackParams = new CombatTypes.AttackParams
         {
-            Defense = CombatTypes.DefenseCheck.Standard
+            Defense = CombatTypes.DefenseCheck.Standard,
+            Dodgeable = true // Default to true for MeleeStrike
         };
 
         public string Id => id;

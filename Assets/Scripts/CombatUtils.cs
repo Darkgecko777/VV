@@ -7,6 +7,13 @@ namespace VirulentVentures
 {
     public static class CombatUtils
     {
+        public static bool CheckEvasion(CharacterStats target)
+        {
+            if (target == null) return false;
+            float evasionChance = target.Evasion / 100f; // Evasion (0-100) as percentage
+            return UnityEngine.Random.value < evasionChance;
+        }
+
         public static List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions, AbilitySO ability)
         {
             if (targetPool == null || targetPool.Count == 0)
@@ -28,11 +35,10 @@ namespace VirulentVentures
                 selectedPool = selectedPool.Where(t =>
                 {
                     var stats = t as CharacterStats;
-                    return stats != null && enemyList.IndexOf(stats) < 2; // Dynamic: First 2 in ordered living list are melee-eligible
+                    return stats != null && enemyList.IndexOf(stats) < 2; // Dynamic: First 2 in ordered list are melee-eligible
                 }).ToList();
             }
 
-            // Apply selection criteria
             if (rule.Type == CombatTypes.TargetingRule.RuleType.Single)
             {
                 if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.LowestHealth)
@@ -41,15 +47,12 @@ namespace VirulentVentures
                 }
                 else if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.Random)
                 {
-                    // Shuffle the pool for random selection
                     selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
                 }
-                // Default: No sorting, take first valid unit (frontmost in ordered list)
                 return selectedPool.Take(1).ToList();
             }
             else if (rule.Type == CombatTypes.TargetingRule.RuleType.SingleConditional)
             {
-                // Apply LowestHealth sorting if specified
                 if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.LowestHealth)
                 {
                     selectedPool = selectedPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
@@ -58,29 +61,26 @@ namespace VirulentVentures
                 {
                     selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
                 }
-                // Default: No sorting, scan in order (frontmost first)
 
-                // Scan for first target meeting condition (e.g., health threshold)
                 foreach (var target in selectedPool)
                 {
                     var stats = target as CharacterStats;
                     if (stats == null) continue;
 
-                    // Check health threshold for abilities that use it
                     if (ability.EffectParameters.HealthThresholdPercent > 0)
                     {
                         float threshold = ability.EffectParameters.HealthThresholdPercent;
                         if (stats.Health < threshold * stats.MaxHealth / 100f)
                         {
-                            return new List<ICombatUnit> { target }; // Return first qualifying target
+                            return new List<ICombatUnit> { target };
                         }
                     }
                     else
                     {
-                        return new List<ICombatUnit> { target }; // No threshold, take first valid
+                        return new List<ICombatUnit> { target };
                     }
                 }
-                return new List<ICombatUnit>(); // No qualifying targets
+                return new List<ICombatUnit>();
             }
 
             return selectedPool.Take(1).ToList();
@@ -94,9 +94,18 @@ namespace VirulentVentures
                 var targetStats = target as CharacterStats;
                 if (targetStats == null) continue;
 
+                // Check evasion if ability is dodgeable
+                if (ability.AttackParams.Dodgeable && CheckEvasion(targetStats))
+                {
+                    string dodgeMessage = $"{targetStats.Id} dodges {user.Id}'s {abilityId}!";
+                    combatLogs.Add(dodgeMessage);
+                    eventBus.RaiseLogMessage(dodgeMessage, Color.yellow);
+                    applied = true; // Treat dodge as a successful ability use
+                    continue;
+                }
+
                 if (ability.EffectId == "Damage")
                 {
-                    // Calculate damage: attack * (100 - defense * 5) / 100
                     int damage = (user.Attack * (100 - targetStats.Defense * 5)) / 100;
                     damage = Mathf.Max(0, Mathf.RoundToInt(damage * ability.EffectParameters.Multiplier));
 
@@ -120,7 +129,6 @@ namespace VirulentVentures
                         continue;
                     }
 
-                    // Apply fixed 15 health heal, capped at MaxHealth
                     int healAmount = Mathf.RoundToInt(15 * ability.EffectParameters.Multiplier);
                     int newHealth = Mathf.Min(targetStats.Health + healAmount, targetStats.MaxHealth);
 
@@ -138,7 +146,6 @@ namespace VirulentVentures
                 }
                 else if (ability.EffectId == "CoupDeGrace")
                 {
-                    // Health threshold check moved to SelectTargets for SingleConditional
                     targetStats.Health = 0;
                     string killMessage = $"{user.Id} executes {targetStats.Id} with {abilityId} <color=#FF0000>[Instant Kill]</color>";
                     combatLogs.Add(killMessage);
@@ -147,7 +154,6 @@ namespace VirulentVentures
                     updateUnitCallback(target);
                     applied = true;
                 }
-                // Future effect types can be added here
             }
             return applied;
         }

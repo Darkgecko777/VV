@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29faf0b94ba308b4ea591377b8c912b3, type: 3}
   m_Name: MinorHeal
   m_EditorClassIdentifier: 
-  id: MeleeStrike
+  id: Minor Heal
   animationTrigger: Attack
   effectId: MinorHeal
   effectParams:
     Multiplier: 1
+    HealthThresholdPercent: 80
   rule:
-    Type: 0
+    Type: 1
     Target: 1
     MeleeOnly: 0
+    Criteria: 1
   attackParams:
     Defense: 0

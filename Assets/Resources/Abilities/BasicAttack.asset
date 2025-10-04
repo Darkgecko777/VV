@@ -14,9 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Strike
   animationTrigger: 
+  effectId: Damage
+  effectParams:
+    Multiplier: 1
+    HealthThresholdPercent: 80
   rule:
     Type: 0
     Target: 2
     MeleeOnly: 1
+    Criteria: 2
   attackParams:
     Defense: 0
