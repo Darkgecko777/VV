@@ -30,13 +30,14 @@ namespace VirulentVentures
             public enum RuleType
             {
                 Single,
-                SingleConditional // New: Scan for first target meeting condition
+                SingleConditional
             }
 
             public enum SelectionCriteria
             {
-                Default, // First valid unit (e.g., frontmost)
-                LowestHealth // Unit with lowest health-to-max-health ratio
+                Default, // First valid unit (frontmost)
+                LowestHealth, // Unit with lowest health-to-max-health ratio
+                Random // New: Randomly select from valid targets
             }
 
             public RuleType Type;

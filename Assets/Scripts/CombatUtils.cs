@@ -39,11 +39,27 @@ namespace VirulentVentures
                 {
                     selectedPool = selectedPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
                 }
+                else if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.Random)
+                {
+                    // Shuffle the pool for random selection
+                    selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
+                }
                 // Default: No sorting, take first valid unit (frontmost in ordered list)
                 return selectedPool.Take(1).ToList();
             }
             else if (rule.Type == CombatTypes.TargetingRule.RuleType.SingleConditional)
             {
+                // Apply LowestHealth sorting if specified
+                if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.LowestHealth)
+                {
+                    selectedPool = selectedPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
+                }
+                else if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.Random)
+                {
+                    selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
+                }
+                // Default: No sorting, scan in order (frontmost first)
+
                 // Scan for first target meeting condition (e.g., health threshold)
                 foreach (var target in selectedPool)
                 {
@@ -51,7 +67,7 @@ namespace VirulentVentures
                     if (stats == null) continue;
 
                     // Check health threshold for abilities that use it
-                    if (rule.Target == CombatTypes.ConditionTarget.Enemy && ability.EffectParameters.HealthThresholdPercent > 0)
+                    if (ability.EffectParameters.HealthThresholdPercent > 0)
                     {
                         float threshold = ability.EffectParameters.HealthThresholdPercent;
                         if (stats.Health < threshold * stats.MaxHealth / 100f)
@@ -70,7 +86,7 @@ namespace VirulentVentures
             return selectedPool.Take(1).ToList();
         }
 
-        public static bool ApplyEffect(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback) // Changed: Return bool for success
+        public static bool ApplyEffect(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback)
         {
             bool applied = false;
             foreach (var target in targets.ToList())
@@ -97,10 +113,10 @@ namespace VirulentVentures
                 }
                 else if (ability.EffectId == "MinorHeal")
                 {
-                    float threshold = ability.EffectParameters.HealthThresholdPercent > 0 ? ability.EffectParameters.HealthThresholdPercent : 80f; // Use param or default 80%
+                    float threshold = ability.EffectParameters.HealthThresholdPercent > 0 ? ability.EffectParameters.HealthThresholdPercent : 80f;
                     if (targetStats.Health >= (threshold / 100f) * targetStats.MaxHealth)
                     {
-                        Debug.LogWarning($"{targetStats.Id} is too healthy for {abilityId} by {user.Id} (>= {threshold}% HP)."); // Console only, no combat log
+                        Debug.LogWarning($"{targetStats.Id} is too healthy for {abilityId} by {user.Id} (>= {threshold}% HP).");
                         continue;
                     }
 
@@ -115,7 +131,7 @@ namespace VirulentVentures
                         string healMessage = $"{user.Id} heals {targetStats.Id} for {healed} health with {abilityId} <color=#00FF00>[+{healAmount} HP, capped at {targetStats.MaxHealth}]</color>";
                         combatLogs.Add(healMessage);
                         eventBus.RaiseLogMessage(healMessage, Color.green);
-                        eventBus.RaiseUnitDamaged(target, healMessage); // Reusing event for consistency
+                        eventBus.RaiseUnitDamaged(target, healMessage);
                         updateUnitCallback(target);
                         applied = true;
                     }
@@ -127,13 +143,13 @@ namespace VirulentVentures
                     string killMessage = $"{user.Id} executes {targetStats.Id} with {abilityId} <color=#FF0000>[Instant Kill]</color>";
                     combatLogs.Add(killMessage);
                     eventBus.RaiseLogMessage(killMessage, Color.red);
-                    eventBus.RaiseUnitDamaged(target, killMessage); // Reusing event for consistency
+                    eventBus.RaiseUnitDamaged(target, killMessage);
                     updateUnitCallback(target);
                     applied = true;
                 }
                 // Future effect types can be added here
             }
-            return applied; // True if any effect was applied
+            return applied;
         }
     }
 }
