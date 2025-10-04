@@ -25,3 +25,7 @@ MonoBehaviour:
     Criteria: 1
   attackParams:
     Defense: 0
+    Dodgeable: 1
+  cooldownParams:
+    Type: 2
+    Duration: 1

@@ -18,11 +18,18 @@ namespace VirulentVentures
             Enemy
         }
 
+        public enum CooldownType
+        {
+            None,        // No cooldown
+            Actions,     // Cooldown based on number of actions (e.g., attacks)
+            Rounds       // Cooldown based on combat rounds
+        }
+
         [Serializable]
         public struct AttackParams
         {
             public DefenseCheck Defense;
-            public bool Dodgeable; // Indicates if the attack can be dodged
+            public bool Dodgeable;
         }
 
         [Serializable]
@@ -36,15 +43,22 @@ namespace VirulentVentures
 
             public enum SelectionCriteria
             {
-                Default, // First valid unit (frontmost)
-                LowestHealth, // Unit with lowest health-to-max-health ratio
-                Random // Randomly select from valid targets
+                Default,
+                LowestHealth,
+                Random
             }
 
             public RuleType Type;
             public ConditionTarget Target;
             public bool MeleeOnly;
             public SelectionCriteria Criteria;
+        }
+
+        [Serializable]
+        public struct CooldownParams
+        {
+            public CooldownType Type; // Actions or Rounds
+            public int Duration;      // Number of actions/rounds for cooldown
         }
     }
 }

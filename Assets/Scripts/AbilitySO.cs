@@ -10,7 +10,7 @@ namespace VirulentVentures
         [SerializeField] private string id = "MeleeStrike";
         [SerializeField] private string animationTrigger = "Attack";
         [SerializeField] private string effectId = "Damage";
-        [SerializeField] private EffectParams effectParams = new EffectParams { Multiplier = 1f, HealthThresholdPercent = 80f }; // Updated: Default 80% for MinorHeal
+        [SerializeField] private EffectParams effectParams = new EffectParams { Multiplier = 1f, HealthThresholdPercent = 80f };
         [SerializeField]
         private CombatTypes.TargetingRule rule = new CombatTypes.TargetingRule
         {
@@ -23,7 +23,13 @@ namespace VirulentVentures
         private CombatTypes.AttackParams attackParams = new CombatTypes.AttackParams
         {
             Defense = CombatTypes.DefenseCheck.Standard,
-            Dodgeable = true // Default to true for MeleeStrike
+            Dodgeable = true
+        };
+        [SerializeField]
+        private CombatTypes.CooldownParams cooldownParams = new CombatTypes.CooldownParams
+        {
+            Type = CombatTypes.CooldownType.None, // Default: no cooldown
+            Duration = 0
         };
 
         public string Id => id;
@@ -32,12 +38,13 @@ namespace VirulentVentures
         public EffectParams EffectParameters => effectParams;
         public CombatTypes.TargetingRule Rule => rule;
         public CombatTypes.AttackParams AttackParams => attackParams;
+        public CombatTypes.CooldownParams CooldownParams => cooldownParams;
 
         [System.Serializable]
         public struct EffectParams
         {
-            public float Multiplier; // For scaling damage, healing, etc.
-            public float HealthThresholdPercent; // Max health % for effects like MinorHeal or CoupDeGrace (0 = disabled)
+            public float Multiplier;
+            public float HealthThresholdPercent;
         }
 
         public List<ICombatUnit> GetTargets(CharacterStats user, PartyData party, List<ICombatUnit> allTargets)
@@ -55,7 +62,7 @@ namespace VirulentVentures
                     ? allTargets.Where(t => !t.IsHero && t.Health > 0 && !t.HasRetreated).ToList()
                     : party.HeroStats.Cast<ICombatUnit>().Where(h => h.Health > 0 && !h.HasRetreated).ToList();
             }
-            else // User
+            else
             {
                 basePool = new List<ICombatUnit> { user };
             }

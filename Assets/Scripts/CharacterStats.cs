@@ -172,7 +172,7 @@ namespace VirulentVentures
                     eventBus.RaiseUnitAttacking(this, null, abilityId);
                     eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = this, target = null, abilityId = abilityId });
 
-                    bool applied = CombatUtils.ApplyEffect(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback);
+                    bool applied = CombatUtils.ApplyEffect(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, state);
                     abilityUsed = true; // Mark ability as used, even if dodged
 
                     yield return new WaitUntil(() => !combatScene.IsPaused);

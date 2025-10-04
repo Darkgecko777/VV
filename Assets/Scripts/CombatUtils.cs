@@ -10,7 +10,7 @@ namespace VirulentVentures
         public static bool CheckEvasion(CharacterStats target)
         {
             if (target == null) return false;
-            float evasionChance = target.Evasion / 100f; // Evasion (0-100) as percentage
+            float evasionChance = target.Evasion / 100f;
             return UnityEngine.Random.value < evasionChance;
         }
 
@@ -35,7 +35,7 @@ namespace VirulentVentures
                 selectedPool = selectedPool.Where(t =>
                 {
                     var stats = t as CharacterStats;
-                    return stats != null && enemyList.IndexOf(stats) < 2; // Dynamic: First 2 in ordered list are melee-eligible
+                    return stats != null && enemyList.IndexOf(stats) < 2;
                 }).ToList();
             }
 
@@ -86,21 +86,51 @@ namespace VirulentVentures
             return selectedPool.Take(1).ToList();
         }
 
-        public static bool ApplyEffect(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback)
+        public static bool ApplyEffect(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState)
         {
+            if (ability == null || attackState == null)
+            {
+                Debug.LogWarning($"CombatUtils: Null ability or attackState for {user.Id}.");
+                return false;
+            }
+
+            // Check cooldown
+            bool isOnCooldown = false;
+            if (ability.CooldownParams.Type != CombatTypes.CooldownType.None)
+            {
+                if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions)
+                {
+                    if (attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0)
+                    {
+                        isOnCooldown = true;
+                    }
+                }
+                else if (attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0)
+                {
+                    isOnCooldown = true;
+                }
+
+                if (isOnCooldown)
+                {
+                    string cooldownMessage = $"{user.Id}'s {abilityId} is on cooldown ({attackState.AbilityCooldowns.GetValueOrDefault(abilityId, 0)} actions/{attackState.RoundCooldowns.GetValueOrDefault(abilityId, 0)} rounds remaining).";
+                    combatLogs.Add(cooldownMessage);
+                    eventBus.RaiseLogMessage(cooldownMessage, Color.yellow);
+                    return false;
+                }
+            }
+
             bool applied = false;
             foreach (var target in targets.ToList())
             {
                 var targetStats = target as CharacterStats;
                 if (targetStats == null) continue;
 
-                // Check evasion if ability is dodgeable
                 if (ability.AttackParams.Dodgeable && CheckEvasion(targetStats))
                 {
                     string dodgeMessage = $"{targetStats.Id} dodges {user.Id}'s {abilityId}!";
                     combatLogs.Add(dodgeMessage);
                     eventBus.RaiseLogMessage(dodgeMessage, Color.yellow);
-                    applied = true; // Treat dodge as a successful ability use
+                    applied = true;
                     continue;
                 }
 
@@ -155,6 +185,23 @@ namespace VirulentVentures
                     applied = true;
                 }
             }
+
+            // Apply cooldown if effect was successfully applied or dodged
+            if (applied && ability.CooldownParams.Type != CombatTypes.CooldownType.None)
+            {
+                if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions)
+                {
+                    attackState.AbilityCooldowns[abilityId] = ability.CooldownParams.Duration;
+                }
+                else if (ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds)
+                {
+                    attackState.RoundCooldowns[abilityId] = ability.CooldownParams.Duration;
+                }
+                string cooldownAppliedMessage = $"{user.Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} {ability.CooldownParams.Type.ToString().ToLower()}.";
+                combatLogs.Add(cooldownAppliedMessage);
+                eventBus.RaiseLogMessage(cooldownAppliedMessage, Color.yellow);
+            }
+
             return applied;
         }
     }
