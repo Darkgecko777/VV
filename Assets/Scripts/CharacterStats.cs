@@ -137,8 +137,8 @@ namespace VirulentVentures
                 yield break;
             }
 
-            string noTargetMessage = null; // Declare at method scope
-            bool abilityUsed = false; // Track if any ability was attempted
+            string noTargetMessage = null;
+            bool abilityUsed = false;
 
             foreach (var ability in abilities)
             {
@@ -151,7 +151,7 @@ namespace VirulentVentures
                 var abilityId = ability.Id;
                 if (state.AbilityCooldowns.ContainsKey(abilityId) && state.AbilityCooldowns[abilityId] > 0)
                 {
-                    continue; // Skip if ability is on cooldown
+                    continue;
                 }
 
                 var filteredPool = ability.GetTargets(this, partyData, allTargets);
@@ -163,7 +163,7 @@ namespace VirulentVentures
                     continue;
                 }
 
-                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, ability.Rule, heroPositions, monsterPositions, ability);
+                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, ability.Rule, heroPositions, monsterPositions, ability, combatLogs, eventBus, uiConfig);
                 if (selectedTargets.Any())
                 {
                     string abilityMessage = $"{Id} uses {abilityId}!";
@@ -172,11 +172,18 @@ namespace VirulentVentures
                     eventBus.RaiseUnitAttacking(this, null, abilityId);
                     eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = this, target = null, abilityId = abilityId });
 
-                    bool applied = CombatUtils.ApplyEffect(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, state);
-                    abilityUsed = true; // Mark ability as used, even if dodged
-
-                    yield return new WaitUntil(() => !combatScene.IsPaused);
-                    yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                    bool applied = CombatUtils.ApplyEffect(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, state, combatScene);
+                    if (applied)
+                    {
+                        abilityUsed = true;
+                        yield return new WaitUntil(() => !combatScene.IsPaused);
+                        yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                    }
+                    else
+                    {
+                        yield return new WaitForSeconds(0.1f / (combatConfig?.CombatSpeed ?? 1f));
+                        continue;
+                    }
 
                     foreach (var target in selectedTargets.ToList())
                     {
@@ -227,11 +234,10 @@ namespace VirulentVentures
                     }
 
                     yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
-                    yield break; // Exit after successful ability use (including dodges)
+                    yield break;
                 }
             }
 
-            // Fallback if no abilities were used (no targets selected)
             if (!abilityUsed)
             {
                 noTargetMessage = noTargetMessage ?? $"No qualifying targets for any abilities of {Id}.";

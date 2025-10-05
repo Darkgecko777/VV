@@ -20,9 +20,24 @@ namespace VirulentVentures
 
         public enum CooldownType
         {
-            None,        // No cooldown
-            Actions,     // Cooldown based on number of actions (e.g., attacks)
-            Rounds       // Cooldown based on combat rounds
+            None,
+            Actions,
+            Rounds
+        }
+
+        public enum EffectType
+        {
+            Strike,
+            Heal,
+            Interrupt,
+            SelfSacrifice,
+            InstantKill
+        }
+
+        public enum TargetStat
+        {
+            Health,
+            Morale
         }
 
         [Serializable]
@@ -57,8 +72,15 @@ namespace VirulentVentures
         [Serializable]
         public struct CooldownParams
         {
-            public CooldownType Type; // Actions or Rounds
-            public int Duration;      // Number of actions/rounds for cooldown
+            public CooldownType Type;
+            public int Duration;
+        }
+
+        [Serializable]
+        public struct EffectParams
+        {
+            public float Multiplier;
+            public float HealthThresholdPercent;
         }
     }
 }

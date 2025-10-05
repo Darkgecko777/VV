@@ -9,8 +9,7 @@ namespace VirulentVentures
     {
         [SerializeField] private string id = "MeleeStrike";
         [SerializeField] private string animationTrigger = "Attack";
-        [SerializeField] private string effectId = "Damage";
-        [SerializeField] private EffectParams effectParams = new EffectParams { Multiplier = 1f, HealthThresholdPercent = 80f };
+        [SerializeField] private List<EffectSO> effects = new List<EffectSO>();
         [SerializeField]
         private CombatTypes.TargetingRule rule = new CombatTypes.TargetingRule
         {
@@ -28,24 +27,16 @@ namespace VirulentVentures
         [SerializeField]
         private CombatTypes.CooldownParams cooldownParams = new CombatTypes.CooldownParams
         {
-            Type = CombatTypes.CooldownType.None, // Default: no cooldown
+            Type = CombatTypes.CooldownType.None,
             Duration = 0
         };
 
         public string Id => id;
         public string AnimationTrigger => animationTrigger;
-        public string EffectId => effectId;
-        public EffectParams EffectParameters => effectParams;
+        public List<EffectSO> Effects => effects;
         public CombatTypes.TargetingRule Rule => rule;
         public CombatTypes.AttackParams AttackParams => attackParams;
         public CombatTypes.CooldownParams CooldownParams => cooldownParams;
-
-        [System.Serializable]
-        public struct EffectParams
-        {
-            public float Multiplier;
-            public float HealthThresholdPercent;
-        }
 
         public List<ICombatUnit> GetTargets(CharacterStats user, PartyData party, List<ICombatUnit> allTargets)
         {

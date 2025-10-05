@@ -14,7 +14,7 @@ namespace VirulentVentures
             return UnityEngine.Random.value < evasionChance;
         }
 
-        public static List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions, AbilitySO ability)
+        public static List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions, AbilitySO ability, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
             if (targetPool == null || targetPool.Count == 0)
             {
@@ -26,6 +26,22 @@ namespace VirulentVentures
             {
                 Debug.LogWarning($"CombatUtils: Null AbilitySO for {user.Id}. Returning empty list.");
                 return new List<ICombatUnit>();
+            }
+
+            // Check user-based thresholds (e.g., SelfSacrifice for ChiStrike)
+            foreach (var effect in ability.Effects)
+            {
+                if (effect is SelfSacrificeEffectSO selfSacrifice && selfSacrifice.ThresholdPercent > 0)
+                {
+                    float threshold = selfSacrifice.ThresholdPercent;
+                    if (user.Health <= (threshold / 100f) * user.MaxHealth)
+                    {
+                        string lowHealthMessage = $"{user.Id} needs more than {threshold}% health to use {ability.Id}!";
+                        combatLogs.Add(lowHealthMessage);
+                        eventBus.RaiseLogMessage(lowHealthMessage, Color.red);
+                        return new List<ICombatUnit>(); // Fail early to trigger fallback
+                    }
+                }
             }
 
             var selectedPool = targetPool;
@@ -67,15 +83,39 @@ namespace VirulentVentures
                     var stats = target as CharacterStats;
                     if (stats == null) continue;
 
-                    if (ability.EffectParameters.HealthThresholdPercent > 0)
+                    // Check target-based thresholds (e.g., Heal, InstantKill)
+                    bool validTarget = false;
+                    foreach (var effect in ability.Effects)
                     {
-                        float threshold = ability.EffectParameters.HealthThresholdPercent;
-                        if (stats.Health < threshold * stats.MaxHealth / 100f)
+                        float threshold = 0f;
+                        if (effect is HealEffectSO heal && heal.ThresholdPercent > 0)
                         {
-                            return new List<ICombatUnit> { target };
+                            threshold = heal.ThresholdPercent;
+                            int currentValue = heal.TargetStat == CombatTypes.TargetStat.Health ? stats.Health : stats.Morale;
+                            int maxValue = heal.TargetStat == CombatTypes.TargetStat.Health ? stats.MaxHealth : stats.MaxMorale;
+                            if (currentValue < (threshold / 100f) * maxValue)
+                            {
+                                validTarget = true;
+                                break;
+                            }
+                        }
+                        else if (effect is InstantKillEffectSO instantKill && instantKill.ThresholdPercent > 0)
+                        {
+                            threshold = instantKill.ThresholdPercent;
+                            if (stats.Health < (threshold / 100f) * stats.MaxHealth)
+                            {
+                                validTarget = true;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            validTarget = true; // No threshold, target is valid
+                            break;
                         }
                     }
-                    else
+
+                    if (validTarget)
                     {
                         return new List<ICombatUnit> { target };
                     }
@@ -86,11 +126,11 @@ namespace VirulentVentures
             return selectedPool.Take(1).ToList();
         }
 
-        public static bool ApplyEffect(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState)
+        public static bool ApplyEffect(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
-            if (ability == null || attackState == null)
+            if (ability == null || attackState == null || combatScene == null || ability.Effects == null)
             {
-                Debug.LogWarning($"CombatUtils: Null ability or attackState for {user.Id}.");
+                Debug.LogWarning($"CombatUtils: Null ability, attackState, combatScene, or effects for {user.Id}.");
                 return false;
             }
 
@@ -98,19 +138,8 @@ namespace VirulentVentures
             bool isOnCooldown = false;
             if (ability.CooldownParams.Type != CombatTypes.CooldownType.None)
             {
-                if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions)
-                {
-                    if (attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0)
-                    {
-                        isOnCooldown = true;
-                    }
-                }
-                else if (attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0)
-                {
-                    isOnCooldown = true;
-                }
-
-                if (isOnCooldown)
+                if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0 ||
+                    ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0)
                 {
                     string cooldownMessage = $"{user.Id}'s {abilityId} is on cooldown ({attackState.AbilityCooldowns.GetValueOrDefault(abilityId, 0)} actions/{attackState.RoundCooldowns.GetValueOrDefault(abilityId, 0)} rounds remaining).";
                     combatLogs.Add(cooldownMessage);
@@ -120,73 +149,11 @@ namespace VirulentVentures
             }
 
             bool applied = false;
-            foreach (var target in targets.ToList())
+            foreach (var effect in ability.Effects)
             {
-                var targetStats = target as CharacterStats;
-                if (targetStats == null) continue;
-
-                if (ability.AttackParams.Dodgeable && CheckEvasion(targetStats))
-                {
-                    string dodgeMessage = $"{targetStats.Id} dodges {user.Id}'s {abilityId}!";
-                    combatLogs.Add(dodgeMessage);
-                    eventBus.RaiseLogMessage(dodgeMessage, Color.yellow);
-                    applied = true;
-                    continue;
-                }
-
-                if (ability.EffectId == "Damage")
-                {
-                    int damage = (user.Attack * (100 - targetStats.Defense * 5)) / 100;
-                    damage = Mathf.Max(0, Mathf.RoundToInt(damage * ability.EffectParameters.Multiplier));
-
-                    if (damage > 0)
-                    {
-                        targetStats.Health -= damage;
-                        string damageMessage = $"{user.Id} hits {targetStats.Id} for {damage} damage with {abilityId} <color=#FFFF00>[{user.Attack} ATK * (100 - {targetStats.Defense} DEF * 5) / 100]</color>";
-                        combatLogs.Add(damageMessage);
-                        eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
-                        eventBus.RaiseUnitDamaged(target, damageMessage);
-                        updateUnitCallback(target);
-                        applied = true;
-                    }
-                }
-                else if (ability.EffectId == "MinorHeal")
-                {
-                    float threshold = ability.EffectParameters.HealthThresholdPercent > 0 ? ability.EffectParameters.HealthThresholdPercent : 80f;
-                    if (targetStats.Health >= (threshold / 100f) * targetStats.MaxHealth)
-                    {
-                        Debug.LogWarning($"{targetStats.Id} is too healthy for {abilityId} by {user.Id} (>= {threshold}% HP).");
-                        continue;
-                    }
-
-                    int healAmount = Mathf.RoundToInt(15 * ability.EffectParameters.Multiplier);
-                    int newHealth = Mathf.Min(targetStats.Health + healAmount, targetStats.MaxHealth);
-
-                    if (newHealth > targetStats.Health)
-                    {
-                        int healed = newHealth - targetStats.Health;
-                        targetStats.Health = newHealth;
-                        string healMessage = $"{user.Id} heals {targetStats.Id} for {healed} health with {abilityId} <color=#00FF00>[+{healAmount} HP, capped at {targetStats.MaxHealth}]</color>";
-                        combatLogs.Add(healMessage);
-                        eventBus.RaiseLogMessage(healMessage, Color.green);
-                        eventBus.RaiseUnitDamaged(target, healMessage);
-                        updateUnitCallback(target);
-                        applied = true;
-                    }
-                }
-                else if (ability.EffectId == "CoupDeGrace")
-                {
-                    targetStats.Health = 0;
-                    string killMessage = $"{user.Id} executes {targetStats.Id} with {abilityId} <color=#FF0000>[Instant Kill]</color>";
-                    combatLogs.Add(killMessage);
-                    eventBus.RaiseLogMessage(killMessage, Color.red);
-                    eventBus.RaiseUnitDamaged(target, killMessage);
-                    updateUnitCallback(target);
-                    applied = true;
-                }
+                applied |= effect.Execute(user, targets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, attackState, combatScene);
             }
 
-            // Apply cooldown if effect was successfully applied or dodged
             if (applied && ability.CooldownParams.Type != CombatTypes.CooldownType.None)
             {
                 if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions)
