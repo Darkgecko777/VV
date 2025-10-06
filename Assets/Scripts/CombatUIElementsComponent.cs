@@ -1,8 +1,9 @@
-﻿using UnityEngine;
-using UnityEngine.UIElements;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Collections;
+using UnityEngine;
+using UnityEngine.UIElements;
+
 namespace VirulentVentures
 {
     public class CombatUIElementsComponent : MonoBehaviour
@@ -17,7 +18,7 @@ namespace VirulentVentures
         private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
         private Dictionary<ICombatUnit, (Label atk, Label def, Label spd, Label eva, Label morale, Label rank)> unitStatLabels = new Dictionary<ICombatUnit, (Label, Label, Label, Label, Label, Label)>();
         private Dictionary<ICombatUnit, Label> infectedLabels = new Dictionary<ICombatUnit, Label>();
-        private Dictionary<ICombatUnit, bool> retreatedUnits = new Dictionary<ICombatUnit, bool>(); // Track retreat state
+        private Dictionary<ICombatUnit, bool> retreatedUnits = new Dictionary<ICombatUnit, bool>();
         private Label speedLabel;
         private Button speedPlusButton;
         private Button speedMinusButton;
@@ -28,46 +29,10 @@ namespace VirulentVentures
         private Button continueButton;
         private float speedIncrement = 0.5f;
         private bool isPaused;
+
         void Awake()
         {
             if (!ValidateReferences()) return;
-            SetupUI();
-            eventBus.OnCombatInitialized += InitializeCombat;
-            eventBus.OnLogMessage += HandleLogMessage;
-            eventBus.OnUnitUpdated += HandleUnitUpdated;
-            eventBus.OnCombatPaused += HandleCombatPaused;
-            eventBus.OnCombatPlayed += HandleCombatPlayed;
-            eventBus.OnCombatSpeedChanged += HandleCombatSpeedChanged;
-            eventBus.OnAbilitySelected += HandleAbilitySelected;
-            eventBus.OnCombatEnded += ShowEndPanel;
-            eventBus.OnUnitRetreated += HandleUnitRetreated;
-            eventBus.OnUnitDied += HandleUnitDied;
-        }
-        void OnDestroy()
-        {
-            eventBus.OnCombatInitialized -= InitializeCombat;
-            eventBus.OnLogMessage -= HandleLogMessage;
-            eventBus.OnUnitUpdated -= HandleUnitUpdated;
-            eventBus.OnCombatPaused -= HandleCombatPaused;
-            eventBus.OnCombatPlayed -= HandleCombatPlayed;
-            eventBus.OnCombatSpeedChanged -= HandleCombatSpeedChanged;
-            eventBus.OnAbilitySelected -= HandleAbilitySelected;
-            eventBus.OnCombatEnded -= ShowEndPanel;
-            eventBus.OnUnitRetreated -= HandleUnitRetreated;
-            eventBus.OnUnitDied -= HandleUnitDied;
-            if (speedPlusButton != null)
-                speedPlusButton.clicked -= IncreaseSpeed;
-            if (speedMinusButton != null)
-                speedMinusButton.clicked -= DecreaseSpeed;
-            if (pauseButton != null)
-                pauseButton.clicked -= PauseCombat;
-            if (playButton != null)
-                playButton.clicked -= PlayCombat;
-            if (continueButton != null)
-                continueButton.clicked -= ContinueCombat;
-        }
-        private void SetupUI()
-        {
             root = GetComponent<UIDocument>().rootVisualElement;
             if (root == null)
             {
@@ -126,33 +91,114 @@ namespace VirulentVentures
                     $"end-panel: {endPanel != null}, end-label: {endLabel != null}, continue-button: {continueButton != null}");
                 return;
             }
-            speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
-            speedPlusButton.clicked += IncreaseSpeed;
-            speedMinusButton.clicked -= DecreaseSpeed;
-            pauseButton.clicked += PauseCombat;
-            playButton.clicked += PlayCombat;
-            continueButton.clicked += ContinueCombat;
-            endPanel.style.display = DisplayStyle.None;
+            eventBus.OnCombatInitialized += InitializeCombat;
+            eventBus.OnLogMessage += HandleLogMessage;
+            eventBus.OnUnitUpdated += HandleUnitUpdated;
+            eventBus.OnCombatPaused += HandleCombatPaused;
+            eventBus.OnCombatPlayed += HandleCombatPlayed;
+            eventBus.OnCombatSpeedChanged += HandleCombatSpeedChanged;
+            eventBus.OnAbilitySelected += HandleAbilitySelected;
+            eventBus.OnCombatEnded += ShowEndPanel;
+            eventBus.OnUnitRetreated += HandleUnitRetreated;
+            eventBus.OnUnitDied += HandleUnitDied;
+        }
+
+        void Start()
+        {
+            StartCoroutine(SetupUIAsync());
+        }
+
+        private IEnumerator SetupUIAsync()
+        {
+            yield return null; // Wait one frame to ensure main thread
+            if (uiConfig == null)
+            {
+                Debug.LogWarning("CombatUIElementsComponent: uiConfig is null, skipping style assignments.");
+                yield break;
+            }
+            if (speedLabel != null)
+            {
+                speedLabel.text = $"Speed: {combatConfig.CombatSpeed:F1}x";
+                speedLabel.style.color = uiConfig.TextColor;
+            }
+            if (speedPlusButton != null)
+            {
+                speedPlusButton.style.color = uiConfig.TextColor;
+                speedPlusButton.clicked += IncreaseSpeed;
+            }
+            if (speedMinusButton != null)
+            {
+                speedMinusButton.style.color = uiConfig.TextColor;
+                speedMinusButton.clicked += DecreaseSpeed;
+            }
+            if (pauseButton != null)
+            {
+                pauseButton.style.color = uiConfig.TextColor;
+                pauseButton.clicked += PauseCombat;
+            }
+            if (playButton != null)
+            {
+                playButton.style.color = uiConfig.TextColor;
+                playButton.clicked += PlayCombat;
+            }
+            if (continueButton != null)
+            {
+                continueButton.style.color = uiConfig.TextColor;
+                continueButton.clicked += ContinueCombat;
+            }
+            if (endPanel != null)
+            {
+                endPanel.style.display = DisplayStyle.None;
+            }
             UpdateButtonStates();
         }
+
+        void OnDestroy()
+        {
+            eventBus.OnCombatInitialized -= InitializeCombat;
+            eventBus.OnLogMessage -= HandleLogMessage;
+            eventBus.OnUnitUpdated -= HandleUnitUpdated;
+            eventBus.OnCombatPaused -= HandleCombatPaused;
+            eventBus.OnCombatPlayed -= HandleCombatPlayed;
+            eventBus.OnCombatSpeedChanged -= HandleCombatSpeedChanged;
+            eventBus.OnAbilitySelected -= HandleAbilitySelected;
+            eventBus.OnCombatEnded -= ShowEndPanel;
+            eventBus.OnUnitRetreated -= HandleUnitRetreated;
+            eventBus.OnUnitDied -= HandleUnitDied;
+            if (speedPlusButton != null)
+                speedPlusButton.clicked -= IncreaseSpeed;
+            if (speedMinusButton != null)
+                speedMinusButton.clicked -= DecreaseSpeed;
+            if (pauseButton != null)
+                pauseButton.clicked -= PauseCombat;
+            if (playButton != null)
+                playButton.clicked -= PlayCombat;
+            if (continueButton != null)
+                continueButton.clicked -= ContinueCombat;
+        }
+
         private void IncreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed + speedIncrement;
             eventBus.RaiseCombatSpeedChanged(newSpeed);
         }
+
         private void DecreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed - speedIncrement;
             eventBus.RaiseCombatSpeedChanged(newSpeed);
         }
+
         private void PauseCombat()
         {
             eventBus.RaiseCombatPaused();
         }
+
         private void PlayCombat()
         {
             eventBus.RaiseCombatPlayed();
         }
+
         private void ContinueCombat()
         {
             bool isVictory = endLabel.text == "Victory!";
@@ -166,6 +212,15 @@ namespace VirulentVentures
                 ExpeditionManager.Instance.TransitionToTemplePlanningScene();
             }
         }
+
+        private void UpdateButtonStates()
+        {
+            pauseButton.SetEnabled(!isPaused);
+            playButton.SetEnabled(isPaused);
+            speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
+            speedMinusButton.SetEnabled(combatConfig.CombatSpeed > combatConfig.MinCombatSpeed);
+        }
+
         private void ShowEndPanel(bool isVictory)
         {
             if (endPanel == null || endLabel == null)
@@ -178,28 +233,40 @@ namespace VirulentVentures
             endLabel.style.color = isVictory ? Color.green : Color.red;
             UpdateButtonStates();
         }
+
         private void HandleCombatPaused()
         {
             isPaused = true;
             eventBus.RaiseLogMessage("Combat paused", uiConfig.TextColor);
             UpdateButtonStates();
         }
+
         private void HandleCombatPlayed()
         {
             isPaused = false;
             eventBus.RaiseLogMessage("Combat resumed", uiConfig.TextColor);
             UpdateButtonStates();
         }
+
         private void HandleCombatSpeedChanged(EventBusSO.CombatSpeedData data)
         {
-            speedLabel.text = $"Speed: {data.speed:F1}x";
+            if (speedLabel != null)
+            {
+                speedLabel.text = $"Speed: {data.speed:F1}x";
+                if (uiConfig != null)
+                {
+                    speedLabel.style.color = uiConfig.TextColor;
+                }
+            }
             UpdateButtonStates();
         }
+
         private void HandleAbilitySelected(EventBusSO.AttackData data)
         {
             if (unitPanels.TryGetValue(data.attacker, out VisualElement panel) && (data.abilityId.Contains("Taunt") || data.abilityId.Contains("Thorns")))
                 StartCoroutine(FlashPanel(panel, new Color(1f, 1f, 0f), 0.5f));
         }
+
         private void HandleUnitRetreated(ICombatUnit unit)
         {
             if (unitPanels.TryGetValue(unit, out var panel) && panel != null)
@@ -208,19 +275,13 @@ namespace VirulentVentures
                 panel.AddToClassList("retreat-slide");
             }
         }
-        private void UpdateButtonStates()
-        {
-            pauseButton.SetEnabled(!isPaused);
-            playButton.SetEnabled(isPaused);
-            speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
-            speedMinusButton.SetEnabled(combatConfig.CombatSpeed > combatConfig.MinCombatSpeed);
-        }
+
         private void InitializeCombat(EventBusSO.CombatInitData data)
         {
             unitPanels.Clear();
             unitStatLabels.Clear();
             infectedLabels.Clear();
-            retreatedUnits.Clear(); // Clear retreat state on combat init
+            retreatedUnits.Clear();
             logMessages.Clear();
             logContent?.Clear();
             var heroes = data.units.Where(u => u.stats.isHero).ToList();
@@ -234,7 +295,7 @@ namespace VirulentVentures
                 var panel = CreateUnitPanel(unit, stats, true, heroPanelHeight);
                 leftPanel.Add(panel);
                 unitPanels[unit] = panel;
-                retreatedUnits[unit] = (unit as CharacterStats)?.HasRetreated ?? false; // Initialize retreat state
+                retreatedUnits[unit] = (unit as CharacterStats)?.HasRetreated ?? false;
             }
             var rightPanel = root.Q<VisualElement>("right-panel");
             float monsterPanelHeight = data.units.Count(u => !u.stats.isHero) > 0 ? 100f / Mathf.Min(data.units.Count(u => !u.stats.isHero), 4) : 25f;
@@ -245,18 +306,23 @@ namespace VirulentVentures
                 var panel = CreateUnitPanel(unit, stats, false, monsterPanelHeight);
                 rightPanel.Add(panel);
                 unitPanels[unit] = panel;
-                retreatedUnits[unit] = (unit as CharacterStats)?.HasRetreated ?? false; // Initialize retreat state
+                retreatedUnits[unit] = (unit as CharacterStats)?.HasRetreated ?? false;
             }
         }
+
         private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
         {
             if (!unitPanels.TryGetValue(data.unit, out var panel) || panel == null) return;
             var rankSection = panel.Q<VisualElement>(className: "rank-section");
-            if (rankSection == null) return; // Safety check
+            if (rankSection == null) return;
             if (data.displayStats.isInfected && !infectedLabels.ContainsKey(data.unit))
             {
                 var infectedLabel = new Label("Infected");
                 infectedLabel.AddToClassList("infected-label");
+                if (uiConfig != null)
+                {
+                    infectedLabel.style.color = uiConfig.TextColor;
+                }
                 rankSection.Add(infectedLabel);
                 infectedLabels[data.unit] = infectedLabel;
             }
@@ -287,7 +353,6 @@ namespace VirulentVentures
                     if (moraleFill != null && moraleLabel != null)
                         UpdateMoraleBar(moraleFill, moraleLabel, data.displayStats.morale, data.displayStats.maxMorale);
                 }
-                // Low morale: flash red, add yellow border via low-morale class
                 if (data.displayStats.morale < data.displayStats.maxMorale * 0.3f && data.displayStats.isHero && !retreatedUnits.ContainsKey(data.unit))
                 {
                     panel.AddToClassList("low-morale");
@@ -299,6 +364,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         private IEnumerator FlashPanel(VisualElement panel, Color flashColor, float duration)
         {
             var originalColor = panel.style.backgroundColor;
@@ -306,6 +372,7 @@ namespace VirulentVentures
             yield return new WaitForSeconds(duration / combatConfig.CombatSpeed);
             panel.style.backgroundColor = originalColor;
         }
+
         private bool ValidateReferences()
         {
             if (uiConfig == null || eventBus == null || combatConfig == null)
@@ -315,6 +382,7 @@ namespace VirulentVentures
             }
             return true;
         }
+
         private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float heightPercent)
         {
             var panel = new VisualElement();
@@ -322,6 +390,10 @@ namespace VirulentVentures
             panel.style.height = new StyleLength(new Length(heightPercent, LengthUnit.Percent));
             var nameLabel = new Label(stats.name);
             nameLabel.AddToClassList("unit-name-label");
+            if (uiConfig != null)
+            {
+                nameLabel.style.color = uiConfig.TextColor;
+            }
             panel.Add(nameLabel);
             var unitContent = new VisualElement();
             unitContent.AddToClassList("unit-content");
@@ -330,11 +402,19 @@ namespace VirulentVentures
             rankSection.AddToClassList("rank-section");
             var rankLabel = new Label($"RANK: {stats.rank}");
             rankLabel.AddToClassList("rank-label");
+            if (uiConfig != null)
+            {
+                rankLabel.style.color = uiConfig.TextColor;
+            }
             rankSection.Add(rankLabel);
             if (stats.isInfected)
             {
                 var infectedLabel = new Label("Infected");
                 infectedLabel.AddToClassList("infected-label");
+                if (uiConfig != null)
+                {
+                    infectedLabel.style.color = uiConfig.TextColor;
+                }
                 rankSection.Add(infectedLabel);
                 infectedLabels[unit] = infectedLabel;
             }
@@ -346,21 +426,37 @@ namespace VirulentVentures
             var atkContainer = new VisualElement();
             atkContainer.AddToClassList("stat-container");
             var atkLabel = new Label($"A: {stats.attack}");
+            if (uiConfig != null)
+            {
+                atkLabel.style.color = uiConfig.TextColor;
+            }
             atkContainer.Add(atkLabel);
             statGrid.Add(atkContainer);
             var defContainer = new VisualElement();
             defContainer.AddToClassList("stat-container");
             var defLabel = new Label($"D: {stats.defense}");
+            if (uiConfig != null)
+            {
+                defLabel.style.color = uiConfig.TextColor;
+            }
             defContainer.Add(defLabel);
             statGrid.Add(defContainer);
             var spdContainer = new VisualElement();
             spdContainer.AddToClassList("stat-container");
             var spdLabel = new Label($"S: {stats.speed}");
+            if (uiConfig != null)
+            {
+                spdLabel.style.color = uiConfig.TextColor;
+            }
             spdContainer.Add(spdLabel);
             statGrid.Add(spdContainer);
             var evaContainer = new VisualElement();
             evaContainer.AddToClassList("stat-container");
             var evaLabel = new Label($"E: {stats.evasion}");
+            if (uiConfig != null)
+            {
+                evaLabel.style.color = uiConfig.TextColor;
+            }
             evaContainer.Add(evaLabel);
             statGrid.Add(evaContainer);
             statsSection.Add(statGrid);
@@ -374,6 +470,10 @@ namespace VirulentVentures
             healthBar.Add(healthFill);
             var healthLabel = new Label($"{stats.health:F0}/{stats.maxHealth:F0}");
             healthLabel.AddToClassList("health-label");
+            if (uiConfig != null)
+            {
+                healthLabel.style.color = uiConfig.TextColor;
+            }
             healthBar.Add(healthLabel);
             UpdateHealthBar(healthFill, healthLabel, stats.health, stats.maxHealth);
             barsSection.Add(healthBar);
@@ -387,6 +487,10 @@ namespace VirulentVentures
                 moraleBar.Add(moraleFill);
                 moraleLabel = new Label($"Morale: {stats.morale:F0}/{stats.maxMorale:F0}");
                 moraleLabel.AddToClassList("morale-label");
+                if (uiConfig != null)
+                {
+                    moraleLabel.style.color = uiConfig.TextColor;
+                }
                 moraleBar.Add(moraleLabel);
                 UpdateMoraleBar(moraleFill, moraleLabel, stats.morale, stats.maxMorale);
                 barsSection.Add(moraleBar);
@@ -396,27 +500,39 @@ namespace VirulentVentures
             unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel, rankLabel);
             return panel;
         }
+
         private void UpdateHealthBar(VisualElement fill, Label label, float health, float maxHealth)
         {
             if (fill == null || label == null) return;
             float healthPercent = Mathf.Clamp(health / maxHealth, 0f, 1f);
             fill.style.width = new StyleLength(new Length(healthPercent * 100f, LengthUnit.Percent));
             label.text = $"{health:F0}/{maxHealth:F0}";
+            if (uiConfig != null)
+            {
+                label.style.color = uiConfig.TextColor;
+            }
         }
+
         private void UpdateMoraleBar(VisualElement fill, Label label, float morale, float maxMorale)
         {
             if (fill == null || label == null) return;
             float moralePercent = Mathf.Clamp(morale / maxMorale, 0f, 1f);
             fill.style.width = new StyleLength(new Length(moralePercent * 100f, LengthUnit.Percent));
             label.text = $"Morale: {morale:F0}/{maxMorale:F0}";
+            if (uiConfig != null)
+            {
+                label.style.color = uiConfig.TextColor;
+            }
         }
+
         private void HandleUnitDied(ICombatUnit unit)
         {
             if (unitPanels.TryGetValue(unit, out var panel) && panel != null)
             {
-                panel.style.display = DisplayStyle.None; 
+                panel.style.display = DisplayStyle.None;
             }
         }
+
         private void HandleLogMessage(EventBusSO.LogData data)
         {
             if (logContent == null || logScrollView == null)
@@ -425,7 +541,10 @@ namespace VirulentVentures
                 return;
             }
             var label = new Label(data.message);
-            label.style.color = data.color;
+            if (uiConfig != null)
+            {
+                label.style.color = data.color;
+            }
             logContent.Add(label);
             logMessages.Add(label);
             if (logMessages.Count > 100)

@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: TrueStrikeEffect
-  m_EditorClassIdentifier: Assembly-CSharp:VirulentVentures:StrikeEffectSO
+  m_Script: {fileID: 11500000, guid: aaa0da8dd2a595545b8e1ca8dace1cf1, type: 3}
+  m_Name: Effect_BasicStrike
+  m_EditorClassIdentifier: Assembly-CSharp::VirulentVentures.StrikeEffectSO
   effectId: 
   multiplier: 1
   isDodgeable: 1

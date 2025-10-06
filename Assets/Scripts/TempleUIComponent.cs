@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -82,18 +83,99 @@ namespace VirulentVentures
                 return;
             }
             isInitialized = true;
-            InitializeUI();
         }
 
         void Start()
         {
             if (isInitialized)
             {
+                StartCoroutine(InitializeUIAsync());
                 SubscribeToEventBus();
                 InitializeEmptyPortraits();
                 SwitchTab(0);
                 UpdateFavourDisplay();
             }
+        }
+
+        private IEnumerator InitializeUIAsync()
+        {
+            yield return null; // Wait one frame to ensure main thread
+            if (uiConfig == null)
+            {
+                Debug.LogWarning("TempleUIComponent: uiConfig is null, skipping style assignments.");
+                yield break;
+            }
+            if (virusDropdown != null)
+            {
+                virusDropdown.choices.Clear();
+                foreach (var virus in availableViruses)
+                {
+                    if (virus != null) virusDropdown.choices.Add(virus.VirusID);
+                }
+                virusDropdown.value = virusDropdown.choices.Count > 0 ? virusDropdown.choices[0] : null;
+                virusDropdown.style.color = uiConfig.TextColor;
+            }
+            if (nodeDropdown != null)
+            {
+                nodeDropdown.choices.Clear();
+                nodeDropdown.value = null;
+                nodeDropdown.style.color = uiConfig.TextColor;
+            }
+            if (generateButton != null)
+            {
+                generateButton.style.color = uiConfig.TextColor;
+                generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
+                generateButton.clicked += () => eventBus.RaiseExpeditionGenerated(null, null);
+            }
+            if (launchButton != null)
+            {
+                launchButton.style.color = uiConfig.TextColor;
+                launchButton.clicked += () => eventBus.RaiseLaunchExpedition();
+            }
+            if (seedVirusButton != null)
+            {
+                seedVirusButton.style.color = uiConfig.TextColor;
+                seedVirusButton.clicked += () =>
+                {
+                    if (nodeDropdown.index >= 0 && virusDropdown.index >= 0)
+                    {
+                        eventBus.RaiseVirusSeeded(virusDropdown.value, nodeDropdown.index);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("TempleUIComponent: Invalid dropdown selection for virus seeding!");
+                    }
+                };
+            }
+            if (favourLabel != null)
+            {
+                favourLabel.style.color = uiConfig.TextColor;
+            }
+            if (autoHealLabel != null)
+            {
+                autoHealLabel.style.color = uiConfig.TextColor;
+            }
+            if (continueButton != null)
+            {
+                continueButton.style.color = uiConfig.TextColor;
+                continueButton.clicked += () => eventBus.RaiseContinueClicked();
+            }
+            if (tabButtons != null)
+            {
+                foreach (var button in tabButtons)
+                {
+                    if (button != null)
+                    {
+                        button.style.color = uiConfig.TextColor;
+                    }
+                }
+            }
+            if (recruitTabButton != null)
+                recruitTabButton.clicked += () => SwitchTab(0);
+            if (expeditionTabButton != null)
+                expeditionTabButton.clicked += () => SwitchTab(1);
+            if (virusTabButton != null)
+                virusTabButton.clicked += () => SwitchTab(2);
         }
 
         void OnDestroy()
@@ -122,57 +204,6 @@ namespace VirulentVentures
             autoHealPopup = null;
             autoHealLabel = null;
             continueButton = null;
-        }
-
-        private void InitializeUI()
-        {
-            virusDropdown.choices.Clear();
-            foreach (var virus in availableViruses)
-            {
-                if (virus != null) virusDropdown.choices.Add(virus.VirusID);
-            }
-            virusDropdown.value = virusDropdown.choices.Count > 0 ? virusDropdown.choices[0] : null;
-            virusDropdown.style.color = uiConfig.TextColor;
-            virusDropdown.style.unityFont = uiConfig.PixelFont;
-            nodeDropdown.choices.Clear();
-            nodeDropdown.value = null;
-            nodeDropdown.style.color = uiConfig.TextColor;
-            nodeDropdown.style.unityFont = uiConfig.PixelFont;
-            generateButton.style.color = uiConfig.TextColor;
-            generateButton.style.unityFont = uiConfig.PixelFont;
-            launchButton.style.color = uiConfig.TextColor;
-            launchButton.style.unityFont = uiConfig.PixelFont;
-            seedVirusButton.style.color = uiConfig.TextColor;
-            seedVirusButton.style.unityFont = uiConfig.PixelFont;
-            favourLabel.style.color = uiConfig.TextColor;
-            favourLabel.style.unityFont = uiConfig.PixelFont;
-            autoHealLabel.style.color = uiConfig.TextColor;
-            autoHealLabel.style.unityFont = uiConfig.PixelFont;
-            continueButton.style.color = uiConfig.TextColor;
-            continueButton.style.unityFont = uiConfig.PixelFont;
-            foreach (var button in tabButtons)
-            {
-                button.style.color = uiConfig.TextColor;
-                button.style.unityFont = uiConfig.PixelFont;
-            }
-            generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
-            generateButton.clicked += () => eventBus.RaiseExpeditionGenerated(null, null);
-            launchButton.clicked += () => eventBus.RaiseLaunchExpedition();
-            seedVirusButton.clicked += () =>
-            {
-                if (nodeDropdown.index >= 0 && virusDropdown.index >= 0)
-                {
-                    eventBus.RaiseVirusSeeded(virusDropdown.value, nodeDropdown.index);
-                }
-                else
-                {
-                    Debug.LogWarning("TempleUIComponent: Invalid dropdown selection for virus seeding!");
-                }
-            };
-            continueButton.clicked += () => eventBus.RaiseContinueClicked();
-            recruitTabButton.clicked += () => SwitchTab(0);
-            expeditionTabButton.clicked += () => SwitchTab(1);
-            virusTabButton.clicked += () => SwitchTab(2);
         }
 
         private void SwitchTab(int index)
@@ -397,8 +428,10 @@ namespace VirulentVentures
                 nodeDropdown.choices.Add($"Node {i + 1} ({nodes[i].NodeType})");
             }
             nodeDropdown.value = nodeDropdown.choices.Count > 0 ? nodeDropdown.choices[0] : null;
-            nodeDropdown.style.color = uiConfig.TextColor;
-            nodeDropdown.style.unityFont = uiConfig.PixelFont;
+            if (nodeDropdown != null && uiConfig != null)
+            {
+                nodeDropdown.style.color = uiConfig.TextColor;
+            }
             nodeContainer.Clear();
             for (int i = 0; i < nodes.Count; i++)
             {
@@ -409,6 +442,10 @@ namespace VirulentVentures
                 nodeBox.style.backgroundColor = new StyleColor(nodeColor);
                 Label nodeLabel = new Label($"Node {i + 1}");
                 nodeLabel.AddToClassList("node-label");
+                if (uiConfig != null)
+                {
+                    nodeLabel.style.color = uiConfig.TextColor;
+                }
                 nodeBox.Add(nodeLabel);
                 if (nodes[i].SeededViruses.Count > 0)
                 {
