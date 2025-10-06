@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Effect_MoraleLoss
   m_EditorClassIdentifier: 
   effectId: 
-  flatAmount: 5
+  flatAmount: -5
   percentAmount: 0
   usePercentage: 0
   thresholdPercent: 0
