@@ -20,6 +20,15 @@ namespace VirulentVentures
                 var targetStats = target as CharacterStats;
                 if (targetStats == null) continue;
 
+                if (ability.Dodgeable && CombatUtils.CheckEvasion(targetStats))
+                {
+                    string dodgeMessage = $"{targetStats.Id} dodges {user.Id}'s {abilityId}!";
+                    combatLogs.Add(dodgeMessage);
+                    eventBus.RaiseLogMessage(dodgeMessage, Color.yellow);
+                    applied = true;
+                    continue;
+                }
+
                 if (ThresholdPercent > 0 && targetStats.Health >= (ThresholdPercent / 100f) * targetStats.MaxHealth)
                 {
                     Debug.LogWarning($"{targetStats.Id} is too healthy for {abilityId} by {user.Id} (>= {ThresholdPercent}% HP).");

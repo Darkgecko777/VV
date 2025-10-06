@@ -20,7 +20,7 @@ namespace VirulentVentures
                 var targetStats = target as CharacterStats;
                 if (targetStats == null) continue;
 
-                if (ability.AttackParams.Dodgeable && CombatUtils.CheckEvasion(targetStats))
+                if (ability.Dodgeable && CombatUtils.CheckEvasion(targetStats))
                 {
                     string dodgeMessage = $"{targetStats.Id} dodges {user.Id}'s {abilityId}!";
                     combatLogs.Add(dodgeMessage);

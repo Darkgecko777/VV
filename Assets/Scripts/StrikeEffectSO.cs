@@ -9,11 +9,9 @@ namespace VirulentVentures
     public class StrikeEffectSO : EffectSO
     {
         [SerializeField] private float multiplier = 1f;
-        [SerializeField] private bool isDodgeable = true;
         [SerializeField] private CombatTypes.DefenseCheck defenseType = CombatTypes.DefenseCheck.Standard;
 
         public float Multiplier => multiplier;
-        public bool IsDodgeable => isDodgeable;
         public CombatTypes.DefenseCheck DefenseType => defenseType;
 
         public override bool Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
@@ -24,7 +22,7 @@ namespace VirulentVentures
                 var targetStats = target as CharacterStats;
                 if (targetStats == null) continue;
 
-                if (IsDodgeable && CombatUtils.CheckEvasion(targetStats))
+                if (ability.Dodgeable && CombatUtils.CheckEvasion(targetStats))
                 {
                     string dodgeMessage = $"{targetStats.Id} dodges {user.Id}'s {abilityId}!";
                     combatLogs.Add(dodgeMessage);

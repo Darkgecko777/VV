@@ -18,12 +18,7 @@ namespace VirulentVentures
             MeleeOnly = true,
             Criteria = CombatTypes.TargetingRule.SelectionCriteria.Default
         };
-        [SerializeField]
-        private CombatTypes.AttackParams attackParams = new CombatTypes.AttackParams
-        {
-            Defense = CombatTypes.DefenseCheck.Standard,
-            Dodgeable = true
-        };
+        [SerializeField] private bool dodgeable = true;
         [SerializeField]
         private CombatTypes.CooldownParams cooldownParams = new CombatTypes.CooldownParams
         {
@@ -35,7 +30,7 @@ namespace VirulentVentures
         public string AnimationTrigger => animationTrigger;
         public List<EffectSO> Effects => effects;
         public CombatTypes.TargetingRule Rule => rule;
-        public CombatTypes.AttackParams AttackParams => attackParams;
+        public bool Dodgeable => dodgeable;
         public CombatTypes.CooldownParams CooldownParams => cooldownParams;
 
         public List<ICombatUnit> GetTargets(CharacterStats user, PartyData party, List<ICombatUnit> allTargets)

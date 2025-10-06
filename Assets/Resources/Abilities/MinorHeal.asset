@@ -17,13 +17,11 @@ MonoBehaviour:
   effects:
   - {fileID: 11400000, guid: eaa052060ebec8c47b90d96d43e47384, type: 2}
   rule:
-    Type: 0
+    Type: 1
     Target: 1
     MeleeOnly: 0
     Criteria: 1
-  attackParams:
-    Defense: 0
-    Dodgeable: 1
+  dodgeable: 1
   cooldownParams:
     Type: 2
     Duration: 1
