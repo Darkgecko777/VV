@@ -53,7 +53,8 @@ namespace VirulentVentures
             public enum RuleType
             {
                 Single,
-                SingleConditional
+                SingleConditional,
+                All
             }
 
             public enum SelectionCriteria

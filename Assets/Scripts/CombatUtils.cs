@@ -122,6 +122,18 @@ namespace VirulentVentures
                 }
                 return new List<ICombatUnit>();
             }
+            else if (rule.Type == CombatTypes.TargetingRule.RuleType.All)
+            {
+                if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.LowestHealth)
+                {
+                    selectedPool = selectedPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
+                }
+                else if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.Random)
+                {
+                    selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
+                }
+                return selectedPool; // Return all valid targets
+            }
 
             return selectedPool.Take(1).ToList();
         }

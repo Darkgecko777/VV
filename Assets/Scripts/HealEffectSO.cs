@@ -8,11 +8,15 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "HealEffect", menuName = "VirulentVentures/Effects/Heal")]
     public class HealEffectSO : EffectSO
     {
-        [SerializeField] private int amount = 15;
+        [SerializeField] private int flatAmount = 15;
+        [SerializeField] private float percentAmount = 0f;
+        [SerializeField] private bool usePercentage = false;
         [SerializeField] private float thresholdPercent = 80f;
         [SerializeField] private CombatTypes.TargetStat targetStat = CombatTypes.TargetStat.Health;
 
-        public int Amount => amount;
+        public int FlatAmount => flatAmount;
+        public float PercentAmount => percentAmount;
+        public bool UsePercentage => usePercentage;
         public float ThresholdPercent => thresholdPercent;
         public CombatTypes.TargetStat TargetStat => targetStat;
 
@@ -32,20 +36,33 @@ namespace VirulentVentures
                     continue;
                 }
 
-                int healAmount = Amount;
-                int newValue = Mathf.Min(currentValue + healAmount, maxValue);
-
-                if (newValue > currentValue)
+                int effectAmount;
+                if (UsePercentage)
                 {
-                    int healed = newValue - currentValue;
+                    effectAmount = Mathf.RoundToInt(maxValue * (PercentAmount / 100f));
+                }
+                else
+                {
+                    effectAmount = FlatAmount;
+                }
+
+                int newValue = Mathf.Clamp(currentValue + effectAmount, 0, maxValue);
+                int change = newValue - currentValue;
+
+                if (change != 0)
+                {
                     if (TargetStat == CombatTypes.TargetStat.Health)
                         targetStats.Health = newValue;
                     else
                         targetStats.Morale = newValue;
-                    string healMessage = $"{user.Id} {(TargetStat == CombatTypes.TargetStat.Health ? "heals" : "boosts")} {targetStats.Id} for {healed} {TargetStat.ToString().ToLower()} with {abilityId} <color=#00FF00>[+{healAmount} {TargetStat}, capped at {maxValue}]</color>";
-                    combatLogs.Add(healMessage);
-                    eventBus.RaiseLogMessage(healMessage, Color.green);
-                    eventBus.RaiseUnitDamaged(target, healMessage);
+
+                    string action = change > 0 ? (TargetStat == CombatTypes.TargetStat.Health ? "heals" : "boosts") : "damages";
+                    string statName = TargetStat.ToString().ToLower();
+                    string colorCode = change > 0 ? "#00FF00" : "#FF0000";
+                    string changeMessage = $"{user.Id} {action} {targetStats.Id} for {Mathf.Abs(change)} {statName} with {abilityId} <color={colorCode}>[{effectAmount:+#;-#} {statName}{(UsePercentage ? $" ({PercentAmount}% of {maxValue})" : "")}, capped at {maxValue}]</color>";
+                    combatLogs.Add(changeMessage);
+                    eventBus.RaiseLogMessage(changeMessage, change > 0 ? Color.green : Color.red);
+                    eventBus.RaiseUnitDamaged(target, changeMessage);
                     updateUnitCallback(target);
                     applied = true;
                 }
