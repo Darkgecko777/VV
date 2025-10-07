@@ -17,12 +17,18 @@ namespace VirulentVentures
         [SerializeField] private UIDocument transitionUIDocument;
 
         private bool isTransitioning = false;
+        private bool isReturningFromExpedition = false;
         private static ExpeditionManager instance;
         private VisualElement fadeOverlay;
         private const float FADE_DURATION = 1f;
 
         public static ExpeditionManager Instance => instance;
         public bool IsTransitioning => isTransitioning;
+        public bool IsReturningFromExpedition
+        {
+            get => isReturningFromExpedition;
+            set => isReturningFromExpedition = value;
+        }
         public event Action OnCombatStarted;
         public event Action<List<NodeData>, int> OnSceneTransitionCompleted;
         public AsyncOperation CurrentAsyncOp { get; private set; }
@@ -110,6 +116,15 @@ namespace VirulentVentures
                 return null;
             }
             isTransitioning = true;
+            string currentScene = SceneManager.GetActiveScene().name;
+            if (currentScene == "ExpeditionScene" || currentScene == "CombatScene")
+            {
+                isReturningFromExpedition = true;
+            }
+            else
+            {
+                isReturningFromExpedition = false;
+            }
             StartCoroutine(FadeAndLoad("TemplePlanningScene", () =>
             {
                 OnSceneTransitionCompleted?.Invoke(null, 0);
@@ -151,7 +166,6 @@ namespace VirulentVentures
             {
                 Debug.LogError("ExpeditionManager: SaveManager.Instance is null, cannot clear progress.");
             }
-            eventBus.RaiseTempleEnteredFromExpedition();
             TransitionToTemplePlanningScene();
         }
 

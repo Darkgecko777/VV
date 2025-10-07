@@ -99,7 +99,7 @@ namespace VirulentVentures
 
         private IEnumerator InitializeUIAsync()
         {
-            yield return null; // Wait one frame to ensure main thread
+            yield return null;
             if (uiConfig == null)
             {
                 Debug.LogWarning("TempleUIComponent: uiConfig is null, skipping style assignments.");
@@ -364,14 +364,6 @@ namespace VirulentVentures
         {
             var playerProgress = ExpeditionManager.Instance.GetPlayerProgress();
             favourLabel.text = $"Favour: {playerProgress.Favour}";
-        }
-
-        private void HandleExpeditionEnded()
-        {
-            Debug.Log($"TempleUIComponent: HandleExpeditionEnded called, HeroStats count: {(partyData.HeroStats == null ? 0 : partyData.HeroStats.Count)}");
-            generateButton.SetEnabled(partyData.HeroStats == null || partyData.HeroStats.Count == 0);
-            UpdateFavourDisplay();
-            UpdatePartyVisuals(partyData);
         }
 
         private void HandlePlayerProgressUpdated()

@@ -26,7 +26,6 @@ namespace VirulentVentures
             eventBus.OnExpeditionGenerated += GenerateExpedition;
             eventBus.OnVirusSeeded += SeedVirus;
             eventBus.OnLaunchExpedition += LaunchExpedition;
-            eventBus.OnTempleEnteredFromExpedition += AutoHealParty;
         }
 
         void Start()
@@ -37,6 +36,13 @@ namespace VirulentVentures
                 SaveManager.Instance.LoadProgress(expeditionData, partyData, playerProgress);
             }
             eventBus.RaisePartyUpdated(partyData);
+
+            if (ExpeditionManager.Instance != null && ExpeditionManager.Instance.IsReturningFromExpedition)
+            {
+                Debug.Log("TempleSceneComponent: Returning from expedition, triggering healing popup.");
+                eventBus.RaiseTempleEnteredFromExpedition();
+                ExpeditionManager.Instance.IsReturningFromExpedition = false; // Reset flag
+            }
         }
 
         void OnDestroy()
@@ -46,58 +52,27 @@ namespace VirulentVentures
                 eventBus.OnExpeditionGenerated -= GenerateExpedition;
                 eventBus.OnVirusSeeded -= SeedVirus;
                 eventBus.OnLaunchExpedition -= LaunchExpedition;
-                eventBus.OnTempleEnteredFromExpedition -= AutoHealParty;
             }
-        }
-
-        private void AutoHealParty()
-        {
-            if (partyData == null || partyData.HeroStats == null || partyData.HeroStats.Count == 0)
-            {
-                Debug.LogWarning("TempleSceneComponent: No party to heal!");
-                return;
-            }
-            int totalFavour = 0;
-            foreach (var hero in partyData.HeroStats)
-            {
-                if (hero.Health <= 0 || hero.HasRetreated) continue;
-                int hpHealed = hero.MaxHealth - hero.Health;
-                int moraleRestored = hero.MaxMorale - hero.Morale;
-                float favour = (healingConfig.HPFavourPerPoint * hpHealed) + (healingConfig.MoraleFavourPerPoint * moraleRestored);
-                hero.Health = hero.MaxHealth;
-                hero.Morale = hero.MaxMorale;
-                totalFavour += Mathf.RoundToInt(favour);
-            }
-            if (totalFavour > 0)
-            {
-                playerProgress.AddFavour(totalFavour);
-                Debug.Log($"TempleSceneComponent: Auto-healed party, earned {totalFavour} favour");
-                eventBus.RaisePlayerProgressUpdated();
-            }
-            eventBus.RaisePartyUpdated(partyData);
         }
 
         private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData data)
         {
             if (data.expeditionData != null || data.partyData != null) return;
 
-            // Randomize total difficulty (D) for stage 1: 24-36
             int totalDifficulty = Random.Range(24, 37);
             List<NodeData> nodes = new List<NodeData>();
             int remainingDifficulty = totalDifficulty;
-            bool isCombat = Random.value > 0.5f; // Random start: combat or non-combat
+            bool isCombat = Random.value > 0.5f;
 
-            // Add temple node (R=0, non-combat)
             nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("", 1, 0, isTempleNode: true));
 
-            // Generate 5-7 additional nodes (6-8 total) with R=3-6
             while (remainingDifficulty >= 2 && nodes.Count < 8)
             {
-                int rating = Random.Range(3, 7); // R=3-6
+                int rating = Random.Range(3, 7);
                 if (remainingDifficulty < rating)
                 {
-                    if (remainingDifficulty < 2) break; // Discard remainder < 2
-                    rating = Mathf.Max(2, remainingDifficulty); // Ensure last node R≥2
+                    if (remainingDifficulty < 2) break;
+                    rating = Mathf.Max(2, remainingDifficulty);
                 }
 
                 NodeData node;
@@ -111,10 +86,9 @@ namespace VirulentVentures
                 }
                 nodes.Add(node);
                 remainingDifficulty -= rating;
-                isCombat = !isCombat; // Alternate
+                isCombat = !isCombat;
             }
 
-            // Party setup
             partyData.Reset();
             partyData.HeroIds = new List<string>();
             var positionMap = new Dictionary<int, string>

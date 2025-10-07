@@ -12,12 +12,10 @@ namespace VirulentVentures
         private void Awake()
         {
             if (!ValidateReferences()) return;
-
             VisualElement root = uiDocument.rootVisualElement;
             Button startButton = root.Q<Button>("start-button");
             Button continueButton = root.Q<Button>("continue-button");
             Button exitButton = root.Q<Button>("exit-button");
-
             startButton?.RegisterCallback<ClickEvent>(evt => OnStartNewClicked());
             continueButton?.RegisterCallback<ClickEvent>(evt => OnContinueClicked());
             exitButton?.RegisterCallback<ClickEvent>(evt => OnExitClicked());
@@ -27,7 +25,18 @@ namespace VirulentVentures
         {
             if (ExpeditionManager.Instance != null)
             {
-                ExpeditionManager.Instance.EndExpedition(); // Resets data and transitions to TemplePlanningScene
+                if (SaveManager.Instance != null)
+                {
+                    SaveManager.Instance.ClearProgress();
+                    ExpeditionManager.Instance.GetExpedition()?.Reset();
+                    ExpeditionManager.Instance.GetPlayerProgress()?.Reset();
+                }
+                else
+                {
+                    Debug.LogError("TitleSceneComponent: SaveManager.Instance is null, cannot clear progress.");
+                }
+                ExpeditionManager.Instance.IsReturningFromExpedition = false; // Ensure no return flag
+                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
             }
             else
             {
@@ -46,7 +55,7 @@ namespace VirulentVentures
                     ExpeditionManager.Instance.GetExpedition().Party,
                     ExpeditionManager.Instance.GetPlayerProgress()
                 );
-                // Transition to last scene (assumed TemplePlanningScene for simplicity)
+                ExpeditionManager.Instance.IsReturningFromExpedition = false; // Ensure no return flag
                 ExpeditionManager.Instance.TransitionToTemplePlanningScene();
             }
             else

@@ -32,13 +32,18 @@ namespace VirulentVentures
         {
             if (eventBus != null)
             {
-                //eventBus.OnPartyReturned -= ShowHealingPopup;
+                UnsubscribeFromEventBus();
             }
         }
 
         private void SubscribeToEventBus()
         {
-            //eventBus.OnPartyReturned += ShowHealingPopup;
+            eventBus.OnTempleEnteredFromExpedition += ShowHealingPopup;
+        }
+
+        private void UnsubscribeFromEventBus()
+        {
+            eventBus.OnTempleEnteredFromExpedition -= ShowHealingPopup;
         }
 
         private void ShowHealingPopup()
@@ -57,7 +62,7 @@ namespace VirulentVentures
             }
             popupContainer.style.display = DisplayStyle.Flex;
 
-            var healableHeroes = partyData.HeroStats.Where(h => !h.HasRetreated && h.Health > 0 && h.Health < h.MaxHealth).ToList();
+            var healableHeroes = partyData.HeroStats.Where(h => !h.HasRetreated && h.Health > 0 && (h.Health < h.MaxHealth || h.Morale < h.MaxMorale)).ToList();
             if (healableHeroes.Count == 0)
             {
                 Debug.Log("HealingPopupComponent: No heroes to heal.");
@@ -71,6 +76,14 @@ namespace VirulentVentures
         private IEnumerator ShowHeroPopups(System.Collections.Generic.List<CharacterStats> heroes)
         {
             int totalFavour = 0;
+            Label totalFavourLabel = new Label("Total Favour: 0");
+            totalFavourLabel.style.unityFont = uiConfig.PixelFont;
+            totalFavourLabel.style.color = new StyleColor(Color.green);
+            totalFavourLabel.style.fontSize = 16;
+            totalFavourLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            totalFavourLabel.style.marginTop = 10;
+            popupContainer.Add(totalFavourLabel);
+
             foreach (var hero in heroes)
             {
                 VisualElement heroPanel = new VisualElement();
@@ -88,35 +101,69 @@ namespace VirulentVentures
 
                 VisualElement healthBar = new VisualElement();
                 healthBar.AddToClassList("health-bar");
+                VisualElement moraleBar = new VisualElement();
+                moraleBar.AddToClassList("morale-bar");
                 heroPanel.Add(healthBar);
+                heroPanel.Add(moraleBar);
 
                 Label hpLabel = new Label($"HP: {hero.Health}/{hero.MaxHealth}");
                 hpLabel.style.unityFont = uiConfig.PixelFont;
                 hpLabel.style.color = uiConfig.TextColor;
                 heroPanel.Add(hpLabel);
 
+                Label moraleLabel = new Label($"Morale: {hero.Morale}/{hero.MaxMorale}");
+                moraleLabel.style.unityFont = uiConfig.PixelFont;
+                moraleLabel.style.color = uiConfig.TextColor;
+                heroPanel.Add(moraleLabel);
+
+                Label virusLabel = new Label("Viruses Harvested: None");
+                virusLabel.style.unityFont = uiConfig.PixelFont;
+                virusLabel.style.color = uiConfig.TextColor;
+                heroPanel.Add(virusLabel);
+
+                Label favourLabel = new Label("Favour: 0");
+                favourLabel.style.unityFont = uiConfig.PixelFont;
+                favourLabel.style.color = new StyleColor(Color.green);
+                heroPanel.Add(favourLabel);
+
                 popupContainer.Add(heroPanel);
 
                 int startHealth = hero.Health;
                 int targetHealth = hero.MaxHealth;
                 int hpHealed = targetHealth - startHealth;
-                float favour = healingConfig.HPFavourPerPoint * hpHealed;
+                int startMorale = hero.Morale;
+                int targetMorale = hero.MaxMorale;
+                int moraleRestored = targetMorale - startMorale;
+                float favour = (healingConfig.HPFavourPerPoint * hpHealed) + (healingConfig.MoraleFavourPerPoint * moraleRestored);
                 totalFavour += Mathf.RoundToInt(favour);
 
                 float elapsed = 0f;
-                float duration = 2f;
+                float duration = 1.5f;
                 while (elapsed < duration)
                 {
                     elapsed += Time.deltaTime;
-                    float t = Mathf.SmoothStep(0f, 1f, elapsed / duration); // Ease-in-out
+                    float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
                     int currentHealth = Mathf.RoundToInt(Mathf.Lerp(startHealth, targetHealth, t));
                     float healthPercent = (float)currentHealth / hero.MaxHealth;
                     healthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
                     hpLabel.text = $"HP: {currentHealth}/{hero.MaxHealth}";
+
+                    int currentMorale = Mathf.RoundToInt(Mathf.Lerp(startMorale, targetMorale, t));
+                    float moralePercent = (float)currentMorale / hero.MaxMorale;
+                    moraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
+                    moraleLabel.text = $"Morale: {currentMorale}/{hero.MaxMorale}";
+
+                    float currentFavour = Mathf.Lerp(0, favour, t);
+                    favourLabel.text = $"Favour: {Mathf.RoundToInt(currentFavour)}";
+                    totalFavourLabel.text = $"Total Favour: {totalFavour - Mathf.RoundToInt(favour) + Mathf.RoundToInt(currentFavour)}";
+
                     yield return null;
                 }
                 hero.Health = targetHealth;
-                yield return new WaitForSeconds(0.5f); // Brief pause between heroes
+                hero.Morale = targetMorale;
+                favourLabel.text = $"Favour: {Mathf.RoundToInt(favour)}";
+                totalFavourLabel.text = $"Total Favour: {totalFavour}";
+                yield return new WaitForSeconds(0.5f);
                 popupContainer.Remove(heroPanel);
             }
 
@@ -127,7 +174,17 @@ namespace VirulentVentures
                 eventBus.RaisePlayerProgressUpdated();
             }
             eventBus.RaisePartyUpdated(partyData);
-            popupContainer.style.display = DisplayStyle.None;
+
+            Button continueButton = new Button();
+            continueButton.text = "Continue";
+            continueButton.AddToClassList("button");
+            continueButton.style.color = uiConfig.TextColor;
+            continueButton.clicked += () =>
+            {
+                popupContainer.style.display = DisplayStyle.None;
+                eventBus.RaiseContinueClicked();
+            };
+            popupContainer.Add(continueButton);
         }
 
         private bool ValidateReferences()
