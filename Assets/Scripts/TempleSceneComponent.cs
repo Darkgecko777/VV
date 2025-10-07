@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -80,20 +80,41 @@ namespace VirulentVentures
         private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData data)
         {
             if (data.expeditionData != null || data.partyData != null) return;
+
+            // Randomize total difficulty (D) for stage 1: 24-36
+            int totalDifficulty = Random.Range(24, 37);
             List<NodeData> nodes = new List<NodeData>();
-            nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", 1, isTempleNode: true));
-            int totalNodeCount = testMode ? 8 : Random.Range(0, 3) * 2 + 8;
-            int combatNodeCount = totalNodeCount / 2;
-            int nonCombatNodeCount = totalNodeCount / 2;
-            int level = 2;
-            for (int i = 0; i < combatNodeCount; i++)
+            int remainingDifficulty = totalDifficulty;
+            bool isCombat = Random.value > 0.5f; // Random start: combat or non-combat
+
+            // Add temple node (R=0, non-combat)
+            nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("", 1, 0, isTempleNode: true));
+
+            // Generate 5-7 additional nodes (6-8 total) with R=3-6
+            while (remainingDifficulty >= 2 && nodes.Count < 8)
             {
-                nodes.Add(combatNodeGenerator.GenerateCombatNode("Swamp", level, combatEncounterData));
+                int rating = Random.Range(3, 7); // R=3-6
+                if (remainingDifficulty < rating)
+                {
+                    if (remainingDifficulty < 2) break; // Discard remainder < 2
+                    rating = Mathf.Max(2, remainingDifficulty); // Ensure last node R≥2
+                }
+
+                NodeData node;
+                if (isCombat)
+                {
+                    node = combatNodeGenerator.GenerateCombatNode("", 1, combatEncounterData, rating);
+                }
+                else
+                {
+                    node = nonCombatNodeGenerator.GenerateNonCombatNode("", 1, rating);
+                }
+                nodes.Add(node);
+                remainingDifficulty -= rating;
+                isCombat = !isCombat; // Alternate
             }
-            for (int i = 0; i < nonCombatNodeCount; i++)
-            {
-                nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("Swamp", level));
-            }
+
+            // Party setup
             partyData.Reset();
             partyData.HeroIds = new List<string>();
             var positionMap = new Dictionary<int, string>
@@ -122,6 +143,7 @@ namespace VirulentVentures
                 hero.Health = hero.MaxHealth;
                 hero.Morale = hero.MaxMorale;
             }
+
             if (expeditionData == null)
             {
                 Debug.LogError("TempleSceneComponent: expeditionData is null in GenerateExpedition!");

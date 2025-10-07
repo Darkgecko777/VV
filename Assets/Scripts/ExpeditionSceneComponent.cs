@@ -24,7 +24,6 @@ namespace VirulentVentures
             eventBus.OnNodeUpdated += HandleNodeUpdate;
             eventBus.OnSceneTransitionCompleted += HandleNodeUpdate;
             eventBus.OnContinueClicked += HandleContinueClicked;
-
             var expedition = ExpeditionManager.Instance.GetExpedition();
             if (!expedition.IsValid())
             {
@@ -50,20 +49,46 @@ namespace VirulentVentures
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
             partyData.AllowCultist = false;
 
-            var nodes = new List<NodeData>();
+            // Randomize total difficulty (D) for stage 1: 24-36
+            int totalDifficulty = Random.Range(24, 37);
+            List<NodeData> nodes = new List<NodeData>();
+            int remainingDifficulty = totalDifficulty;
+            bool isCombat = Random.value > 0.5f; // Random start: combat or non-combat
+
+            // Add temple node (R=0, non-combat)
             var nonCombatGenerator = gameObject.AddComponent<NonCombatNodeGenerator>();
+            nodes.Add(nonCombatGenerator.GenerateNonCombatNode("", 1, 0, isTempleNode: true));
+
+            // Generate 5-7 additional nodes (6-8 total) with R=3-6
             var combatGenerator = gameObject.AddComponent<CombatNodeGenerator>();
-            var nonCombatNode = nonCombatGenerator.GenerateNonCombatNode("Swamp", 1);
-            var combatNode = combatGenerator.GenerateCombatNode("Swamp", 1, combatEncounterData);
-            nodes.Add(nonCombatNode);
-            nodes.Add(combatNode);
+            while (remainingDifficulty >= 2 && nodes.Count < 8)
+            {
+                int rating = Random.Range(3, 7); // R=3-6
+                if (remainingDifficulty < rating)
+                {
+                    if (remainingDifficulty < 2) break; // Discard remainder < 2
+                    rating = Mathf.Max(2, remainingDifficulty); // Ensure last node R≥2
+                }
+
+                NodeData node;
+                if (isCombat)
+                {
+                    node = combatGenerator.GenerateCombatNode("", 1, combatEncounterData, rating);
+                }
+                else
+                {
+                    node = nonCombatGenerator.GenerateNonCombatNode("", 1, rating);
+                }
+                nodes.Add(node);
+                remainingDifficulty -= rating;
+                isCombat = !isCombat; // Alternate
+            }
             Destroy(nonCombatGenerator);
             Destroy(combatGenerator);
 
             expeditionData.SetNodes(nodes);
             expeditionData.CurrentNodeIndex = 0;
             expeditionData.SetParty(partyData);
-
             eventBus.RaiseExpeditionGenerated(expeditionData, partyData);
             eventBus.RaisePartyUpdated(partyData);
             eventBus.RaiseNodeUpdated(nodes, 0);
@@ -76,7 +101,6 @@ namespace VirulentVentures
                 Debug.LogError("ExpeditionSceneComponent: Invalid node data or index!");
                 return;
             }
-
             var currentNode = data.nodes[data.currentIndex];
             if (currentNode.IsCombat && !currentNode.Completed)
             {
@@ -113,7 +137,6 @@ namespace VirulentVentures
                 Debug.LogError("ExpeditionSceneComponent: Expedition or NodeData is null in HandleContinueClicked!");
                 return;
             }
-
             // Check for hero deaths before advancing
             if (CheckForHeroDeaths())
             {
@@ -121,7 +144,6 @@ namespace VirulentVentures
                 ExpeditionManager.Instance.TransitionToTemplePlanningScene();
                 return;
             }
-
             if (expedition.CurrentNodeIndex >= expedition.NodeData.Count - 1)
             {
                 Debug.Log("ExpeditionSceneComponent: Expedition completed, transitioning to Temple");

@@ -52,27 +52,13 @@ namespace VirulentVentures
             return true;
         }
 
-        public NodeData GenerateCombatNode(string biome, int level, EncounterData encounterData, NodeData existingNode = null)
+        public NodeData GenerateCombatNode(string biome, int level, EncounterData encounterData, int rating)
         {
-            if (!ValidateReferences(encounterData)) return new NodeData(new List<CharacterStats>(), "Combat", biome, false, "", new List<VirusData>());
+            if (!ValidateReferences(encounterData)) return new NodeData(new List<CharacterStats>(), "Combat", biome, true, "", new List<VirusData>(), rating);
 
-            List<CharacterStats> monsters;
-            if (existingNode != null && existingNode.Monsters.Any(m => m.Health > 0))
-            {
-                monsters = existingNode.Monsters;
-            }
-            else
-            {
-                int count = Random.Range(1, Mathf.Min(5, level + 2));
-                List<string> selectedIds = new List<string>();
-                for (int i = 0; i < count; i++)
-                {
-                    string monsterId = monsterPool[Random.Range(0, monsterPool.Count)];
-                    selectedIds.Add(monsterId);
-                }
-                encounterData.InitializeEncounter(selectedIds);
-                monsters = encounterData.SpawnMonsters();
-            }
+            List<string> selectedIds = SelectMonsterComposition(rating);
+            encounterData.InitializeEncounter(selectedIds);
+            List<CharacterStats> monsters = encounterData.SpawnMonsters();
 
             monsters = monsters
                 .GroupBy(m => m.PartyPosition)
@@ -80,7 +66,7 @@ namespace VirulentVentures
                 .SelectMany(g => g.GroupBy(m => m.Id).SelectMany(sg => sg.OrderBy(_ => Random.value)))
                 .ToList();
 
-            string[] texts = flavourTextPool.ContainsKey(biome) ? flavourTextPool[biome] : new[] { $"A {biome.ToLower()}-infested encounter." };
+            string[] texts = flavourTextPool.ContainsKey(biome) ? flavourTextPool[biome] : new[] { "A dangerous encounter." };
             string flavourText = texts[Random.Range(0, texts.Length)];
 
             return new NodeData(
@@ -89,8 +75,47 @@ namespace VirulentVentures
                 biome: biome,
                 isCombat: true,
                 flavourText: flavourText,
-                seededViruses: new List<VirusData>()
+                seededViruses: new List<VirusData>(),
+                challengeRating: rating
             );
+        }
+
+        private List<string> SelectMonsterComposition(int targetRating)
+        {
+            List<string> validIds = new List<string>();
+            List<(string id, int rank)> monsterRanks = monsterPool
+                .Select(id => (id, CharacterLibrary.GetMonsterData(id).Rank))
+                .Where(t => t.Rank > 0)
+                .ToList();
+
+            void FindCompositions(List<string> current, int sum, int index, List<List<string>> results)
+            {
+                if (sum == targetRating && current.Count <= 4)
+                {
+                    results.Add(new List<string>(current));
+                    return;
+                }
+                if (sum > targetRating || current.Count > 4 || index >= monsterRanks.Count) return;
+
+                // Include current monster
+                current.Add(monsterRanks[index].id);
+                FindCompositions(current, sum + monsterRanks[index].rank, index, results);
+                current.RemoveAt(current.Count - 1);
+
+                // Skip current monster
+                FindCompositions(current, sum, index + 1, results);
+            }
+
+            List<List<string>> compositions = new List<List<string>>();
+            FindCompositions(new List<string>(), 0, 0, compositions);
+
+            if (compositions.Count == 0)
+            {
+                Debug.LogWarning($"CombatNodeGenerator: No valid monster composition found for rating {targetRating}. Using fallback.");
+                return new List<string> { "Wraith" }; // Fallback to rank 1
+            }
+
+            return compositions[Random.Range(0, compositions.Count)];
         }
     }
 }

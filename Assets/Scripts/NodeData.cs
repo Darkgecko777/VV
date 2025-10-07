@@ -1,20 +1,19 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 
 namespace VirulentVentures
 {
-    [Serializable]
+    [System.Serializable]
     public class NodeData
     {
-        [SerializeField] private List<CharacterStats> monsters = new List<CharacterStats>();
-        [SerializeField] private string nodeType; // e.g., "Combat", "NonCombat"
-        [SerializeField] private string biome; // e.g., "Swamp"
+        [SerializeField] private List<CharacterStats> monsters;
+        [SerializeField] private string nodeType;
+        [SerializeField] private string biome;
         [SerializeField] private bool isCombat;
         [SerializeField] private string flavourText;
-        [SerializeField] private List<VirusData> seededViruses = new List<VirusData>();
-        [SerializeField] private bool completed; // New field
+        [SerializeField] private List<VirusData> seededViruses;
+        [SerializeField] private int challengeRating;
+        [SerializeField] private bool completed;
 
         public List<CharacterStats> Monsters => monsters;
         public string NodeType => nodeType;
@@ -22,17 +21,19 @@ namespace VirulentVentures
         public bool IsCombat => isCombat;
         public string FlavourText => flavourText;
         public List<VirusData> SeededViruses => seededViruses;
-        public bool Completed { get => completed; set => completed = value; } // New property
+        public int ChallengeRating => challengeRating;
+        public bool Completed { get => completed; set => completed = value; }
 
-        public NodeData(List<CharacterStats> monsters, string nodeType, string biome, bool isCombat, string flavourText, List<VirusData> seededViruses = null)
+        public NodeData(List<CharacterStats> monsters, string nodeType, string biome, bool isCombat, string flavourText, List<VirusData> seededViruses, int challengeRating = 0, bool completed = false)
         {
-            this.monsters = monsters?.Where(m => m is CharacterStats cs && cs.Type == CharacterType.Monster).ToList() ?? new List<CharacterStats>();
-            this.nodeType = nodeType;
-            this.biome = biome;
+            this.monsters = monsters ?? new List<CharacterStats>();
+            this.nodeType = nodeType ?? "NonCombat";
+            this.biome = biome ?? "";
             this.isCombat = isCombat;
-            this.flavourText = flavourText;
+            this.flavourText = flavourText ?? "";
             this.seededViruses = seededViruses ?? new List<VirusData>();
-            this.completed = false; // Initialize as not completed
+            this.challengeRating = challengeRating;
+            this.completed = completed;
         }
     }
 }
