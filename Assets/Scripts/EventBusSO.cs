@@ -101,6 +101,7 @@ namespace VirulentVentures
         public event Action OnCombatPlayed;
         public event Action<CombatSpeedData> OnCombatSpeedChanged;
         public event Action<AttackData> OnAbilitySelected;
+        public event Action OnCureInfections;
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -225,6 +226,11 @@ namespace VirulentVentures
         public void RaiseAbilitySelected(AttackData data)
         {
             OnAbilitySelected?.Invoke(data);
+        }
+
+        public void RaiseCureInfections()
+        {
+            OnCureInfections?.Invoke();
         }
     }
 }

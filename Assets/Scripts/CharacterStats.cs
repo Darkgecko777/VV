@@ -18,9 +18,10 @@ namespace VirulentVentures
         public int Evasion { get; set; }
         public int Morale { get; set; }
         public int MaxMorale { get; set; }
-        public int Infectivity { get; set; }
+        public int Immunity { get; set; }
+        public List<VirusData> Infections { get; set; }
         public bool HasRetreated { get; set; } = false;
-        public bool IsInfected { get; set; } = false;
+        public bool IsInfected => Infections != null && Infections.Any();
         public int PartyPosition { get; set; }
         public string[] abilityIds { get; set; }
         public AbilitySO[] abilities { get; set; }
@@ -43,7 +44,8 @@ namespace VirulentVentures
                 Evasion = 10;
                 Morale = 100;
                 MaxMorale = 100;
-                Infectivity = 20;
+                Immunity = 20;
+                Infections = new List<VirusData>();
                 PartyPosition = 1;
                 abilityIds = new string[] { "MeleeStrike" };
                 abilities = new AbilitySO[0];
@@ -61,7 +63,8 @@ namespace VirulentVentures
             Evasion = data.Evasion;
             Morale = Type == CharacterType.Hero ? data.Morale : 0;
             MaxMorale = Type == CharacterType.Hero ? data.MaxMorale : 0;
-            Infectivity = data.Infectivity;
+            Immunity = data.Infectivity;
+            Infections = new List<VirusData>();
             PartyPosition = data.PartyPosition;
             abilityIds = data.Abilities != null && data.Abilities.Length > 0 ? data.Abilities.Select(a => a.Id).ToArray() : new string[] { "MeleeStrike" };
             abilities = data.Abilities != null ? data.Abilities : new AbilitySO[0];
@@ -87,10 +90,11 @@ namespace VirulentVentures
             public int infectivity;
             public bool isHero;
             public bool isInfected;
+            public List<VirusData> infections;
             public int rank;
             public Sprite combatSprite;
 
-            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected, int rank, Sprite combatSprite)
+            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected, List<VirusData> infections, int rank, Sprite combatSprite)
             {
                 this.name = name;
                 this.health = health;
@@ -104,6 +108,7 @@ namespace VirulentVentures
                 this.infectivity = infectivity;
                 this.isHero = isHero;
                 this.isInfected = isInfected;
+                this.infections = infections;
                 this.rank = rank;
                 this.combatSprite = combatSprite;
             }
@@ -121,9 +126,10 @@ namespace VirulentVentures
                 evasion: Mathf.Clamp(Evasion, 0, 100),
                 morale: Morale,
                 maxMorale: MaxMorale,
-                infectivity: Infectivity,
+                infectivity: Immunity,
                 isHero: IsHero,
                 isInfected: IsInfected,
+                infections: Infections,
                 rank: Rank,
                 combatSprite: CombatSprite
             );

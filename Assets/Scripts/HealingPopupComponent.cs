@@ -12,6 +12,7 @@ namespace VirulentVentures
         [SerializeField] private PartyData partyData;
         [SerializeField] private HealingConfig healingConfig;
         [SerializeField] private EventBusSO eventBus;
+        [SerializeField] private VirusCraftingComponent virusCraftingComponent; // Added serialized field
         private VisualElement root;
         private VisualElement popupContainer;
         private bool isInitialized;
@@ -62,10 +63,11 @@ namespace VirulentVentures
             }
             popupContainer.style.display = DisplayStyle.Flex;
 
-            var healableHeroes = partyData.HeroStats.Where(h => !h.HasRetreated && h.Health > 0 && (h.Health < h.MaxHealth || h.Morale < h.MaxMorale)).ToList();
+            var healableHeroes = partyData.HeroStats.Where(h => !h.HasRetreated && h.Health > 0 &&
+                (h.Health < h.MaxHealth || h.Morale < h.MaxMorale || h.Infections.Any())).ToList();
             if (healableHeroes.Count == 0)
             {
-                Debug.Log("HealingPopupComponent: No heroes to heal.");
+                Debug.Log("HealingPopupComponent: No heroes to heal or cure.");
                 popupContainer.style.display = DisplayStyle.None;
                 return;
             }
@@ -116,7 +118,8 @@ namespace VirulentVentures
                 moraleLabel.style.color = uiConfig.TextColor;
                 heroPanel.Add(moraleLabel);
 
-                Label virusLabel = new Label("Viruses Harvested: None");
+                string virusText = hero.Infections.Any() ? string.Join(", ", hero.Infections.Select(v => v.VirusID)) : "None";
+                Label virusLabel = new Label($"Viruses: {virusText}");
                 virusLabel.style.unityFont = uiConfig.PixelFont;
                 virusLabel.style.color = uiConfig.TextColor;
                 heroPanel.Add(virusLabel);
@@ -134,7 +137,8 @@ namespace VirulentVentures
                 int startMorale = hero.Morale;
                 int targetMorale = hero.MaxMorale;
                 int moraleRestored = targetMorale - startMorale;
-                float favour = (healingConfig.HPFavourPerPoint * hpHealed) + (healingConfig.MoraleFavourPerPoint * moraleRestored);
+                float virusFavour = hero.Infections.Sum(v => healingConfig.VirusRarityFavour.TryGetValue(v.Rarity, out float f) ? f : 0f);
+                float favour = (healingConfig.HPFavourPerPoint * hpHealed) + (healingConfig.MoraleFavourPerPoint * moraleRestored) + virusFavour;
                 totalFavour += Mathf.RoundToInt(favour);
 
                 float elapsed = 0f;
@@ -161,6 +165,11 @@ namespace VirulentVentures
                 }
                 hero.Health = targetHealth;
                 hero.Morale = targetMorale;
+                if (hero.Infections.Any())
+                {
+                    eventBus.RaiseCureInfections();
+                    virusLabel.text = "Viruses: None";
+                }
                 favourLabel.text = $"Favour: {Mathf.RoundToInt(favour)}";
                 totalFavourLabel.text = $"Total Favour: {totalFavour}";
                 yield return new WaitForSeconds(0.5f);
@@ -189,10 +198,12 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || uiConfig == null || partyData == null || healingConfig == null || eventBus == null)
+            if (uiDocument == null || uiConfig == null || partyData == null || healingConfig == null ||
+                eventBus == null || virusCraftingComponent == null)
             {
-                Debug.LogError($"HealingPopupComponent: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, " +
-                    $"PartyData: {partyData != null}, HealingConfig: {healingConfig != null}, EventBus: {eventBus != null}");
+                Debug.LogError($"HealingPopupComponent: Missing references! UIDocument: {uiDocument != null}, " +
+                    $"UIConfig: {uiConfig != null}, PartyData: {partyData != null}, HealingConfig: {healingConfig != null}, " +
+                    $"EventBus: {eventBus != null}, VirusCraftingComponent: {virusCraftingComponent != null}");
                 return false;
             }
             return true;

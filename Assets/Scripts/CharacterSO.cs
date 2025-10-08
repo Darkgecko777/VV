@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace VirulentVentures
@@ -57,6 +57,7 @@ namespace VirulentVentures
                 infectivity: infectivity,
                 isHero: isHero,
                 isInfected: false,
+                infections: new List<VirusData>(),
                 rank: rank,
                 combatSprite: combatSprite
             );

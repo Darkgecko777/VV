@@ -116,6 +116,7 @@ namespace VirulentVentures
                         Debug.LogWarning($"PartyData: Invalid Rank {stats.Rank} for {heroId}, setting to 1.");
                         stats.Rank = 1;
                     }
+                    stats.Infections = new List<VirusData>();
                     HeroStats.Add(stats);
                     positionMap.Remove(partyPosition);
                 }
@@ -131,6 +132,25 @@ namespace VirulentVentures
         public CharacterStats GetHeroByPosition(int position)
         {
             return HeroStats?.Find(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition == position);
+        }
+
+        public void ApplyVirusEffects(EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs)
+        {
+            foreach (var hero in HeroStats.Where(h => h.Infections.Any() && h.Health > 0 && !h.HasRetreated))
+            {
+                foreach (var virus in hero.Infections)
+                {
+                    if (virus.Effect == "HPDrain")
+                    {
+                        int damage = Mathf.RoundToInt(hero.MaxHealth * virus.EffectStrength);
+                        hero.Health = Mathf.Max(1, hero.Health - damage);
+                        string virusMessage = $"{hero.Id} suffers {damage} damage from {virus.VirusID}!";
+                        combatLogs.Add(virusMessage);
+                        eventBus.RaiseLogMessage(virusMessage, Color.red);
+                        eventBus.RaiseUnitUpdated(hero, hero.GetDisplayStats());
+                    }
+                }
+            }
         }
     }
 }

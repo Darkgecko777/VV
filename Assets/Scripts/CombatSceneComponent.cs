@@ -17,6 +17,7 @@ namespace VirulentVentures
         private List<CharacterStats> heroPositions = new List<CharacterStats>();
         private List<CharacterStats> monsterPositions = new List<CharacterStats>();
         private List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
+        private Dictionary<CharacterStats, List<VirusData>> monsterInfections = new Dictionary<CharacterStats, List<VirusData>>();
         private bool isCombatActive;
         private bool isPaused;
         private int roundNumber;
@@ -30,10 +31,12 @@ namespace VirulentVentures
         public bool IsPaused => isPaused;
         public EventBusSO EventBus => eventBus;
         public UIConfig UIConfig => uiConfig;
+
         public UnitAttackState GetUnitAttackState(ICombatUnit unit)
         {
             return unitAttackStates.Find(s => s.Unit == unit);
         }
+
         void Awake()
         {
             isCombatActive = false;
@@ -45,6 +48,7 @@ namespace VirulentVentures
             heroPositions.Clear();
             monsterPositions.Clear();
             units.Clear();
+            monsterInfections.Clear();
             lastEndCombatTime = -logDuplicateWindow;
             if (!hasSubscribed)
             {
@@ -54,6 +58,7 @@ namespace VirulentVentures
                 hasSubscribed = true;
             }
         }
+
         void Start()
         {
             if (!ValidateReferences())
@@ -70,6 +75,7 @@ namespace VirulentVentures
             InitializeUnits(expedition.Party.GetHeroes(), expedition.NodeData[expedition.CurrentNodeIndex].Monsters);
             StartCombatLoop(expedition.Party);
         }
+
         void OnDestroy()
         {
             if (hasSubscribed)
@@ -85,16 +91,19 @@ namespace VirulentVentures
                 activeCombatCoroutine = null;
             }
         }
+
         public void PauseCombat()
         {
             isPaused = true;
             eventBus.RaiseCombatPaused();
         }
+
         public void PlayCombat()
         {
             isPaused = false;
             eventBus.RaiseCombatPlayed();
         }
+
         public void SetCombatSpeed(float speed)
         {
             if (combatConfig != null)
@@ -110,6 +119,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         public void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
         {
             string initMessage = "Combat begins!";
@@ -161,6 +171,7 @@ namespace VirulentVentures
                     SkipNextAttack = false,
                     TempStats = new Dictionary<string, (int value, int duration)>()
                 });
+                monsterInfections[monster] = new List<VirusData>();
                 string monsterMessage = $"{monster.Id} enters combat with {monster.Health}/{monster.MaxHealth} HP.";
                 allCombatLogs.Add(monsterMessage);
                 eventBus.RaiseLogMessage(monsterMessage, uiConfig.TextColor);
@@ -169,6 +180,7 @@ namespace VirulentVentures
             monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
             eventBus.RaiseCombatInitialized(units);
         }
+
         public void UpdateUnit(ICombatUnit unit, string damageMessage = null)
         {
             if (unit == null) return;
@@ -194,6 +206,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         public void StartCombatLoop(PartyData party)
         {
             if (partyData == null)
@@ -214,6 +227,37 @@ namespace VirulentVentures
             isCombatActive = true;
             activeCombatCoroutine = StartCoroutine(RunCombat());
         }
+
+        private void TryInfectUnit(CharacterStats attacker, CharacterStats target, AbilitySO ability, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
+        {
+            if (attacker == null || target == null || ability == null || combatConfig == null) return;
+            if (attacker.Infections.Any() && ability.Id == "BasicAttack" && target.Health > 0 && !target.HasRetreated)
+            {
+                foreach (var virus in attacker.Infections.Where(v => v.TransmissionVector == TransmissionVector.Health))
+                {
+                    float infectionChance = virus.BaseInfectionChance * (1f - target.Immunity / 100f);
+                    if (Random.value <= infectionChance)
+                    {
+                        if (target.Type == CharacterType.Hero)
+                        {
+                            target.Infections.Add(virus);
+                        }
+                        else
+                        {
+                            if (!monsterInfections.ContainsKey(target))
+                                monsterInfections[target] = new List<VirusData>();
+                            monsterInfections[target].Add(virus);
+                        }
+                        string infectMessage = $"{target.Id} infected with {virus.VirusID}!";
+                        combatLogs.Add(infectMessage);
+                        eventBus.RaiseLogMessage(infectMessage, Color.red);
+                        eventBus.RaiseUnitInfected(target, virus.VirusID);
+                        eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
+                    }
+                }
+            }
+        }
+
         private IEnumerator RunCombat()
         {
             if (!isCombatActive)
@@ -243,6 +287,7 @@ namespace VirulentVentures
             while (isCombatActive)
             {
                 yield return new WaitUntil(() => !isPaused);
+                partyData.ApplyVirusEffects(eventBus, uiConfig, allCombatLogs);
                 var unitList = heroPositions.Cast<ICombatUnit>().Concat(monsterPositions.Cast<ICombatUnit>()).Where(u => u.Health > 0 && !u.HasRetreated).OrderByDescending(u => u.Speed).ToList();
                 if (unitList.Count == 0 || monsterPositions.Count == 0)
                 {
@@ -299,6 +344,14 @@ namespace VirulentVentures
                     if (unit is CharacterStats stats)
                     {
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
+                        if (stats.abilities.Any(a => a.Id == "BasicAttack"))
+                        {
+                            var selectedTargets = CombatUtils.SelectTargets(stats, unitList, partyData, stats.abilities.First(a => a.Id == "BasicAttack").Rule, heroPositions, monsterPositions, stats.abilities.First(a => a.Id == "BasicAttack"), allCombatLogs, eventBus, uiConfig);
+                            foreach (var target in selectedTargets.OfType<CharacterStats>())
+                            {
+                                TryInfectUnit(stats, target, stats.abilities.First(a => a.Id == "BasicAttack"), allCombatLogs, eventBus, uiConfig);
+                            }
+                        }
                     }
                     yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
@@ -316,6 +369,14 @@ namespace VirulentVentures
                     {
                         state.AttacksThisRound++;
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
+                        if (stats.abilities.Any(a => a.Id == "BasicAttack"))
+                        {
+                            var selectedTargets = CombatUtils.SelectTargets(stats, unitList, partyData, stats.abilities.First(a => a.Id == "BasicAttack").Rule, heroPositions, monsterPositions, stats.abilities.First(a => a.Id == "BasicAttack"), allCombatLogs, eventBus, uiConfig);
+                            foreach (var target in selectedTargets.OfType<CharacterStats>())
+                            {
+                                TryInfectUnit(stats, target, stats.abilities.First(a => a.Id == "BasicAttack"), allCombatLogs, eventBus, uiConfig);
+                            }
+                        }
                         yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
@@ -343,6 +404,7 @@ namespace VirulentVentures
                 IncrementRound();
             }
         }
+
         private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
         {
             if (unit is not CharacterStats stats) return false;
@@ -361,6 +423,7 @@ namespace VirulentVentures
                 return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
             return false;
         }
+
         private void IncrementRound()
         {
             roundNumber++;
@@ -368,6 +431,7 @@ namespace VirulentVentures
             allCombatLogs.Add(roundMessage);
             eventBus.RaiseLogMessage(roundMessage, uiConfig.TextColor);
         }
+
         private void EndCombat(ExpeditionManager expeditionManager, bool isVictory)
         {
             float currentTime = Time.time;
@@ -388,6 +452,7 @@ namespace VirulentVentures
             heroPositions.Clear();
             monsterPositions.Clear();
             units.Clear();
+            monsterInfections.Clear();
             noTargetLogCooldowns.Clear();
             isCombatActive = false;
             roundNumber = 0;
@@ -419,6 +484,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         private bool ValidateReferences()
         {
             if (combatConfig == null)

@@ -281,6 +281,7 @@ MonoBehaviour:
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
   healingConfig: {fileID: 11400000, guid: 6a1e4f63fa251a445a7bf57aefb9948d, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  virusCraftingComponent: {fileID: 1302402189}
 --- !u!4 &527303798
 Transform:
   m_ObjectHideFlags: 0
@@ -288,6 +289,54 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 527303796}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1302402188
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1302402190}
+  - component: {fileID: 1302402189}
+  m_Layer: 0
+  m_Name: VirusComponent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1302402189
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1302402188}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2ce794dbf470df439e9814d3873f31f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerProgress: {fileID: 11400000, guid: 431658165779e034594c3a1172a741ce, type: 2}
+  partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
+  eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
+  healingConfig: {fileID: 11400000, guid: 6a1e4f63fa251a445a7bf57aefb9948d, type: 2}
+--- !u!4 &1302402190
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1302402188}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -474,6 +523,7 @@ MonoBehaviour:
   defaultPositions: {fileID: 11400000, guid: 9d7e90a887fd3d74c95ac0562a7fe6be, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   healingConfig: {fileID: 11400000, guid: 6a1e4f63fa251a445a7bf57aefb9948d, type: 2}
+  virusCraftingComponent: {fileID: 1302402189}
 --- !u!4 &2139730225
 Transform:
   m_ObjectHideFlags: 0
@@ -498,3 +548,4 @@ SceneRoots:
   - {fileID: 363512856}
   - {fileID: 335239195}
   - {fileID: 527303798}
+  - {fileID: 1302402190}
