@@ -9,23 +9,22 @@ namespace VirulentVentures.Editor
     [Serializable]
     public class ScriptReference
     {
-        public string title = "Virulent Ventures Script Reference";
-        public string version = "1.8.0"; // Updated to match latest ScriptReference.json
-        public string date;
-        public string description = "Auto-generated document tracking all scripts for Virulent Ventures.";
-        public List<ScriptEntry> scripts = new List<ScriptEntry>();
-        public List<string> notes = new List<string>();
+        public List<string> scripts = new List<string>();
     }
 
     [Serializable]
-    public class ScriptEntry
+    public class DebugLog
     {
-        public string name;
-        public string path;
-        public string description = "TODO: Add description";
-        public List<string> dependencies = new List<string>();
-        public string notes = "Auto-generated entry.";
-        public string lastModified;
+        public List<DebugLogEntry> logs;
+    }
+
+    [Serializable]
+    public class DebugLogEntry
+    {
+        public string timestamp;
+        public string type;
+        public string message;
+        public string stackTrace;
     }
 
     public class UpdateScriptReference
@@ -39,47 +38,21 @@ namespace VirulentVentures.Editor
             // Ensure Logs directory exists
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 
-            // Load existing ScriptReference.json if it exists
-            ScriptReference scriptReference = new ScriptReference();
-            if (File.Exists(outputPath))
-            {
-                string existingJson = File.ReadAllText(outputPath);
-                scriptReference = JsonUtility.FromJson<ScriptReference>(existingJson);
-            }
-
-            // Update date and add note for this run
-            scriptReference.date = DateTime.Now.ToString("yyyy-MM-dd");
-            scriptReference.notes.Add($"Updated on {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-
             // Get all .cs files in Scripts folder
             string[] scriptFiles = Directory.GetFiles(scriptsFolder, "*.cs", SearchOption.AllDirectories);
-            List<ScriptEntry> newScripts = new List<ScriptEntry>();
+            List<string> scriptNames = new List<string>();
 
             foreach (string filePath in scriptFiles)
             {
                 string fileName = Path.GetFileName(filePath);
-
-                // Check if script already exists in ScriptReference
-                ScriptEntry existingEntry = scriptReference.scripts.Find(s => s.name == fileName);
-                if (existingEntry != null)
-                {
-                    // Update lastModified
-                    existingEntry.lastModified = File.GetLastWriteTime(filePath).ToString("yyyy-MM-dd HH:mm:ss");
-                    newScripts.Add(existingEntry);
-                }
-                else
-                {
-                    // New script entry
-                    newScripts.Add(new ScriptEntry
-                    {
-                        name = fileName,
-                        path = filePath,
-                        lastModified = File.GetLastWriteTime(filePath).ToString("yyyy-MM-dd HH:mm:ss")
-                    });
-                }
+                scriptNames.Add(fileName);
             }
 
-            scriptReference.scripts = newScripts;
+            // Create ScriptReference with only script names
+            ScriptReference scriptReference = new ScriptReference
+            {
+                scripts = scriptNames
+            };
 
             // Write to ScriptReference.json
             string json = JsonUtility.ToJson(scriptReference, true);
@@ -96,27 +69,12 @@ namespace VirulentVentures.Editor
             {
                 timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
                 type = "Log",
-                message = $"UpdateScriptReference: Updated ScriptReference.json with {newScripts.Count} scripts at {outputPath}",
+                message = $"UpdateScriptReference: Updated ScriptReference.json with {scriptNames.Count} script names at {outputPath}",
                 stackTrace = ""
             });
             File.WriteAllText(debugLogPath, JsonUtility.ToJson(debugLog, true));
 
-            Debug.Log($"UpdateScriptReference: Generated ScriptReference.json with {newScripts.Count} scripts at {outputPath}");
-        }
-
-        [Serializable]
-        public class DebugLog
-        {
-            public List<DebugLogEntry> logs;
-        }
-
-        [Serializable]
-        public class DebugLogEntry
-        {
-            public string timestamp;
-            public string type;
-            public string message;
-            public string stackTrace;
+            Debug.Log($"UpdateScriptReference: Generated ScriptReference.json with {scriptNames.Count} script names at {outputPath}");
         }
     }
 }

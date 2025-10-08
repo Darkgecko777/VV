@@ -17,7 +17,7 @@ namespace VirulentVentures
         private List<CharacterStats> heroPositions = new List<CharacterStats>();
         private List<CharacterStats> monsterPositions = new List<CharacterStats>();
         private List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
-        private Dictionary<CharacterStats, List<VirusData>> monsterInfections = new Dictionary<CharacterStats, List<VirusData>>();
+        private Dictionary<CharacterStats, List<VirusSO>> monsterInfections = new Dictionary<CharacterStats, List<VirusSO>>();
         private bool isCombatActive;
         private bool isPaused;
         private int roundNumber;
@@ -171,7 +171,7 @@ namespace VirulentVentures
                     SkipNextAttack = false,
                     TempStats = new Dictionary<string, (int value, int duration)>()
                 });
-                monsterInfections[monster] = new List<VirusData>();
+                monsterInfections[monster] = monster.Infections ?? new List<VirusSO>();
                 string monsterMessage = $"{monster.Id} enters combat with {monster.Health}/{monster.MaxHealth} HP.";
                 allCombatLogs.Add(monsterMessage);
                 eventBus.RaiseLogMessage(monsterMessage, uiConfig.TextColor);
@@ -231,11 +231,14 @@ namespace VirulentVentures
         private void TryInfectUnit(CharacterStats attacker, CharacterStats target, AbilitySO ability, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
             if (attacker == null || target == null || ability == null || combatConfig == null) return;
+
+            // Normal transmission: Attacker infects target on health damage
             if (attacker.Infections.Any() && ability.Id == "BasicAttack" && target.Health > 0 && !target.HasRetreated)
             {
                 foreach (var virus in attacker.Infections.Where(v => v.TransmissionVector == TransmissionVector.Health))
                 {
-                    float infectionChance = virus.BaseInfectionChance * (1f - target.Immunity / 100f);
+                    float infectionChance = Mathf.Clamp01(1f - (target.Immunity / 100f + virus.BaseInfectionChance));
+                    Debug.Log($"CombatSceneComponent: {attacker.Id} attempts to infect {target.Id} with {virus.VirusID}, chance: {infectionChance:F2}");
                     if (Random.value <= infectionChance)
                     {
                         if (target.Type == CharacterType.Hero)
@@ -245,7 +248,7 @@ namespace VirulentVentures
                         else
                         {
                             if (!monsterInfections.ContainsKey(target))
-                                monsterInfections[target] = new List<VirusData>();
+                                monsterInfections[target] = new List<VirusSO>();
                             monsterInfections[target].Add(virus);
                         }
                         string infectMessage = $"{target.Id} infected with {virus.VirusID}!";
@@ -253,6 +256,34 @@ namespace VirulentVentures
                         eventBus.RaiseLogMessage(infectMessage, Color.red);
                         eventBus.RaiseUnitInfected(target, virus.VirusID);
                         eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
+                    }
+                }
+            }
+
+            // Reverse transmission: Target infects attacker if target is infected
+            if (target.Infections.Any() && ability.Id == "BasicAttack" && attacker.Health > 0 && !attacker.HasRetreated)
+            {
+                foreach (var virus in target.Infections.Where(v => v.TransmissionVector == TransmissionVector.Health))
+                {
+                    float infectionChance = Mathf.Clamp01(1f - (attacker.Immunity / 100f + virus.BaseInfectionChance * 0.5f));
+                    Debug.Log($"CombatSceneComponent: {target.Id} attempts counter-infection on {attacker.Id} with {virus.VirusID}, chance: {infectionChance:F2}");
+                    if (Random.value <= infectionChance)
+                    {
+                        if (attacker.Type == CharacterType.Hero)
+                        {
+                            attacker.Infections.Add(virus);
+                        }
+                        else
+                        {
+                            if (!monsterInfections.ContainsKey(attacker))
+                                monsterInfections[attacker] = new List<VirusSO>();
+                            monsterInfections[attacker].Add(virus);
+                        }
+                        string infectMessage = $"{attacker.Id} infected with {virus.VirusID} via counter-attack!";
+                        combatLogs.Add(infectMessage);
+                        eventBus.RaiseLogMessage(infectMessage, Color.red);
+                        eventBus.RaiseUnitInfected(attacker, virus.VirusID);
+                        eventBus.RaiseUnitUpdated(attacker, attacker.GetDisplayStats());
                     }
                 }
             }

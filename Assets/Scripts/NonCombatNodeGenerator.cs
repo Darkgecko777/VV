@@ -30,7 +30,7 @@ namespace VirulentVentures
                 biome: biome,
                 isCombat: false,
                 flavourText: flavourText,
-                seededViruses: new List<VirusData>(),
+                seededViruses: new List<VirusSO>(),
                 challengeRating: rating
             );
         }

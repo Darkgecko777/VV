@@ -13,7 +13,7 @@ namespace VirulentVentures
         [SerializeField] private UIConfig uiConfig;
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private EventBusSO eventBus;
-        [SerializeField] private List<VirusData> availableViruses;
+        [SerializeField] private VirusConfigSO virusConfig;
         [SerializeField] private PartyData partyData;
         private DropdownField virusDropdown;
         private DropdownField nodeDropdown;
@@ -108,12 +108,19 @@ namespace VirulentVentures
             if (virusDropdown != null)
             {
                 virusDropdown.choices.Clear();
-                foreach (var virus in availableViruses)
+                if (virusConfig != null)
                 {
-                    if (virus != null) virusDropdown.choices.Add(virus.VirusID);
+                    foreach (var virus in virusConfig.GetViruses())
+                    {
+                        if (virus != null) virusDropdown.choices.Add(virus.VirusID);
+                    }
+                    virusDropdown.value = virusDropdown.choices.Count > 0 ? virusDropdown.choices[0] : null;
+                    virusDropdown.style.color = uiConfig.TextColor;
                 }
-                virusDropdown.value = virusDropdown.choices.Count > 0 ? virusDropdown.choices[0] : null;
-                virusDropdown.style.color = uiConfig.TextColor;
+                else
+                {
+                    Debug.LogWarning("TempleUIComponent: virusConfig is null, no viruses loaded in dropdown.");
+                }
             }
             if (nodeDropdown != null)
             {
@@ -455,7 +462,7 @@ namespace VirulentVentures
             if (data.nodeIndex >= 0 && data.nodeIndex < nodes.Count())
             {
                 var nodeBox = nodes[data.nodeIndex];
-                var virus = availableViruses.Find(v => v.VirusID == data.virusID);
+                var virus = virusConfig?.GetVirus(data.virusID);
                 if (virus != null)
                 {
                     nodeBox.tooltip = nodeBox.tooltip + (string.IsNullOrEmpty(nodeBox.tooltip) ? "" : ", ") + virus.VirusID;
@@ -465,10 +472,10 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || availableViruses == null || partyData == null)
+            if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || virusConfig == null || partyData == null)
             {
                 Debug.LogError($"TempleUIComponent: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, " +
-                    $"VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, AvailableViruses: {availableViruses != null}, " +
+                    $"VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, VirusConfig: {virusConfig != null}, " +
                     $"PartyData: {partyData != null}");
                 return false;
             }

@@ -7,20 +7,11 @@ namespace VirulentVentures
     public class CombatNodeGenerator : MonoBehaviour
     {
         [SerializeField] private List<string> monsterPool;
+        [SerializeField] private VirusConfigSO virusConfig; // Assign in Inspector
         private readonly Dictionary<string, string[]> flavourTextPool = new Dictionary<string, string[]>
         {
-            { "Swamp", new[] {
-                "A horde emerges from the bog.",
-                "Mire-dwellers lurk in the mist.",
-                "Fetid claws rise from the swamp.",
-                "Dark shapes stir in the muck."
-            } },
-            { "Ruins", new[] {
-                "Spectral foes guard the ruins.",
-                "Ancient sentinels awaken.",
-                "Crumbled stone hides lurking fiends.",
-                "Echoes summon shadowed beasts."
-            } }
+            { "Swamp", new[] { "A horde emerges from the bog.", "Mire-dwellers lurk in the mist.", "Fetid claws rise from the swamp.", "Dark shapes stir in the muck." } },
+            { "Ruins", new[] { "Spectral foes guard the ruins.", "Ancient sentinels awaken.", "Crumbled stone hides lurking fiends.", "Echoes summon shadowed beasts." } }
         };
 
         void Awake()
@@ -31,16 +22,20 @@ namespace VirulentVentures
                 if (monsterPool.Count == 0)
                 {
                     Debug.LogWarning("CombatNodeGenerator: CharacterLibrary.GetMonsterIds returned empty, using fallback monster IDs.");
-                    monsterPool = new List<string> { "Bog Fiend", "Wraith", "Mire Shambler", "Umbral Corvax" };
+                    monsterPool = new List<string> { "BogFiend", "Wraith", "MireShambler", "UmbralCorvax" };
                 }
+            }
+            if (virusConfig == null)
+            {
+                Debug.LogError("CombatNodeGenerator: virusConfig not assigned in Inspector. Please assign VirusConfigSO.");
             }
         }
 
         private bool ValidateReferences(EncounterData encounterData)
         {
-            if (encounterData == null || encounterData.Positions == null || monsterPool == null || monsterPool.Count == 0)
+            if (encounterData == null || encounterData.Positions == null || monsterPool == null || monsterPool.Count == 0 || virusConfig == null)
             {
-                Debug.LogError($"CombatNodeGenerator: Missing references! EncounterData: {encounterData != null}, EncounterData.Positions: {encounterData?.Positions != null}, MonsterPool: {monsterPool != null && monsterPool.Count > 0}");
+                Debug.LogError($"CombatNodeGenerator: Missing references! EncounterData: {encounterData != null}, EncounterData.Positions: {encounterData?.Positions != null}, MonsterPool: {monsterPool != null && monsterPool.Count > 0}, VirusConfig: {virusConfig != null}");
                 return false;
             }
             var validMonsterIds = CharacterLibrary.GetMonsterIds();
@@ -54,11 +49,25 @@ namespace VirulentVentures
 
         public NodeData GenerateCombatNode(string biome, int level, EncounterData encounterData, int rating)
         {
-            if (!ValidateReferences(encounterData)) return new NodeData(new List<CharacterStats>(), "Combat", biome, true, "", new List<VirusData>(), rating);
+            if (!ValidateReferences(encounterData))
+                return new NodeData(new List<CharacterStats>(), "Combat", biome, true, "", new List<VirusSO>(), rating);
 
             List<string> selectedIds = SelectMonsterComposition(rating);
             encounterData.InitializeEncounter(selectedIds);
             List<CharacterStats> monsters = encounterData.SpawnMonsters();
+
+            // Guarantee BogRot on one random monster
+            VirusSO bogRotVirus = virusConfig?.GetVirus("BogRot");
+            if (monsters.Count > 0 && bogRotVirus != null)
+            {
+                int randomIndex = Random.Range(0, monsters.Count);
+                monsters[randomIndex].Infections.Add(bogRotVirus);
+                Debug.Log($"CombatNodeGenerator: Seeded {bogRotVirus.VirusID} on {monsters[randomIndex].Id} in {biome} node.");
+            }
+            else
+            {
+                Debug.LogError($"CombatNodeGenerator: Cannot seed virus, BogRot not found or no monsters. Virus: {bogRotVirus != null}, Monsters: {monsters.Count}");
+            }
 
             monsters = monsters
                 .GroupBy(m => m.PartyPosition)
@@ -75,7 +84,7 @@ namespace VirulentVentures
                 biome: biome,
                 isCombat: true,
                 flavourText: flavourText,
-                seededViruses: new List<VirusData>(),
+                seededViruses: bogRotVirus != null ? new List<VirusSO> { bogRotVirus } : new List<VirusSO>(),
                 challengeRating: rating
             );
         }
@@ -97,12 +106,9 @@ namespace VirulentVentures
                 }
                 if (sum > targetRating || current.Count > 4 || index >= monsterRanks.Count) return;
 
-                // Include current monster
                 current.Add(monsterRanks[index].id);
                 FindCompositions(current, sum + monsterRanks[index].rank, index, results);
                 current.RemoveAt(current.Count - 1);
-
-                // Skip current monster
                 FindCompositions(current, sum, index + 1, results);
             }
 
@@ -112,7 +118,7 @@ namespace VirulentVentures
             if (compositions.Count == 0)
             {
                 Debug.LogWarning($"CombatNodeGenerator: No valid monster composition found for rating {targetRating}. Using fallback.");
-                return new List<string> { "Wraith" }; // Fallback to rank 1
+                return new List<string> { "Wraith" };
             }
 
             return compositions[Random.Range(0, compositions.Count)];

@@ -9,6 +9,7 @@ namespace VirulentVentures
         [SerializeField] private PartyData partyData;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private HealingConfig healingConfig;
+        [SerializeField] private VirusConfigSO virusConfig;
 
         void Awake()
         {
@@ -55,7 +56,9 @@ namespace VirulentVentures
                 Debug.LogError("VirusCraftingComponent: eventBus is null.");
             if (healingConfig == null)
                 Debug.LogError("VirusCraftingComponent: healingConfig is null.");
-            return playerProgress != null && partyData != null && eventBus != null && healingConfig != null;
+            if (virusConfig == null)
+                Debug.LogError("VirusCraftingComponent: virusConfig is null.");
+            return playerProgress != null && partyData != null && eventBus != null && healingConfig != null && virusConfig != null;
         }
     }
 }

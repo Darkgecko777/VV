@@ -11,7 +11,7 @@ namespace VirulentVentures
         [SerializeField] private string biome;
         [SerializeField] private bool isCombat;
         [SerializeField] private string flavourText;
-        [SerializeField] private List<VirusData> seededViruses;
+        [SerializeField] private List<VirusSO> seededViruses;
         [SerializeField] private int challengeRating;
         [SerializeField] private bool completed;
 
@@ -20,18 +20,18 @@ namespace VirulentVentures
         public string Biome => biome;
         public bool IsCombat => isCombat;
         public string FlavourText => flavourText;
-        public List<VirusData> SeededViruses => seededViruses;
+        public List<VirusSO> SeededViruses => seededViruses;
         public int ChallengeRating => challengeRating;
         public bool Completed { get => completed; set => completed = value; }
 
-        public NodeData(List<CharacterStats> monsters, string nodeType, string biome, bool isCombat, string flavourText, List<VirusData> seededViruses, int challengeRating = 0, bool completed = false)
+        public NodeData(List<CharacterStats> monsters, string nodeType, string biome, bool isCombat, string flavourText, List<VirusSO> seededViruses, int challengeRating = 0, bool completed = false)
         {
             this.monsters = monsters ?? new List<CharacterStats>();
             this.nodeType = nodeType ?? "NonCombat";
             this.biome = biome ?? "";
             this.isCombat = isCombat;
             this.flavourText = flavourText ?? "";
-            this.seededViruses = seededViruses ?? new List<VirusData>();
+            this.seededViruses = seededViruses ?? new List<VirusSO>();
             this.challengeRating = challengeRating;
             this.completed = completed;
         }

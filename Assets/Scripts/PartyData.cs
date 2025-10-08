@@ -116,7 +116,7 @@ namespace VirulentVentures
                         Debug.LogWarning($"PartyData: Invalid Rank {stats.Rank} for {heroId}, setting to 1.");
                         stats.Rank = 1;
                     }
-                    stats.Infections = new List<VirusData>();
+                    stats.Infections = new List<VirusSO>();
                     HeroStats.Add(stats);
                     positionMap.Remove(partyPosition);
                 }

@@ -9,7 +9,7 @@ namespace VirulentVentures
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
         [SerializeField] private PlayerProgress playerProgress;
-        [SerializeField] private List<VirusData> availableViruses;
+        [SerializeField] private List<VirusSO> availableViruses;
         [SerializeField] private VisualConfig visualConfig;
         [SerializeField] private CombatNodeGenerator combatNodeGenerator;
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
@@ -149,7 +149,7 @@ namespace VirulentVentures
                 Debug.LogWarning($"TempleSceneComponent: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {data.nodeIndex}");
                 return;
             }
-            VirusData virus = availableViruses.Find(v => v.VirusID == data.virusID);
+            VirusSO virus = availableViruses.Find(v => v.VirusID == data.virusID);
             if (virus == null)
             {
                 Debug.LogWarning($"TempleSceneComponent: Virus {data.virusID} not found!");

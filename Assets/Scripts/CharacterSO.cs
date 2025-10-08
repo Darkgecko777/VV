@@ -57,7 +57,7 @@ namespace VirulentVentures
                 infectivity: infectivity,
                 isHero: isHero,
                 isInfected: false,
-                infections: new List<VirusData>(),
+                infections: new List<VirusSO>(),
                 rank: rank,
                 combatSprite: combatSprite
             );

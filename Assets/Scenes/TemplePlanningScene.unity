@@ -187,7 +187,7 @@ MonoBehaviour:
   uiConfig: {fileID: 11400000, guid: 86a04b4abdd73f245970282451a71cb2, type: 2}
   visualConfig: {fileID: 11400000, guid: 2b3a2d67fb8240f4a945c81fe887f5be, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
-  availableViruses: []
+  virusConfig: {fileID: 11400000, guid: f3cf837d6271acc4a8761637dd96e765, type: 2}
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
 --- !u!1 &363512853
 GameObject:
@@ -232,6 +232,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   monsterPool: []
+  virusConfig: {fileID: 11400000, guid: f3cf837d6271acc4a8761637dd96e765, type: 2}
 --- !u!4 &363512856
 Transform:
   m_ObjectHideFlags: 0
@@ -330,6 +331,7 @@ MonoBehaviour:
   partyData: {fileID: 11400000, guid: f8fff9505d5b47a4ab22114e8704425b, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   healingConfig: {fileID: 11400000, guid: 6a1e4f63fa251a445a7bf57aefb9948d, type: 2}
+  virusConfig: {fileID: 11400000, guid: f3cf837d6271acc4a8761637dd96e765, type: 2}
 --- !u!4 &1302402190
 Transform:
   m_ObjectHideFlags: 0
