@@ -12,7 +12,7 @@ namespace VirulentVentures
 
         public int Duration => duration;
 
-        public override bool Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
+        public override (TransmissionVector? changedVector, float delta) Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
             bool applied = false;
             foreach (var target in targets.ToList())
@@ -43,7 +43,7 @@ namespace VirulentVentures
                     Debug.LogWarning($"CombatUtils: No UnitAttackState found for {targetStats.Id} to apply interrupt.");
                 }
             }
-            return applied;
+            return (null, 0f); // No stat changes, so no vector or delta
         }
     }
 }

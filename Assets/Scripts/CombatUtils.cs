@@ -77,50 +77,7 @@ namespace VirulentVentures
                 {
                     selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
                 }
-
-                foreach (var target in selectedPool)
-                {
-                    var stats = target as CharacterStats;
-                    if (stats == null) continue;
-
-                    // Check target-based thresholds (e.g., Heal, InstantKill)
-                    bool validTarget = false;
-                    foreach (var effect in ability.Effects)
-                    {
-                        float threshold = 0f;
-                        if (effect is HealEffectSO heal && heal.ThresholdPercent > 0)
-                        {
-                            threshold = heal.ThresholdPercent;
-                            int currentValue = heal.TargetStat == CombatTypes.TargetStat.Health ? stats.Health : stats.Morale;
-                            int maxValue = heal.TargetStat == CombatTypes.TargetStat.Health ? stats.MaxHealth : stats.MaxMorale;
-                            if (currentValue < (threshold / 100f) * maxValue)
-                            {
-                                validTarget = true;
-                                break;
-                            }
-                        }
-                        else if (effect is InstantKillEffectSO instantKill && instantKill.ThresholdPercent > 0)
-                        {
-                            threshold = instantKill.ThresholdPercent;
-                            if (stats.Health < (threshold / 100f) * stats.MaxHealth)
-                            {
-                                validTarget = true;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            validTarget = true; // No threshold, target is valid
-                            break;
-                        }
-                    }
-
-                    if (validTarget)
-                    {
-                        return new List<ICombatUnit> { target };
-                    }
-                }
-                return new List<ICombatUnit>();
+                return selectedPool.Take(1).ToList();
             }
             else if (rule.Type == CombatTypes.TargetingRule.RuleType.All)
             {
@@ -163,7 +120,17 @@ namespace VirulentVentures
             bool applied = false;
             foreach (var effect in ability.Effects)
             {
-                applied |= effect.Execute(user, targets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, attackState, combatScene);
+                var (changedVector, delta) = effect.Execute(user, targets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, attackState, combatScene);
+                applied |= (changedVector != null); // Consider applied if stat changed
+
+                // Trigger virus transmission for each target if a stat was changed
+                if (changedVector != null && targets.Any())
+                {
+                    foreach (var target in targets.OfType<CharacterStats>())
+                    {
+                        combatScene.TryInfectUnit(user, target, changedVector.Value, delta, combatLogs, eventBus, uiConfig);
+                    }
+                }
             }
 
             if (applied && ability.CooldownParams.Type != CombatTypes.CooldownType.None)

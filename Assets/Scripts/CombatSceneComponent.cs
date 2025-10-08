@@ -228,17 +228,24 @@ namespace VirulentVentures
             activeCombatCoroutine = StartCoroutine(RunCombat());
         }
 
-        private void TryInfectUnit(CharacterStats attacker, CharacterStats target, AbilitySO ability, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
+        public void TryInfectUnit(CharacterStats source, CharacterStats target, TransmissionVector changedVector, float delta, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
-            if (attacker == null || target == null || ability == null || combatConfig == null) return;
+            if (source == null || target == null || target.Health <= 0 || target.HasRetreated) return;
 
-            // Normal transmission: Attacker infects target on health damage
-            if (attacker.Infections.Any() && ability.Id == "BasicAttack" && target.Health > 0 && !target.HasRetreated)
+            // Adjust chance modifier based on delta direction (negative = full, positive = 0.5x)
+            float directionModifier = (delta < 0) ? 1f : 0.5f;
+
+            // Normal transmission: Source infects target if source infected and vector matches
+            if (source.Infections.Any(v => v.TransmissionVector == changedVector))
             {
-                foreach (var virus in attacker.Infections.Where(v => v.TransmissionVector == TransmissionVector.Health))
+                foreach (var virus in source.Infections.Where(v => v.TransmissionVector == changedVector))
                 {
-                    float infectionChance = Mathf.Clamp01(1f - (target.Immunity / 100f + virus.BaseInfectionChance));
-                    Debug.Log($"CombatSceneComponent: {attacker.Id} attempts to infect {target.Id} with {virus.VirusID}, chance: {infectionChance:F2}");
+                    float infectionChance = Mathf.Clamp01(1f - (target.Immunity / 100f + virus.BaseInfectionChance * directionModifier));
+                    string chanceMessage = $"{source.Id} attempts to infect {target.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
+                    combatLogs.Add(chanceMessage);
+                    eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
+                    Debug.Log($"CombatSceneComponent: {chanceMessage}");
+
                     if (Random.value <= infectionChance)
                     {
                         if (target.Type == CharacterType.Hero)
@@ -260,30 +267,34 @@ namespace VirulentVentures
                 }
             }
 
-            // Reverse transmission: Target infects attacker if target is infected
-            if (target.Infections.Any() && ability.Id == "BasicAttack" && attacker.Health > 0 && !attacker.HasRetreated)
+            // Reverse transmission: Target infects source if target infected and vector matches
+            if (target.Infections.Any(v => v.TransmissionVector == changedVector))
             {
-                foreach (var virus in target.Infections.Where(v => v.TransmissionVector == TransmissionVector.Health))
+                foreach (var virus in target.Infections.Where(v => v.TransmissionVector == changedVector))
                 {
-                    float infectionChance = Mathf.Clamp01(1f - (attacker.Immunity / 100f + virus.BaseInfectionChance * 0.5f));
-                    Debug.Log($"CombatSceneComponent: {target.Id} attempts counter-infection on {attacker.Id} with {virus.VirusID}, chance: {infectionChance:F2}");
+                    float infectionChance = Mathf.Clamp01(1f - (source.Immunity / 100f + virus.BaseInfectionChance * directionModifier * 0.5f)); // Extra 0.5x for reverse
+                    string chanceMessage = $"{target.Id} attempts counter-infection on {source.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
+                    combatLogs.Add(chanceMessage);
+                    eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
+                    Debug.Log($"CombatSceneComponent: {chanceMessage}");
+
                     if (Random.value <= infectionChance)
                     {
-                        if (attacker.Type == CharacterType.Hero)
+                        if (source.Type == CharacterType.Hero)
                         {
-                            attacker.Infections.Add(virus);
+                            source.Infections.Add(virus);
                         }
                         else
                         {
-                            if (!monsterInfections.ContainsKey(attacker))
-                                monsterInfections[attacker] = new List<VirusSO>();
-                            monsterInfections[attacker].Add(virus);
+                            if (!monsterInfections.ContainsKey(source))
+                                monsterInfections[source] = new List<VirusSO>();
+                            monsterInfections[source].Add(virus);
                         }
-                        string infectMessage = $"{attacker.Id} infected with {virus.VirusID} via counter-attack!";
+                        string infectMessage = $"{source.Id} infected with {virus.VirusID} via counter-attack!";
                         combatLogs.Add(infectMessage);
                         eventBus.RaiseLogMessage(infectMessage, Color.red);
-                        eventBus.RaiseUnitInfected(attacker, virus.VirusID);
-                        eventBus.RaiseUnitUpdated(attacker, attacker.GetDisplayStats());
+                        eventBus.RaiseUnitInfected(source, virus.VirusID);
+                        eventBus.RaiseUnitUpdated(source, source.GetDisplayStats());
                     }
                 }
             }
@@ -375,14 +386,6 @@ namespace VirulentVentures
                     if (unit is CharacterStats stats)
                     {
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
-                        if (stats.abilities.Any(a => a.Id == "BasicAttack"))
-                        {
-                            var selectedTargets = CombatUtils.SelectTargets(stats, unitList, partyData, stats.abilities.First(a => a.Id == "BasicAttack").Rule, heroPositions, monsterPositions, stats.abilities.First(a => a.Id == "BasicAttack"), allCombatLogs, eventBus, uiConfig);
-                            foreach (var target in selectedTargets.OfType<CharacterStats>())
-                            {
-                                TryInfectUnit(stats, target, stats.abilities.First(a => a.Id == "BasicAttack"), allCombatLogs, eventBus, uiConfig);
-                            }
-                        }
                     }
                     yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
@@ -400,14 +403,6 @@ namespace VirulentVentures
                     {
                         state.AttacksThisRound++;
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
-                        if (stats.abilities.Any(a => a.Id == "BasicAttack"))
-                        {
-                            var selectedTargets = CombatUtils.SelectTargets(stats, unitList, partyData, stats.abilities.First(a => a.Id == "BasicAttack").Rule, heroPositions, monsterPositions, stats.abilities.First(a => a.Id == "BasicAttack"), allCombatLogs, eventBus, uiConfig);
-                            foreach (var target in selectedTargets.OfType<CharacterStats>())
-                            {
-                                TryInfectUnit(stats, target, stats.abilities.First(a => a.Id == "BasicAttack"), allCombatLogs, eventBus, uiConfig);
-                            }
-                        }
                         yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {

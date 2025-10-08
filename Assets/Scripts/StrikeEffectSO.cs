@@ -14,9 +14,10 @@ namespace VirulentVentures
         public float Multiplier => multiplier;
         public CombatTypes.DefenseCheck DefenseType => defenseType;
 
-        public override bool Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
+        public override (TransmissionVector? changedVector, float delta) Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
             bool applied = false;
+            float totalDelta = 0f;
             foreach (var target in targets.ToList())
             {
                 var targetStats = target as CharacterStats;
@@ -39,6 +40,7 @@ namespace VirulentVentures
                 if (damage > 0)
                 {
                     targetStats.Health -= damage;
+                    totalDelta += damage; // Accumulate damage for delta
                     string damageMessage = $"{user.Id} hits {targetStats.Id} for {damage} {(DefenseType == CombatTypes.DefenseCheck.None ? "true " : "")}damage with {abilityId} <color=#FFFF00>[{user.Attack} ATK{(DefenseType == CombatTypes.DefenseCheck.Standard ? $" * (100 - {targetStats.Defense} DEF * 5) / 100" : "")} * {Multiplier}]</color>";
                     combatLogs.Add(damageMessage);
                     eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
@@ -47,7 +49,7 @@ namespace VirulentVentures
                     applied = true;
                 }
             }
-            return applied;
+            return applied ? (TransmissionVector.Health, totalDelta) : (null, 0f);
         }
     }
 }

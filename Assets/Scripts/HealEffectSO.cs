@@ -20,9 +20,12 @@ namespace VirulentVentures
         public float ThresholdPercent => thresholdPercent;
         public CombatTypes.TargetStat TargetStat => targetStat;
 
-        public override bool Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
+        public override (TransmissionVector? changedVector, float delta) Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
             bool applied = false;
+            float totalDelta = 0f;
+            TransmissionVector? vector = TargetStat == CombatTypes.TargetStat.Health ? TransmissionVector.Health : TransmissionVector.Morale;
+
             foreach (var target in targets.ToList())
             {
                 var targetStats = target as CharacterStats;
@@ -56,6 +59,7 @@ namespace VirulentVentures
                     else
                         targetStats.Morale = newValue;
 
+                    totalDelta += change; // Accumulate change for delta
                     string action = change > 0 ? (TargetStat == CombatTypes.TargetStat.Health ? "heals" : "boosts") : "damages";
                     string statName = TargetStat.ToString().ToLower();
                     string colorCode = change > 0 ? "#00FF00" : "#FF0000";
@@ -67,7 +71,7 @@ namespace VirulentVentures
                     applied = true;
                 }
             }
-            return applied;
+            return applied ? (vector, totalDelta) : (null, 0f);
         }
     }
 }

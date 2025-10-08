@@ -12,9 +12,10 @@ namespace VirulentVentures
 
         public float ThresholdPercent => thresholdPercent;
 
-        public override bool Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
+        public override (TransmissionVector? changedVector, float delta) Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
             bool applied = false;
+            float totalDelta = 0f;
             foreach (var target in targets.ToList())
             {
                 var targetStats = target as CharacterStats;
@@ -35,7 +36,9 @@ namespace VirulentVentures
                     continue;
                 }
 
+                int healthLost = targetStats.Health; // Record health lost as delta
                 targetStats.Health = 0;
+                totalDelta += healthLost;
                 string killMessage = $"{user.Id} executes {targetStats.Id} with {abilityId} <color=#FF0000>[Instant Kill]</color>";
                 combatLogs.Add(killMessage);
                 eventBus.RaiseLogMessage(killMessage, Color.red);
@@ -43,7 +46,7 @@ namespace VirulentVentures
                 updateUnitCallback(target);
                 applied = true;
             }
-            return applied;
+            return applied ? (TransmissionVector.Health, totalDelta) : (null, 0f);
         }
     }
 }
