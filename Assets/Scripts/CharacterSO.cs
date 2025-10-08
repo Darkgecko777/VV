@@ -16,13 +16,13 @@ namespace VirulentVentures
         [SerializeField] private int evasion;
         [SerializeField] private int morale; // Heroes only
         [SerializeField] private int maxMorale; // Heroes only
-        [SerializeField] private int infectivity;
+        [SerializeField] private int immunity; // Renamed from infectivity
         [SerializeField] private bool canBeCultist;
         [SerializeField] private int partyPosition;
         [SerializeField] private int rank = 1; // Default 1
         [SerializeField] private Sprite portrait; // For Temple scene
         [SerializeField] private Sprite combatSprite; // For Combat scene
-        [SerializeField] private AbilitySO[] abilities = new AbilitySO[0]; // Changed: string[] abilityIds to AbilitySO[]
+        [SerializeField] private AbilitySO[] abilities = new AbilitySO[0];
 
         public string Id => id;
         public CharacterType Type => type;
@@ -34,13 +34,13 @@ namespace VirulentVentures
         public int Evasion => evasion;
         public int Morale => morale;
         public int MaxMorale => maxMorale;
-        public int Infectivity => infectivity;
+        public int Immunity => immunity; // Renamed
         public bool CanBeCultist => canBeCultist;
         public int PartyPosition => partyPosition;
         public int Rank => rank;
         public Sprite Portrait => portrait;
         public Sprite CombatSprite => combatSprite;
-        public AbilitySO[] Abilities => abilities; // Changed: Getter for AbilitySO[]
+        public AbilitySO[] Abilities => abilities;
 
         public CharacterStats.DisplayStats GetDisplayStats(bool isHero)
         {
@@ -54,7 +54,7 @@ namespace VirulentVentures
                 evasion: Mathf.Clamp(evasion, 0, 100),
                 morale: isHero ? morale : 0,
                 maxMorale: isHero ? maxMorale : 0,
-                infectivity: infectivity,
+                immunity: immunity, // Renamed
                 isHero: isHero,
                 isInfected: false,
                 infections: new List<VirusSO>(),

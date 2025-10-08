@@ -17,7 +17,6 @@ namespace VirulentVentures
         private List<CharacterStats> heroPositions = new List<CharacterStats>();
         private List<CharacterStats> monsterPositions = new List<CharacterStats>();
         private List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
-        private Dictionary<CharacterStats, List<VirusSO>> monsterInfections = new Dictionary<CharacterStats, List<VirusSO>>();
         private bool isCombatActive;
         private bool isPaused;
         private int roundNumber;
@@ -48,7 +47,6 @@ namespace VirulentVentures
             heroPositions.Clear();
             monsterPositions.Clear();
             units.Clear();
-            monsterInfections.Clear();
             lastEndCombatTime = -logDuplicateWindow;
             if (!hasSubscribed)
             {
@@ -171,7 +169,6 @@ namespace VirulentVentures
                     SkipNextAttack = false,
                     TempStats = new Dictionary<string, (int value, int duration)>()
                 });
-                monsterInfections[monster] = monster.Infections ?? new List<VirusSO>();
                 string monsterMessage = $"{monster.Id} enters combat with {monster.Health}/{monster.MaxHealth} HP.";
                 allCombatLogs.Add(monsterMessage);
                 eventBus.RaiseLogMessage(monsterMessage, uiConfig.TextColor);
@@ -207,6 +204,55 @@ namespace VirulentVentures
             }
         }
 
+        public void TryInfectUnit(CharacterStats source, CharacterStats target, TransmissionVector changedVector, float delta, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
+        {
+            if (source == null || target == null || target.Health <= 0 || target.HasRetreated) return;
+            // Adjust chance modifier based on delta direction (negative = full, positive = 0.5x)
+            float directionModifier = (delta < 0) ? 1f : 0.5f;
+            // Normal transmission: Source infects target if source infected and vector matches
+            if (source.Infections.Any(v => v.TransmissionVector == changedVector))
+            {
+                foreach (var virus in source.Infections.Where(v => v.TransmissionVector == changedVector))
+                {
+                    float infectionChance = Mathf.Clamp01(1f - (target.Immunity / 100f + virus.BaseInfectionChance * directionModifier));
+                    string chanceMessage = $"{source.Id} attempts to infect {target.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
+                    combatLogs.Add(chanceMessage);
+                    eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
+                    Debug.Log($"CombatSceneComponent: {chanceMessage}");
+                    if (Random.value <= infectionChance)
+                    {
+                        target.AddInfection(virus);
+                        string infectMessage = $"{target.Id} infected with {virus.VirusID}!";
+                        combatLogs.Add(infectMessage);
+                        eventBus.RaiseLogMessage(infectMessage, Color.red);
+                        eventBus.RaiseUnitInfected(target, virus.VirusID);
+                        eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
+                    }
+                }
+            }
+            // Reverse transmission: Target infects source if target infected and vector matches
+            if (target.Infections.Any(v => v.TransmissionVector == changedVector))
+            {
+                foreach (var virus in target.Infections.Where(v => v.TransmissionVector == changedVector))
+                {
+                    float infectionChance = Mathf.Clamp01(1f - (source.Immunity / 100f + virus.BaseInfectionChance * directionModifier * 0.5f)); // Extra 0.5x for reverse
+                    string chanceMessage = $"{target.Id} attempts counter-infection on {source.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
+                    combatLogs.Add(chanceMessage);
+                    eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
+                    Debug.Log($"CombatSceneComponent: {chanceMessage}");
+                    if (Random.value <= infectionChance)
+                    {
+                        source.AddInfection(virus);
+                        string infectMessage = $"{source.Id} infected with {virus.VirusID} via counter-attack!";
+                        combatLogs.Add(infectMessage);
+                        eventBus.RaiseLogMessage(infectMessage, Color.red);
+                        eventBus.RaiseUnitInfected(source, virus.VirusID);
+                        eventBus.RaiseUnitUpdated(source, source.GetDisplayStats());
+                    }
+                }
+            }
+        }
+
         public void StartCombatLoop(PartyData party)
         {
             if (partyData == null)
@@ -226,78 +272,6 @@ namespace VirulentVentures
             partyData = party;
             isCombatActive = true;
             activeCombatCoroutine = StartCoroutine(RunCombat());
-        }
-
-        public void TryInfectUnit(CharacterStats source, CharacterStats target, TransmissionVector changedVector, float delta, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
-        {
-            if (source == null || target == null || target.Health <= 0 || target.HasRetreated) return;
-
-            // Adjust chance modifier based on delta direction (negative = full, positive = 0.5x)
-            float directionModifier = (delta < 0) ? 1f : 0.5f;
-
-            // Normal transmission: Source infects target if source infected and vector matches
-            if (source.Infections.Any(v => v.TransmissionVector == changedVector))
-            {
-                foreach (var virus in source.Infections.Where(v => v.TransmissionVector == changedVector))
-                {
-                    float infectionChance = Mathf.Clamp01(1f - (target.Immunity / 100f + virus.BaseInfectionChance * directionModifier));
-                    string chanceMessage = $"{source.Id} attempts to infect {target.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
-                    combatLogs.Add(chanceMessage);
-                    eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
-                    Debug.Log($"CombatSceneComponent: {chanceMessage}");
-
-                    if (Random.value <= infectionChance)
-                    {
-                        if (target.Type == CharacterType.Hero)
-                        {
-                            target.Infections.Add(virus);
-                        }
-                        else
-                        {
-                            if (!monsterInfections.ContainsKey(target))
-                                monsterInfections[target] = new List<VirusSO>();
-                            monsterInfections[target].Add(virus);
-                        }
-                        string infectMessage = $"{target.Id} infected with {virus.VirusID}!";
-                        combatLogs.Add(infectMessage);
-                        eventBus.RaiseLogMessage(infectMessage, Color.red);
-                        eventBus.RaiseUnitInfected(target, virus.VirusID);
-                        eventBus.RaiseUnitUpdated(target, target.GetDisplayStats());
-                    }
-                }
-            }
-
-            // Reverse transmission: Target infects source if target infected and vector matches
-            if (target.Infections.Any(v => v.TransmissionVector == changedVector))
-            {
-                foreach (var virus in target.Infections.Where(v => v.TransmissionVector == changedVector))
-                {
-                    float infectionChance = Mathf.Clamp01(1f - (source.Immunity / 100f + virus.BaseInfectionChance * directionModifier * 0.5f)); // Extra 0.5x for reverse
-                    string chanceMessage = $"{target.Id} attempts counter-infection on {source.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
-                    combatLogs.Add(chanceMessage);
-                    eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
-                    Debug.Log($"CombatSceneComponent: {chanceMessage}");
-
-                    if (Random.value <= infectionChance)
-                    {
-                        if (source.Type == CharacterType.Hero)
-                        {
-                            source.Infections.Add(virus);
-                        }
-                        else
-                        {
-                            if (!monsterInfections.ContainsKey(source))
-                                monsterInfections[source] = new List<VirusSO>();
-                            monsterInfections[source].Add(virus);
-                        }
-                        string infectMessage = $"{source.Id} infected with {virus.VirusID} via counter-attack!";
-                        combatLogs.Add(infectMessage);
-                        eventBus.RaiseLogMessage(infectMessage, Color.red);
-                        eventBus.RaiseUnitInfected(source, virus.VirusID);
-                        eventBus.RaiseUnitUpdated(source, source.GetDisplayStats());
-                    }
-                }
-            }
         }
 
         private IEnumerator RunCombat()
@@ -478,7 +452,6 @@ namespace VirulentVentures
             heroPositions.Clear();
             monsterPositions.Clear();
             units.Clear();
-            monsterInfections.Clear();
             noTargetLogCooldowns.Clear();
             isCombatActive = false;
             roundNumber = 0;

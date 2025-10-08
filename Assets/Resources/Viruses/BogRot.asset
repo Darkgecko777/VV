@@ -15,6 +15,7 @@ MonoBehaviour:
   virusID: Bog Rot
   transmissionVector: 0
   effect: 
-  baseInfectionChance: -0.1
+  baseInfectionChance: 0
   effectStrength: 0.05
   rarity: Common
+  labelColor: {r: 0.25481573, g: 0.6226415, b: 0.11454255, a: 1}

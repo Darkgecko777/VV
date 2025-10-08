@@ -22,7 +22,7 @@ MonoBehaviour:
   evasion: 25
   morale: 100
   maxMorale: 100
-  infectivity: 40
+  immunity: 65
   canBeCultist: 1
   partyPosition: 3
   rank: 1

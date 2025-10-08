@@ -63,7 +63,7 @@ namespace VirulentVentures
             Evasion = data.Evasion;
             Morale = Type == CharacterType.Hero ? data.Morale : 0;
             MaxMorale = Type == CharacterType.Hero ? data.MaxMorale : 0;
-            Immunity = data.Infectivity;
+            Immunity = data.Immunity; // Renamed from Infectivity
             Infections = new List<VirusSO>();
             PartyPosition = data.PartyPosition;
             abilityIds = data.Abilities != null && data.Abilities.Length > 0 ? data.Abilities.Select(a => a.Id).ToArray() : new string[] { "MeleeStrike" };
@@ -74,6 +74,47 @@ namespace VirulentVentures
             }
             Rank = data.Rank;
             CombatSprite = data.CombatSprite;
+        }
+
+        public void AddInfection(VirusSO newVirus)
+        {
+            if (newVirus == null)
+            {
+                Debug.LogWarning($"CharacterStats: Attempted to add null VirusSO to {Id}.");
+                return;
+            }
+
+            var rarityOrder = new Dictionary<string, int>
+            {
+                { "Common", 1 },
+                { "Uncommon", 2 },
+                { "Rare", 3 },
+                { "Epic", 4 }
+            };
+
+            var existingVirus = Infections.FirstOrDefault(v => v.VirusID == newVirus.VirusID);
+            if (existingVirus != null)
+            {
+                int existingRarity = rarityOrder.ContainsKey(existingVirus.Rarity) ? rarityOrder[existingVirus.Rarity] : 0;
+                int newRarity = rarityOrder.ContainsKey(newVirus.Rarity) ? rarityOrder[newVirus.Rarity] : 0;
+
+                if (newRarity > existingRarity)
+                {
+                    Infections.Remove(existingVirus);
+                    Infections.Add(newVirus);
+                    Debug.Log($"CharacterStats: Replaced {newVirus.VirusID} ({existingVirus.Rarity}) with higher rarity ({newVirus.Rarity}) for {Id}.");
+                }
+                else
+                {
+                    Debug.LogWarning($"CharacterStats: {Id} already infected with {newVirus.VirusID} ({existingVirus.Rarity}). New virus ({newVirus.Rarity}) not added due to equal or lower rarity.");
+                    return;
+                }
+            }
+            else
+            {
+                Infections.Add(newVirus);
+                Debug.Log($"CharacterStats: Added {newVirus.VirusID} ({newVirus.Rarity}) to {Id}.");
+            }
         }
 
         public struct DisplayStats
@@ -87,14 +128,14 @@ namespace VirulentVentures
             public int evasion;
             public int morale;
             public int maxMorale;
-            public int infectivity;
+            public int immunity; // Renamed from infectivity
             public bool isHero;
             public bool isInfected;
             public List<VirusSO> infections;
             public int rank;
             public Sprite combatSprite;
 
-            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int infectivity, bool isHero, bool isInfected, List<VirusSO> infections, int rank, Sprite combatSprite)
+            public DisplayStats(string name, int health, int maxHealth, int attack, int defense, int speed, int evasion, int morale, int maxMorale, int immunity, bool isHero, bool isInfected, List<VirusSO> infections, int rank, Sprite combatSprite)
             {
                 this.name = name;
                 this.health = health;
@@ -105,7 +146,7 @@ namespace VirulentVentures
                 this.evasion = evasion;
                 this.morale = morale;
                 this.maxMorale = maxMorale;
-                this.infectivity = infectivity;
+                this.immunity = immunity; // Renamed
                 this.isHero = isHero;
                 this.isInfected = isInfected;
                 this.infections = infections;
@@ -126,7 +167,7 @@ namespace VirulentVentures
                 evasion: Mathf.Clamp(Evasion, 0, 100),
                 morale: Morale,
                 maxMorale: MaxMorale,
-                infectivity: Immunity,
+                immunity: Immunity, // Renamed
                 isHero: IsHero,
                 isInfected: IsInfected,
                 infections: Infections,
