@@ -16,6 +16,7 @@ namespace VirulentVentures
         [SerializeField] private float baseInfectionChance = -0.1f; // Modifier: negative increases infectivity
         [SerializeField] private float effectStrength = 0.05f; // Placeholder
         [SerializeField] private string rarity = "Common";
+        [SerializeField] private Color labelColor = Color.red; // Customizable color for virus name display
 
         public string VirusID => virusID;
         public TransmissionVector TransmissionVector => transmissionVector;
@@ -23,5 +24,6 @@ namespace VirulentVentures
         public float BaseInfectionChance => baseInfectionChance;
         public float EffectStrength => effectStrength;
         public string Rarity => rarity;
+        public Color LabelColor => labelColor;
     }
 }

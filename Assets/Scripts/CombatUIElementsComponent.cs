@@ -17,8 +17,10 @@ namespace VirulentVentures
         private List<Label> logMessages = new List<Label>();
         private Dictionary<ICombatUnit, VisualElement> unitPanels = new Dictionary<ICombatUnit, VisualElement>();
         private Dictionary<ICombatUnit, (Label atk, Label def, Label spd, Label eva, Label morale, Label rank)> unitStatLabels = new Dictionary<ICombatUnit, (Label, Label, Label, Label, Label, Label)>();
-        private Dictionary<ICombatUnit, Label> infectedLabels = new Dictionary<ICombatUnit, Label>();
+        private Dictionary<ICombatUnit, VisualElement> virusLabelContainers = new Dictionary<ICombatUnit, VisualElement>();
         private Dictionary<ICombatUnit, bool> retreatedUnits = new Dictionary<ICombatUnit, bool>();
+        private float speedIncrement = 0.5f;
+        private bool isPaused;
         private Label speedLabel;
         private Button speedPlusButton;
         private Button speedMinusButton;
@@ -27,8 +29,6 @@ namespace VirulentVentures
         private VisualElement endPanel;
         private Label endLabel;
         private Button continueButton;
-        private float speedIncrement = 0.5f;
-        private bool isPaused;
 
         void Awake()
         {
@@ -280,14 +280,14 @@ namespace VirulentVentures
         {
             unitPanels.Clear();
             unitStatLabels.Clear();
-            infectedLabels.Clear();
+            virusLabelContainers.Clear();
             retreatedUnits.Clear();
             logMessages.Clear();
             logContent?.Clear();
             var heroes = data.units.Where(u => u.stats.isHero).ToList();
-            var infectedHeroCount = heroes.Count(h => h.stats.isInfected);
+            var infectedHeroCount = heroes.Sum(h => h.stats.infections?.Count ?? 0); // Count total viruses across heroes
             var leftPanel = root.Q<VisualElement>("left-panel");
-            float heroPanelHeight = heroes.Count > 0 ? 100f / Mathf.Min(heroes.Count + infectedHeroCount * 0.3f, 4) : 25f;
+            float heroPanelHeight = heroes.Count > 0 ? 100f / Mathf.Min(heroes.Count + infectedHeroCount * 0.15f, 4) : 25f; // Adjust for multiple viruses
             for (int i = 0; i < heroes.Count && i < 4; i++)
             {
                 var unit = heroes[i].unit;
@@ -315,21 +315,26 @@ namespace VirulentVentures
             if (!unitPanels.TryGetValue(data.unit, out var panel) || panel == null) return;
             var rankSection = panel.Q<VisualElement>(className: "rank-section");
             if (rankSection == null) return;
-            if (data.displayStats.isInfected && !infectedLabels.ContainsKey(data.unit))
+            // Update virus labels
+            if (virusLabelContainers.TryGetValue(data.unit, out var virusContainer))
             {
-                var infectedLabel = new Label("Infected");
-                infectedLabel.AddToClassList("infected-label");
-                if (uiConfig != null)
-                {
-                    infectedLabel.style.color = uiConfig.TextColor;
-                }
-                rankSection.Add(infectedLabel);
-                infectedLabels[data.unit] = infectedLabel;
+                rankSection.Remove(virusContainer);
+                virusLabelContainers.Remove(data.unit);
             }
-            else if (!data.displayStats.isInfected && infectedLabels.ContainsKey(data.unit))
+            if (data.displayStats.infections != null && data.displayStats.infections.Any())
             {
-                rankSection.Remove(infectedLabels[data.unit]);
-                infectedLabels.Remove(data.unit);
+                var newVirusContainer = new VisualElement();
+                newVirusContainer.AddToClassList("virus-container");
+                foreach (var virus in data.displayStats.infections)
+                {
+                    if (virus == null) continue;
+                    var virusLabel = new Label(virus.VirusID);
+                    virusLabel.AddToClassList("virus-label");
+                    virusLabel.style.color = virus.LabelColor;
+                    newVirusContainer.Add(virusLabel);
+                }
+                rankSection.Add(newVirusContainer);
+                virusLabelContainers[data.unit] = newVirusContainer;
             }
             if (unitStatLabels.TryGetValue(data.unit, out var statLabels))
             {
@@ -407,16 +412,20 @@ namespace VirulentVentures
                 rankLabel.style.color = uiConfig.TextColor;
             }
             rankSection.Add(rankLabel);
-            if (stats.isInfected)
+            if (stats.infections != null && stats.infections.Any())
             {
-                var infectedLabel = new Label("Infected");
-                infectedLabel.AddToClassList("infected-label");
-                if (uiConfig != null)
+                var virusContainer = new VisualElement();
+                virusContainer.AddToClassList("virus-container");
+                foreach (var virus in stats.infections)
                 {
-                    infectedLabel.style.color = uiConfig.TextColor;
+                    if (virus == null) continue;
+                    var virusLabel = new Label(virus.VirusID);
+                    virusLabel.AddToClassList("virus-label");
+                    virusLabel.style.color = virus.LabelColor;
+                    virusContainer.Add(virusLabel);
                 }
-                rankSection.Add(infectedLabel);
-                infectedLabels[unit] = infectedLabel;
+                rankSection.Add(virusContainer);
+                virusLabelContainers[unit] = virusContainer;
             }
             unitContent.Add(rankSection);
             var statsSection = new VisualElement();
