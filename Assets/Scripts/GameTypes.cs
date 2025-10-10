@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace VirulentVentures
 {
-    public static class CombatTypes
+    public static class GameTypes
     {
         public enum DefenseCheck
         {
@@ -31,13 +31,19 @@ namespace VirulentVentures
             Heal,
             Interrupt,
             SelfSacrifice,
-            InstantKill
+            InstantKill,
+            StatEffect
         }
 
         public enum TargetStat
         {
             Health,
-            Morale
+            Morale,
+            Speed,
+            Attack,
+            Defense,
+            Evasion,
+            Immunity
         }
 
         [Serializable]

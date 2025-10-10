@@ -156,10 +156,10 @@ namespace VirulentVentures
                 string abilityId = ability.Id;
 
                 // Check cooldown silently
-                if (ability.CooldownParams.Type != CombatTypes.CooldownType.None)
+                if (ability.CooldownParams.Type != GameTypes.CooldownType.None)
                 {
-                    if ((ability.CooldownParams.Type == CombatTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0) ||
-                        (ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0))
+                    if ((ability.CooldownParams.Type == GameTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0) ||
+                        (ability.CooldownParams.Type == GameTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0))
                     {
                         continue; // Skip to next ability without logging
                     }
@@ -205,8 +205,8 @@ namespace VirulentVentures
                     {
                         foreach (var target in selectedTargets.OfType<CharacterStats>())
                         {
-                            int currentValue = healEffect.TargetStat == CombatTypes.TargetStat.Health ? target.Health : target.Morale;
-                            int maxValue = healEffect.TargetStat == CombatTypes.TargetStat.Health ? target.MaxHealth : target.MaxMorale;
+                            int currentValue = healEffect.TargetStat == GameTypes.TargetStat.Health ? target.Health : target.Morale;
+                            int maxValue = healEffect.TargetStat == GameTypes.TargetStat.Health ? target.MaxHealth : target.MaxMorale;
                             if (currentValue < (healEffect.ThresholdPercent / 100f) * maxValue)
                             {
                                 targetConditionsPassed = true;
@@ -261,13 +261,13 @@ namespace VirulentVentures
                 // Execute the ability
                 bool applied = CombatUtils.ExecuteAbility(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, attackState, combatScene);
 
-                if (applied && ability.CooldownParams.Type != CombatTypes.CooldownType.None)
+                if (applied && ability.CooldownParams.Type != GameTypes.CooldownType.None)
                 {
-                    if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions)
+                    if (ability.CooldownParams.Type == GameTypes.CooldownType.Actions)
                     {
                         attackState.AbilityCooldowns[abilityId] = ability.CooldownParams.Duration;
                     }
-                    else if (ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds)
+                    else if (ability.CooldownParams.Type == GameTypes.CooldownType.Rounds)
                     {
                         attackState.RoundCooldowns[abilityId] = ability.CooldownParams.Duration;
                     }

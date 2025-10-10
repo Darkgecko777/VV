@@ -9,10 +9,10 @@ namespace VirulentVentures
     public class StrikeEffectSO : EffectSO
     {
         [SerializeField] private float multiplier = 1f;
-        [SerializeField] private CombatTypes.DefenseCheck defenseType = CombatTypes.DefenseCheck.Standard;
+        [SerializeField] private GameTypes.DefenseCheck defenseType = GameTypes.DefenseCheck.Standard;
 
         public float Multiplier => multiplier;
-        public CombatTypes.DefenseCheck DefenseType => defenseType;
+        public GameTypes.DefenseCheck DefenseType => defenseType;
 
         public override (TransmissionVector? changedVector, float delta) Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
@@ -32,7 +32,7 @@ namespace VirulentVentures
                     continue;
                 }
 
-                int damage = DefenseType == CombatTypes.DefenseCheck.Standard
+                int damage = DefenseType == GameTypes.DefenseCheck.Standard
                     ? (user.Attack * (100 - targetStats.Defense * 5)) / 100
                     : user.Attack;
                 damage = Mathf.Max(0, Mathf.RoundToInt(damage * Multiplier));
@@ -41,7 +41,7 @@ namespace VirulentVentures
                 {
                     targetStats.Health -= damage;
                     totalDelta += damage; // Accumulate damage for delta
-                    string damageMessage = $"{user.Id} hits {targetStats.Id} for {damage} {(DefenseType == CombatTypes.DefenseCheck.None ? "true " : "")}damage with {abilityId} <color=#FFFF00>[{user.Attack} ATK{(DefenseType == CombatTypes.DefenseCheck.Standard ? $" * (100 - {targetStats.Defense} DEF * 5) / 100" : "")} * {Multiplier}]</color>";
+                    string damageMessage = $"{user.Id} hits {targetStats.Id} for {damage} {(DefenseType == GameTypes.DefenseCheck.None ? "true " : "")}damage with {abilityId} <color=#FFFF00>[{user.Attack} ATK{(DefenseType == GameTypes.DefenseCheck.Standard ? $" * (100 - {targetStats.Defense} DEF * 5) / 100" : "")} * {Multiplier}]</color>";
                     combatLogs.Add(damageMessage);
                     eventBus.RaiseLogMessage(damageMessage, uiConfig.TextColor);
                     eventBus.RaiseUnitDamaged(target, damageMessage);

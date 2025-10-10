@@ -14,7 +14,7 @@ namespace VirulentVentures
             return UnityEngine.Random.value < evasionChance;
         }
 
-        public static List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, CombatTypes.TargetingRule rule, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions, AbilitySO ability, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
+        public static List<ICombatUnit> SelectTargets(CharacterStats user, List<ICombatUnit> targetPool, PartyData partyData, GameTypes.TargetingRule rule, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions, AbilitySO ability, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
             if (targetPool == null || targetPool.Count == 0)
             {
@@ -50,9 +50,9 @@ namespace VirulentVentures
                 }).ToList();
             }
 
-            if (rule.Type == CombatTypes.TargetingRule.RuleType.Single || rule.Type == CombatTypes.TargetingRule.RuleType.SingleConditional)
+            if (rule.Type == GameTypes.TargetingRule.RuleType.Single || rule.Type == GameTypes.TargetingRule.RuleType.SingleConditional)
             {
-                if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.LowestHealth)
+                if (rule.Criteria == GameTypes.TargetingRule.SelectionCriteria.LowestHealth)
                 {
                     selectedPool = selectedPool
                         .Select(t => t as CharacterStats)
@@ -66,14 +66,14 @@ namespace VirulentVentures
                     }
                     return selectedPool.Take(1).ToList();
                 }
-                else if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.Random)
+                else if (rule.Criteria == GameTypes.TargetingRule.SelectionCriteria.Random)
                 {
                     selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
                     return selectedPool.Take(1).ToList();
                 }
                 return selectedPool.Take(1).ToList();
             }
-            else if (rule.Type == CombatTypes.TargetingRule.RuleType.All)
+            else if (rule.Type == GameTypes.TargetingRule.RuleType.All)
             {
                 return selectedPool;
             }
@@ -91,10 +91,10 @@ namespace VirulentVentures
 
             // Check cooldown
             bool isOnCooldown = false;
-            if (ability.CooldownParams.Type != CombatTypes.CooldownType.None)
+            if (ability.CooldownParams.Type != GameTypes.CooldownType.None)
             {
-                if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0 ||
-                    ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0)
+                if (ability.CooldownParams.Type == GameTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0 ||
+                    ability.CooldownParams.Type == GameTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0)
                 {
                     isOnCooldown = true;
                     return false; // Skip silently
@@ -117,13 +117,13 @@ namespace VirulentVentures
                 }
             }
 
-            if (applied && ability.CooldownParams.Type != CombatTypes.CooldownType.None)
+            if (applied && ability.CooldownParams.Type != GameTypes.CooldownType.None)
             {
-                if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions)
+                if (ability.CooldownParams.Type == GameTypes.CooldownType.Actions)
                 {
                     attackState.AbilityCooldowns[abilityId] = ability.CooldownParams.Duration;
                 }
-                else if (ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds)
+                else if (ability.CooldownParams.Type == GameTypes.CooldownType.Rounds)
                 {
                     attackState.RoundCooldowns[abilityId] = ability.CooldownParams.Duration;
                 }

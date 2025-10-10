@@ -30,12 +30,10 @@ namespace VirulentVentures
         public bool IsPaused => isPaused;
         public EventBusSO EventBus => eventBus;
         public UIConfig UIConfig => uiConfig;
-
         public UnitAttackState GetUnitAttackState(ICombatUnit unit)
         {
             return unitAttackStates.Find(s => s.Unit == unit);
         }
-
         void Awake()
         {
             isCombatActive = false;
@@ -56,7 +54,6 @@ namespace VirulentVentures
                 hasSubscribed = true;
             }
         }
-
         void Start()
         {
             if (!ValidateReferences())
@@ -73,7 +70,6 @@ namespace VirulentVentures
             InitializeUnits(expedition.Party.GetHeroes(), expedition.NodeData[expedition.CurrentNodeIndex].Monsters);
             StartCombatLoop(expedition.Party);
         }
-
         void OnDestroy()
         {
             if (hasSubscribed)
@@ -89,19 +85,16 @@ namespace VirulentVentures
                 activeCombatCoroutine = null;
             }
         }
-
         public void PauseCombat()
         {
             isPaused = true;
             eventBus.RaiseCombatPaused();
         }
-
         public void PlayCombat()
         {
             isPaused = false;
             eventBus.RaiseCombatPlayed();
         }
-
         public void SetCombatSpeed(float speed)
         {
             if (combatConfig != null)
@@ -118,7 +111,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         public void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
         {
             string initMessage = "Combat begins!";
@@ -178,7 +170,6 @@ namespace VirulentVentures
             monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
             eventBus.RaiseCombatInitialized(units);
         }
-
         public void UpdateUnit(ICombatUnit unit, string damageMessage = null)
         {
             if (unit == null) return;
@@ -204,7 +195,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         public void TryInfectUnit(CharacterStats source, CharacterStats target, TransmissionVector changedVector, float delta, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
             if (source == null || target == null || target.Health <= 0 || target.HasRetreated) return;
@@ -252,7 +242,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         public void StartCombatLoop(PartyData party)
         {
             if (partyData == null)
@@ -273,7 +262,6 @@ namespace VirulentVentures
             isCombatActive = true;
             activeCombatCoroutine = StartCoroutine(RunCombat());
         }
-
         private IEnumerator RunCombat()
         {
             if (!isCombatActive)
@@ -349,6 +337,7 @@ namespace VirulentVentures
                     }
                     foreach (var tempStat in state.TempStats.ToList())
                     {
+                        if (tempStat.Value.duration == -1) continue; // Combat-end effects persist
                         state.TempStats[tempStat.Key] = (tempStat.Value.value, tempStat.Value.duration - 1);
                         if (state.TempStats[tempStat.Key].duration <= 0)
                         {
@@ -408,7 +397,6 @@ namespace VirulentVentures
                 IncrementRound();
             }
         }
-
         private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
         {
             if (unit is not CharacterStats stats) return false;
@@ -427,7 +415,6 @@ namespace VirulentVentures
                 return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
             return false;
         }
-
         private void IncrementRound()
         {
             roundNumber++;
@@ -435,7 +422,6 @@ namespace VirulentVentures
             allCombatLogs.Add(roundMessage);
             eventBus.RaiseLogMessage(roundMessage, uiConfig.TextColor);
         }
-
         private void EndCombat(ExpeditionManager expeditionManager, bool isVictory)
         {
             float currentTime = Time.time;
@@ -450,6 +436,25 @@ namespace VirulentVentures
             {
                 allCombatLogs.Add(endMessage);
                 eventBus?.RaiseLogMessage(endMessage, uiConfig?.TextColor ?? Color.white);
+            }
+            // Reset temporary stat changes (except Health and Morale)
+            foreach (var state in unitAttackStates)
+            {
+                if (state.Unit is CharacterStats stats)
+                {
+                    foreach (var tempStat in state.TempStats.ToList())
+                    {
+                        string statKey = tempStat.Key;
+                        if (statKey == "health" || statKey == "morale") continue;
+                        int originalValue = GetOriginalStatValue(stats, statKey);
+                        SetStatValue(stats, statKey, originalValue);
+                        state.TempStats.Remove(statKey);
+                        string resetMessage = $"{stats.Id}'s {statKey} reset to {originalValue} at combat end.";
+                        allCombatLogs.Add(resetMessage);
+                        eventBus?.RaiseLogMessage(resetMessage, uiConfig?.TextColor ?? Color.white);
+                        eventBus?.RaiseUnitUpdated(stats, stats.GetDisplayStats());
+                    }
+                }
             }
             expeditionManager.SaveProgress();
             unitAttackStates.Clear();
@@ -487,7 +492,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         private bool ValidateReferences()
         {
             if (combatConfig == null)
@@ -503,6 +507,39 @@ namespace VirulentVentures
             if (combatConfig == null || eventBus == null || uiConfig == null || combatCamera == null || partyData == null)
                 return false;
             return true;
+        }
+        private int GetOriginalStatValue(CharacterStats stats, string statKey)
+        {
+            return statKey switch
+            {
+                "speed" => stats.Speed,
+                "attack" => stats.Attack,
+                "defense" => stats.Defense,
+                "evasion" => stats.Evasion,
+                "immunity" => stats.Immunity,
+                _ => 0
+            };
+        }
+        private void SetStatValue(CharacterStats stats, string statKey, int value)
+        {
+            switch (statKey)
+            {
+                case "speed":
+                    stats.Speed = value;
+                    break;
+                case "attack":
+                    stats.Attack = value;
+                    break;
+                case "defense":
+                    stats.Defense = value;
+                    break;
+                case "evasion":
+                    stats.Evasion = value;
+                    break;
+                case "immunity":
+                    stats.Immunity = value;
+                    break;
+            }
         }
     }
 }

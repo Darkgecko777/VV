@@ -4,7 +4,12 @@ namespace VirulentVentures
 {
     public enum TransmissionVector
     {
-        Health, Morale, Buff, Food, Environment, Obstacle
+        Health,
+        Morale,
+        Buff,
+        Food,
+        Environment,
+        Obstacle
     }
 
     [CreateAssetMenu(fileName = "VirusSO", menuName = "VirulentVentures/VirusSO", order = 13)]
