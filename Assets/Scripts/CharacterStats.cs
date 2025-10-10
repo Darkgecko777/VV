@@ -177,34 +177,76 @@ namespace VirulentVentures
                     continue; // Skip to next ability
                 }
 
-                // Silently check effect-specific conditions (e.g., thresholds)
-                bool conditionsPassed = true;
+                // Silently check effect-specific conditions (user-based)
+                bool userConditionsPassed = true;
                 foreach (var effect in ability.Effects)
                 {
                     if (effect is SelfSacrificeEffectSO selfSac && selfSac.ThresholdPercent > 0)
                     {
                         if (Health <= (selfSac.ThresholdPercent / 100f) * MaxHealth)
                         {
-                            conditionsPassed = false;
+                            userConditionsPassed = false;
                             break;
                         }
                     }
                 }
 
-                if (!conditionsPassed)
+                if (!userConditionsPassed)
                 {
+                    noTargetMessage = $"User conditions not met for {Id}'s {abilityId}.";
+                    continue; // Skip to next ability
+                }
+
+                // Silently check effect-specific conditions (target-based)
+                bool targetConditionsPassed = false;
+                foreach (var effect in ability.Effects)
+                {
+                    if (effect is HealEffectSO healEffect && healEffect.ThresholdPercent > 0)
+                    {
+                        foreach (var target in selectedTargets.OfType<CharacterStats>())
+                        {
+                            int currentValue = healEffect.TargetStat == CombatTypes.TargetStat.Health ? target.Health : target.Morale;
+                            int maxValue = healEffect.TargetStat == CombatTypes.TargetStat.Health ? target.MaxHealth : target.MaxMorale;
+                            if (currentValue < (healEffect.ThresholdPercent / 100f) * maxValue)
+                            {
+                                targetConditionsPassed = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (effect is InstantKillEffectSO instantKill && instantKill.ThresholdPercent > 0)
+                    {
+                        foreach (var target in selectedTargets.OfType<CharacterStats>())
+                        {
+                            if (target.Health < (instantKill.ThresholdPercent / 100f) * target.MaxHealth)
+                            {
+                                targetConditionsPassed = true;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Non-threshold effects (e.g., Strike, Interrupt) are always valid if targets exist
+                        targetConditionsPassed = true;
+                    }
+                    if (targetConditionsPassed) break;
+                }
+
+                if (!targetConditionsPassed)
+                {
+                    noTargetMessage = $"Target conditions not met for {Id}'s {abilityId}.";
                     continue; // Skip to next ability
                 }
 
                 // Valid ability found: Trigger animation and wait for completion
                 eventBus.RaiseUnitAttacking(this, selectedTargets.FirstOrDefault(), abilityId);
 
-                // Find the SpriteAnimation component for this unit (assumes CombatSceneComponent manages GameObjects)
+                // Find the SpriteAnimation component for this unit
                 var unitEntry = combatScene.GetComponentsInChildren<SpriteAnimation>()
                     .FirstOrDefault(sa => combatScene.units.Any(u => u.unit == this && u.go == sa.gameObject));
                 if (unitEntry != null)
                 {
-                    // Wait for animation to complete
                     while (unitEntry.IsAnimating)
                     {
                         yield return null;
@@ -286,7 +328,7 @@ namespace VirulentVentures
                     updateUnitCallback(this);
                 }
 
-                yield return new WaitForSeconds(0.3f / (combatConfig?.CombatSpeed ?? 1f)); // Increased from 0.2f for pacing
+                yield return new WaitForSeconds(0.3f / (combatConfig?.CombatSpeed ?? 1f));
                 yield break; // Exit after first valid ability
             }
 

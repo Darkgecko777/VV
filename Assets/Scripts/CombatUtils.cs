@@ -50,26 +50,32 @@ namespace VirulentVentures
                 }).ToList();
             }
 
-            if (rule.Type == CombatTypes.TargetingRule.RuleType.Single)
+            if (rule.Type == CombatTypes.TargetingRule.RuleType.Single || rule.Type == CombatTypes.TargetingRule.RuleType.SingleConditional)
             {
                 if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.LowestHealth)
                 {
-                    selectedPool = selectedPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
+                    selectedPool = selectedPool
+                        .Select(t => t as CharacterStats)
+                        .Where(t => t != null)
+                        .OrderBy(t => (float)t.Health / t.MaxHealth)
+                        .Cast<ICombatUnit>()
+                        .ToList();
+                    if (selectedPool.Any())
+                    {
+                        Debug.Log($"CombatUtils: Selected {selectedPool[0].Id} with {((CharacterStats)selectedPool[0]).Health / (float)((CharacterStats)selectedPool[0]).MaxHealth:F2} health ratio for {user.Id}'s {ability.Id}");
+                    }
+                    return selectedPool.Take(1).ToList();
                 }
                 else if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.Random)
                 {
                     selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
+                    return selectedPool.Take(1).ToList();
                 }
                 return selectedPool.Take(1).ToList();
             }
             else if (rule.Type == CombatTypes.TargetingRule.RuleType.All)
             {
                 return selectedPool;
-            }
-            else if (rule.Type == CombatTypes.TargetingRule.RuleType.SingleConditional)
-            {
-                // Add conditional logic if needed
-                return selectedPool.Take(1).ToList();
             }
 
             return new List<ICombatUnit>();
@@ -91,7 +97,7 @@ namespace VirulentVentures
                     ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0)
                 {
                     isOnCooldown = true;
-                    return false; // Skip silently, PerformAbility will try next ability
+                    return false; // Skip silently
                 }
             }
 
