@@ -10,9 +10,13 @@ namespace VirulentVentures
     {
         [SerializeField] private GameTypes.TargetStat targetStat = GameTypes.TargetStat.Speed;
         [SerializeField] private int amount = 0;
+        [SerializeField] private bool targetSelf = false; // New field to target user
+        [SerializeField] private int duration = -1; // New field for duration (default: combat-end)
 
         public GameTypes.TargetStat TargetStat => targetStat;
         public int Amount => amount;
+        public bool TargetSelf => targetSelf;
+        public int Duration => duration;
 
         public override (TransmissionVector? changedVector, float delta) Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
@@ -20,36 +24,72 @@ namespace VirulentVentures
             float totalDelta = 0f;
             TransmissionVector? vector = TransmissionVector.Buff;
 
-            foreach (var target in targets.ToList())
+            if (TargetSelf)
             {
-                var targetStats = target as CharacterStats;
-                if (targetStats == null || targetStats.Health <= 0 || targetStats.HasRetreated) continue;
+                // Apply to user
+                if (user == null || user.Health <= 0 || user.HasRetreated) return (null, 0f);
 
-                int currentValue = GetStatValue(targetStats, targetStat);
+                int currentValue = GetStatValue(user, targetStat);
                 int newValue = Mathf.Max(0, currentValue + Amount);
                 int change = newValue - currentValue;
 
                 if (change != 0)
                 {
-                    var targetState = combatScene.GetUnitAttackState(target);
-                    if (targetState != null)
+                    var userState = combatScene.GetUnitAttackState(user);
+                    if (userState != null)
                     {
                         string statKey = targetStat.ToString().ToLower();
-                        targetState.TempStats[statKey] = (Amount, -1); // -1 indicates combat-end duration
+                        userState.TempStats[statKey] = (Amount, Duration); // Use configurable duration
                     }
 
-                    SetStatValue(targetStats, targetStat, newValue);
+                    SetStatValue(user, targetStat, newValue);
                     totalDelta += change;
 
                     string action = change > 0 ? "increases" : "reduces";
                     string statName = targetStat.ToString().ToLower();
                     string colorCode = change > 0 ? "#00FF00" : "#FF0000";
-                    string changeMessage = $"{user.Id} {action} {targetStats.Id}'s {statName} by {Mathf.Abs(change)} with {abilityId} <color={colorCode}>[{Amount:+#;-#} {statName}]</color>";
+                    string changeMessage = $"{user.Id} {action} their own {statName} by {Mathf.Abs(change)} with {abilityId} <color={colorCode}>[{Amount:+#;-#} {statName}]</color>";
                     combatLogs.Add(changeMessage);
                     eventBus.RaiseLogMessage(changeMessage, change > 0 ? Color.green : Color.red);
-                    eventBus.RaiseUnitUpdated(target, targetStats.GetDisplayStats());
-                    updateUnitCallback(target);
+                    eventBus.RaiseUnitUpdated(user, user.GetDisplayStats());
+                    updateUnitCallback(user);
                     applied = true;
+                }
+            }
+            else
+            {
+                // Apply to targets (existing behavior)
+                foreach (var target in targets.ToList())
+                {
+                    var targetStats = target as CharacterStats;
+                    if (targetStats == null || targetStats.Health <= 0 || targetStats.HasRetreated) continue;
+
+                    int currentValue = GetStatValue(targetStats, targetStat);
+                    int newValue = Mathf.Max(0, currentValue + Amount);
+                    int change = newValue - currentValue;
+
+                    if (change != 0)
+                    {
+                        var targetState = combatScene.GetUnitAttackState(target);
+                        if (targetState != null)
+                        {
+                            string statKey = targetStat.ToString().ToLower();
+                            targetState.TempStats[statKey] = (Amount, Duration); // Use configurable duration
+                        }
+
+                        SetStatValue(targetStats, targetStat, newValue);
+                        totalDelta += change;
+
+                        string action = change > 0 ? "increases" : "reduces";
+                        string statName = targetStat.ToString().ToLower();
+                        string colorCode = change > 0 ? "#00FF00" : "#FF0000";
+                        string changeMessage = $"{user.Id} {action} {targetStats.Id}'s {statName} by {Mathf.Abs(change)} with {abilityId} <color={colorCode}>[{Amount:+#;-#} {statName}]</color>";
+                        combatLogs.Add(changeMessage);
+                        eventBus.RaiseLogMessage(changeMessage, change > 0 ? Color.green : Color.red);
+                        eventBus.RaiseUnitUpdated(target, targetStats.GetDisplayStats());
+                        updateUnitCallback(target);
+                        applied = true;
+                    }
                 }
             }
 
