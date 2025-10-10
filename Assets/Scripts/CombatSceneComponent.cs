@@ -1,7 +1,7 @@
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace VirulentVentures
 {
@@ -16,7 +16,7 @@ namespace VirulentVentures
         private List<string> allCombatLogs = new List<string>();
         private List<CharacterStats> heroPositions = new List<CharacterStats>();
         private List<CharacterStats> monsterPositions = new List<CharacterStats>();
-        private List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
+        public List<(ICombatUnit unit, GameObject go, CharacterStats.DisplayStats displayStats)> units = new List<(ICombatUnit, GameObject, CharacterStats.DisplayStats)>();
         private bool isCombatActive;
         private bool isPaused;
         private int roundNumber;
@@ -108,6 +108,7 @@ namespace VirulentVentures
             {
                 float oldSpeed = combatConfig.CombatSpeed;
                 combatConfig.CombatSpeed = Mathf.Clamp(speed, combatConfig.MinCombatSpeed, combatConfig.MaxCombatSpeed);
+                Debug.Log($"CombatSceneComponent: CombatSpeed set to {combatConfig.CombatSpeed:F1}x (was {oldSpeed:F1}x)");
                 if (oldSpeed != combatConfig.CombatSpeed)
                 {
                     string speedMessage = $"Combat speed set to {combatConfig.CombatSpeed:F1}x!";
@@ -128,7 +129,7 @@ namespace VirulentVentures
                 if (hero.abilities == null || hero.abilities.Length == 0)
                 {
                     Debug.LogError($"CombatSceneComponent: No abilities defined for hero {hero.Id}.");
-                    hero.abilityIds = new string[] { "BasicAttack" };
+                    hero.abilityIds = new string[] { "MeleeStrike" };
                     hero.abilities = new AbilitySO[0];
                 }
                 var stats = hero.GetDisplayStats();
@@ -153,7 +154,7 @@ namespace VirulentVentures
                 if (monster.abilities == null || monster.abilities.Length == 0)
                 {
                     Debug.LogError($"CombatSceneComponent: No abilities defined for monster {monster.Id}.");
-                    monster.abilityIds = new string[] { "BasicAttack" };
+                    monster.abilityIds = new string[] { "MeleeStrike" };
                     monster.abilities = new AbilitySO[0];
                 }
                 var stats = monster.GetDisplayStats();
@@ -207,9 +208,7 @@ namespace VirulentVentures
         public void TryInfectUnit(CharacterStats source, CharacterStats target, TransmissionVector changedVector, float delta, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
             if (source == null || target == null || target.Health <= 0 || target.HasRetreated) return;
-            // Adjust chance modifier based on delta direction (negative = full, positive = 0.5x)
             float directionModifier = (delta < 0) ? 1f : 0.5f;
-            // Normal transmission: Source infects target if source infected and vector matches
             if (source.Infections.Any(v => v.TransmissionVector == changedVector))
             {
                 foreach (var virus in source.Infections.Where(v => v.TransmissionVector == changedVector))
@@ -230,12 +229,11 @@ namespace VirulentVentures
                     }
                 }
             }
-            // Reverse transmission: Target infects source if target infected and vector matches
             if (target.Infections.Any(v => v.TransmissionVector == changedVector))
             {
                 foreach (var virus in target.Infections.Where(v => v.TransmissionVector == changedVector))
                 {
-                    float infectionChance = Mathf.Clamp01(1f - (source.Immunity / 100f + virus.BaseInfectionChance * directionModifier * 0.5f)); // Extra 0.5x for reverse
+                    float infectionChance = Mathf.Clamp01(1f - (source.Immunity / 100f + virus.BaseInfectionChance * directionModifier * 0.5f));
                     string chanceMessage = $"{target.Id} attempts counter-infection on {source.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
                     combatLogs.Add(chanceMessage);
                     eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
@@ -359,9 +357,11 @@ namespace VirulentVentures
                     state.AttacksThisRound++;
                     if (unit is CharacterStats stats)
                     {
+                        Debug.Log($"CombatSceneComponent: Starting {unit.Id}'s PerformAbility");
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
+                        Debug.Log($"CombatSceneComponent: Finished {unit.Id}'s PerformAbility, waiting 1.2s / {combatConfig.CombatSpeed:F1}x");
+                        yield return new WaitForSeconds(1.2f / (combatConfig?.CombatSpeed ?? 1f)); // Increased to cover full animation (~1.1s at CombatSpeed=0.5f)
                     }
-                    yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                     {
                         isCombatActive = false;
@@ -376,8 +376,10 @@ namespace VirulentVentures
                     if (unit is CharacterStats stats && stats.Speed >= combatConfig.SpeedTwoAttacksThreshold && state.AttacksThisRound < 2)
                     {
                         state.AttacksThisRound++;
+                        Debug.Log($"CombatSceneComponent: Starting {unit.Id}'s second PerformAbility");
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
-                        yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
+                        Debug.Log($"CombatSceneComponent: Finished {unit.Id}'s second PerformAbility, waiting 1.2s / {combatConfig.CombatSpeed:F1}x");
+                        yield return new WaitForSeconds(1.2f / (combatConfig?.CombatSpeed ?? 1f));
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
                             isCombatActive = false;

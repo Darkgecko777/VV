@@ -181,7 +181,6 @@ namespace VirulentVentures
                 bool conditionsPassed = true;
                 foreach (var effect in ability.Effects)
                 {
-                    // For effects with user-based thresholds, check without logging
                     if (effect is SelfSacrificeEffectSO selfSac && selfSac.ThresholdPercent > 0)
                     {
                         if (Health <= (selfSac.ThresholdPercent / 100f) * MaxHealth)
@@ -190,7 +189,6 @@ namespace VirulentVentures
                             break;
                         }
                     }
-                    // Add similar silent checks for other effects if needed
                 }
 
                 if (!conditionsPassed)
@@ -198,8 +196,22 @@ namespace VirulentVentures
                     continue; // Skip to next ability
                 }
 
-                // Valid ability found: Now animate, log, and execute
+                // Valid ability found: Trigger animation and wait for completion
                 eventBus.RaiseUnitAttacking(this, selectedTargets.FirstOrDefault(), abilityId);
+
+                // Find the SpriteAnimation component for this unit (assumes CombatSceneComponent manages GameObjects)
+                var unitEntry = combatScene.GetComponentsInChildren<SpriteAnimation>()
+                    .FirstOrDefault(sa => combatScene.units.Any(u => u.unit == this && u.go == sa.gameObject));
+                if (unitEntry != null)
+                {
+                    // Wait for animation to complete
+                    while (unitEntry.IsAnimating)
+                    {
+                        yield return null;
+                    }
+                }
+
+                // Log the ability attempt
                 string attackMessage = $"{Id} uses {abilityId} on {string.Join(", ", selectedTargets.Select(t => t.Id))}!";
                 combatLogs.Add(attackMessage);
                 eventBus.RaiseLogMessage(attackMessage, uiConfig.TextColor);
@@ -274,7 +286,7 @@ namespace VirulentVentures
                     updateUnitCallback(this);
                 }
 
-                yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
+                yield return new WaitForSeconds(0.3f / (combatConfig?.CombatSpeed ?? 1f)); // Increased from 0.2f for pacing
                 yield break; // Exit after first valid ability
             }
 
@@ -287,7 +299,7 @@ namespace VirulentVentures
                 Debug.LogWarning($"CharacterStats: {noTargetMessage} Review ability design for {Id}.");
             }
 
-            yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
+            yield return new WaitForSeconds(0.3f / (combatConfig?.CombatSpeed ?? 1f));
         }
     }
 

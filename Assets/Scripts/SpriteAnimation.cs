@@ -9,6 +9,7 @@ namespace VirulentVentures
         private SpriteRenderer spriteRenderer;
         private bool isAnimating = false;
         private Queue<IEnumerator> animationQueue = new Queue<IEnumerator>();
+        public bool IsAnimating => isAnimating;
 
         void Awake()
         {
@@ -17,12 +18,12 @@ namespace VirulentVentures
 
         public void TiltForward(bool isHero, float speed = 1f)
         {
-            EnqueueAnimation(TiltForwardCoroutine(isHero, speed));
+            EnqueueAnimation(TiltForwardCoroutine(isHero, Mathf.Clamp(speed, 0.5f, 1.5f)));
         }
 
         public void Jiggle(float speed = 1f)
         {
-            EnqueueAnimation(JiggleCoroutine(speed));
+            EnqueueAnimation(JiggleCoroutine(Mathf.Clamp(speed, 0.5f, 1.5f)));
         }
 
         private void EnqueueAnimation(IEnumerator animation)
@@ -57,8 +58,8 @@ namespace VirulentVentures
 
             Quaternion startRotation = transform.rotation;
             Quaternion targetRotation = Quaternion.Euler(0, 0, isHero ? -30f : 30f);
-            float baseDuration = 0.2f;
-            float holdTime = 0.1f / speed;
+            float baseDuration = 0.4f; // Increased from 0.3f for more visible animation
+            float holdTime = 0.15f / speed;
             float elapsed = 0f;
 
             // Tilt forward
