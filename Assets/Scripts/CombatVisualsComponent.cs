@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+
 namespace VirulentVentures
 {
     public class CombatVisualsComponent : MonoBehaviour
@@ -13,6 +14,7 @@ namespace VirulentVentures
         private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
         private GameObject backgroundGameObject;
         private bool isPaused;
+
         void Awake()
         {
             if (!ValidateReferences()) return;
@@ -25,6 +27,7 @@ namespace VirulentVentures
             eventBus.OnCombatPlayed += () => isPaused = false;
             SetupBackground();
         }
+
         void OnDestroy()
         {
             eventBus.OnCombatInitialized -= InitializeCombat;
@@ -37,6 +40,7 @@ namespace VirulentVentures
             if (backgroundGameObject != null)
                 Destroy(backgroundGameObject);
         }
+
         private void SetupBackground()
         {
             if (backgroundGameObject != null) Destroy(backgroundGameObject);
@@ -53,6 +57,7 @@ namespace VirulentVentures
             sr.sortingOrder = 0;
             backgroundGameObject.transform.localScale = new Vector3(2.24f, 0.65f, 1f);
         }
+
         private void InitializeCombat(EventBusSO.CombatInitData data)
         {
             unitGameObjects.Clear();
@@ -72,6 +77,7 @@ namespace VirulentVentures
                 unitGameObjects[unit] = go;
             }
         }
+
         private void HandleUnitAttacking(EventBusSO.AttackData data)
         {
             if (unitGameObjects.TryGetValue(data.attacker, out GameObject attackerGo))
@@ -85,6 +91,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         private void HandleUnitDamaged(EventBusSO.DamagePopupData data)
         {
             if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
@@ -95,6 +102,7 @@ namespace VirulentVentures
                     animator.Jiggle();
             }
         }
+
         private void HandleUnitDied(ICombatUnit unit)
         {
             if (unitGameObjects.TryGetValue(unit, out GameObject go) && go != null)
@@ -106,6 +114,7 @@ namespace VirulentVentures
                 unitGameObjects.Remove(unit);
             }
         }
+
         private void HandleUnitRetreated(ICombatUnit unit)
         {
             if (unitGameObjects.TryGetValue(unit, out GameObject go))
@@ -116,13 +125,15 @@ namespace VirulentVentures
                 StartCoroutine(DeactivateAfterFade(go));
             }
         }
+
         private IEnumerator DeactivateAfterFade(GameObject go)
         {
-            yield return ScaledWait(0.3f); // Use ScaledWait for consistency
+            yield return ScaledWait(0.3f);
             if (go != null)
                 go.SetActive(false);
         }
-        private IEnumerator ScaledWait(float baseDuration) // Added for pause and speed scaling
+
+        private IEnumerator ScaledWait(float baseDuration)
         {
             float elapsed = 0f;
             while (elapsed < baseDuration)
@@ -132,6 +143,7 @@ namespace VirulentVentures
                 yield return null;
             }
         }
+
         private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)
         {
             var go = new GameObject(stats.name);
@@ -146,11 +158,10 @@ namespace VirulentVentures
             go.transform.position = position;
             go.transform.localScale = new Vector3(2f, 2f, 1f);
             var spriteAnimation = go.AddComponent<SpriteAnimation>();
-            // Assign references to SpriteAnimation
-            spriteAnimation.GetType().GetField("combatConfig", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(spriteAnimation, combatConfig);
-            spriteAnimation.GetType().GetField("eventBus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(spriteAnimation, eventBus);
+            spriteAnimation.Init(combatConfig, eventBus);
             return go;
         }
+
         private bool ValidateReferences()
         {
             if (visualConfig == null || eventBus == null || combatConfig == null || characterPositions == null)

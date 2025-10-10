@@ -1,4 +1,3 @@
-// Revised SpriteAnimation.cs
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,26 +7,47 @@ namespace VirulentVentures
     public class SpriteAnimation : MonoBehaviour
     {
         private SpriteRenderer spriteRenderer;
-        [SerializeField] private CombatConfig combatConfig; // Added for dynamic speed
-        [SerializeField] private EventBusSO eventBus; // Added for pause events
+        [SerializeField] private CombatConfig combatConfig;
+        [SerializeField] private EventBusSO eventBus;
         private bool isAnimating = false;
-        private bool isPaused; // Added for pause handling
+        private bool isPaused;
         private Queue<IEnumerator> animationQueue = new Queue<IEnumerator>();
         public bool IsAnimating => isAnimating;
 
-        void Awake()
+        public void Init(CombatConfig config, EventBusSO bus)
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
-            if (combatConfig == null) Debug.LogError("SpriteAnimation: CombatConfig is null.");
-            if (eventBus == null) Debug.LogError("SpriteAnimation: EventBus is null.");
+            combatConfig = config;
+            eventBus = bus;
+            if (combatConfig == null)
+            {
+                Debug.LogError("SpriteAnimation: CombatConfig is null in Init.");
+                return;
+            }
+            if (eventBus == null)
+            {
+                Debug.LogError("SpriteAnimation: EventBus is null in Init.");
+                return;
+            }
             eventBus.OnCombatPaused += () => isPaused = true;
             eventBus.OnCombatPlayed += () => isPaused = false;
         }
 
+        void Awake()
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+            {
+                Debug.LogError("SpriteAnimation: SpriteRenderer is missing.");
+            }
+        }
+
         void OnDestroy()
         {
-            eventBus.OnCombatPaused -= () => isPaused = true;
-            eventBus.OnCombatPlayed -= () => isPaused = false;
+            if (eventBus != null)
+            {
+                eventBus.OnCombatPaused -= () => isPaused = true;
+                eventBus.OnCombatPlayed -= () => isPaused = false;
+            }
         }
 
         public void TiltForward(bool isHero)
@@ -68,11 +88,11 @@ namespace VirulentVentures
 
         private IEnumerator TiltForwardCoroutine(bool isHero)
         {
-            if (!gameObject.activeSelf) yield break;
+            if (!gameObject.activeSelf || combatConfig == null) yield break;
 
             Quaternion startRotation = transform.rotation;
             Quaternion targetRotation = Quaternion.Euler(0, 0, isHero ? -30f : 30f);
-            float baseDuration = 0.4f; // Increased from 0.3f for more visible animation
+            float baseDuration = 0.4f;
             float holdTime = 0.15f;
             float elapsed = 0f;
 
@@ -112,7 +132,7 @@ namespace VirulentVentures
 
         private IEnumerator JiggleCoroutine()
         {
-            if (!gameObject.activeSelf) yield break;
+            if (!gameObject.activeSelf || combatConfig == null) yield break;
 
             Vector3 startScale = transform.localScale;
             Vector3 startPosition = transform.localPosition;
