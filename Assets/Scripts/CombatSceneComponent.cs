@@ -208,12 +208,12 @@ namespace VirulentVentures
         public void TryInfectUnit(CharacterStats source, CharacterStats target, TransmissionVector changedVector, float delta, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
             if (source == null || target == null || target.Health <= 0 || target.HasRetreated) return;
-            float directionModifier = (delta < 0) ? 1f : 0.5f;
+            // Standard infection (source to target if source infected)
             if (source.Infections.Any(v => v.TransmissionVector == changedVector))
             {
                 foreach (var virus in source.Infections.Where(v => v.TransmissionVector == changedVector))
                 {
-                    float infectionChance = Mathf.Clamp01(1f - (target.Immunity / 100f + virus.BaseInfectionChance * directionModifier));
+                    float infectionChance = Mathf.Clamp01(1f - (target.Immunity / 100f + virus.InfectivityModifier));
                     string chanceMessage = $"{source.Id} attempts to infect {target.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
                     combatLogs.Add(chanceMessage);
                     eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
@@ -229,11 +229,13 @@ namespace VirulentVentures
                     }
                 }
             }
+            // Counter-infection (target to source if target infected, with 0.3 multiplier)
             if (target.Infections.Any(v => v.TransmissionVector == changedVector))
             {
                 foreach (var virus in target.Infections.Where(v => v.TransmissionVector == changedVector))
                 {
-                    float infectionChance = Mathf.Clamp01(1f - (source.Immunity / 100f + virus.BaseInfectionChance * directionModifier * 0.5f));
+                    float baseChance = 1f - (source.Immunity / 100f + virus.InfectivityModifier);
+                    float infectionChance = Mathf.Clamp01(baseChance * 0.3f);
                     string chanceMessage = $"{target.Id} attempts counter-infection on {source.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
                     combatLogs.Add(chanceMessage);
                     eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
