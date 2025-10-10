@@ -66,6 +66,20 @@ namespace VirulentVentures
                     }
                     return selectedPool.Take(1).ToList();
                 }
+                else if (rule.Criteria == GameTypes.TargetingRule.SelectionCriteria.HighestHealth)
+                {
+                    selectedPool = selectedPool
+                        .Select(t => t as CharacterStats)
+                        .Where(t => t != null)
+                        .OrderByDescending(t => (float)t.Health / t.MaxHealth)
+                        .Cast<ICombatUnit>()
+                        .ToList();
+                    if (selectedPool.Any())
+                    {
+                        Debug.Log($"CombatUtils: Selected {selectedPool[0].Id} with {((CharacterStats)selectedPool[0]).Health / (float)((CharacterStats)selectedPool[0]).MaxHealth:F2} health ratio for {user.Id}'s {ability.Id}");
+                    }
+                    return selectedPool.Take(1).ToList();
+                }
                 else if (rule.Criteria == GameTypes.TargetingRule.SelectionCriteria.Random)
                 {
                     selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
@@ -90,7 +104,6 @@ namespace VirulentVentures
             }
 
             // Check cooldown
-
             if (ability.CooldownParams.Type != GameTypes.CooldownType.None)
             {
                 if (ability.CooldownParams.Type == GameTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0 ||

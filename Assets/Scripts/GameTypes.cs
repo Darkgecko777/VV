@@ -67,7 +67,8 @@ namespace VirulentVentures
             {
                 Default,
                 LowestHealth,
-                Random
+                Random,
+                HighestHealth // Added for ScoutSniperShot
             }
 
             public RuleType Type;
