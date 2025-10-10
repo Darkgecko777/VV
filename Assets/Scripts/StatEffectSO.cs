@@ -8,11 +8,9 @@ namespace VirulentVentures
     [CreateAssetMenu(fileName = "StatEffect", menuName = "VirulentVentures/Effects/StatEffect")]
     public class StatEffectSO : EffectSO
     {
-        [SerializeField] private string effectId = "StatEffect";
         [SerializeField] private GameTypes.TargetStat targetStat = GameTypes.TargetStat.Speed;
         [SerializeField] private int amount = 0;
 
-        public string EffectId => effectId;
         public GameTypes.TargetStat TargetStat => targetStat;
         public int Amount => amount;
 
