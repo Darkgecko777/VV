@@ -14,7 +14,6 @@ namespace VirulentVentures
         [SerializeField] private CombatNodeGenerator combatNodeGenerator;
         [SerializeField] private NonCombatNodeGenerator nonCombatNodeGenerator;
         [SerializeField] private EncounterData combatEncounterData;
-        [SerializeField] private bool testMode = true;
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private HealingConfig healingConfig;

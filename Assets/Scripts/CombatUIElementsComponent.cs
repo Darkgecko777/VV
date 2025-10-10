@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿// Revised CombatUIElementsComponent.cs
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -29,7 +30,6 @@ namespace VirulentVentures
         private VisualElement endPanel;
         private Label endLabel;
         private Button continueButton;
-
         void Awake()
         {
             if (!ValidateReferences()) return;
@@ -102,12 +102,10 @@ namespace VirulentVentures
             eventBus.OnUnitRetreated += HandleUnitRetreated;
             eventBus.OnUnitDied += HandleUnitDied;
         }
-
         void Start()
         {
             StartCoroutine(SetupUIAsync());
         }
-
         private IEnumerator SetupUIAsync()
         {
             yield return null; // Wait one frame to ensure main thread
@@ -152,7 +150,6 @@ namespace VirulentVentures
             }
             UpdateButtonStates();
         }
-
         void OnDestroy()
         {
             eventBus.OnCombatInitialized -= InitializeCombat;
@@ -176,29 +173,24 @@ namespace VirulentVentures
             if (continueButton != null)
                 continueButton.clicked -= ContinueCombat;
         }
-
         private void IncreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed + speedIncrement;
-            eventBus.RaiseCombatSpeedChanged(newSpeed);
+            eventBus.RaiseRequestSetCombatSpeed(newSpeed); // Changed to new request event
         }
-
         private void DecreaseSpeed()
         {
             float newSpeed = combatConfig.CombatSpeed - speedIncrement;
-            eventBus.RaiseCombatSpeedChanged(newSpeed);
+            eventBus.RaiseRequestSetCombatSpeed(newSpeed); // Changed to new request event
         }
-
         private void PauseCombat()
         {
             eventBus.RaiseCombatPaused();
         }
-
         private void PlayCombat()
         {
             eventBus.RaiseCombatPlayed();
         }
-
         private void ContinueCombat()
         {
             bool isVictory = endLabel.text == "Victory!";
@@ -212,7 +204,6 @@ namespace VirulentVentures
                 ExpeditionManager.Instance.TransitionToTemplePlanningScene();
             }
         }
-
         private void UpdateButtonStates()
         {
             pauseButton.SetEnabled(!isPaused);
@@ -220,7 +211,6 @@ namespace VirulentVentures
             speedPlusButton.SetEnabled(combatConfig.CombatSpeed < combatConfig.MaxCombatSpeed);
             speedMinusButton.SetEnabled(combatConfig.CombatSpeed > combatConfig.MinCombatSpeed);
         }
-
         private void ShowEndPanel(bool isVictory)
         {
             if (endPanel == null || endLabel == null)
@@ -233,21 +223,18 @@ namespace VirulentVentures
             endLabel.style.color = isVictory ? Color.green : Color.red;
             UpdateButtonStates();
         }
-
         private void HandleCombatPaused()
         {
             isPaused = true;
             eventBus.RaiseLogMessage("Combat paused", uiConfig.TextColor);
             UpdateButtonStates();
         }
-
         private void HandleCombatPlayed()
         {
             isPaused = false;
             eventBus.RaiseLogMessage("Combat resumed", uiConfig.TextColor);
             UpdateButtonStates();
         }
-
         private void HandleCombatSpeedChanged(EventBusSO.CombatSpeedData data)
         {
             if (speedLabel != null)
@@ -260,13 +247,11 @@ namespace VirulentVentures
             }
             UpdateButtonStates();
         }
-
         private void HandleAbilitySelected(EventBusSO.AttackData data)
         {
             if (unitPanels.TryGetValue(data.attacker, out VisualElement panel) && (data.abilityId.Contains("Taunt") || data.abilityId.Contains("Thorns")))
                 StartCoroutine(FlashPanel(panel, new Color(1f, 1f, 0f), 0.5f));
         }
-
         private void HandleUnitRetreated(ICombatUnit unit)
         {
             if (unitPanels.TryGetValue(unit, out var panel) && panel != null)
@@ -275,7 +260,6 @@ namespace VirulentVentures
                 panel.AddToClassList("retreat-slide");
             }
         }
-
         private void InitializeCombat(EventBusSO.CombatInitData data)
         {
             unitPanels.Clear();
@@ -309,7 +293,6 @@ namespace VirulentVentures
                 retreatedUnits[unit] = (unit as CharacterStats)?.HasRetreated ?? false;
             }
         }
-
         private void HandleUnitUpdated(EventBusSO.UnitUpdateData data)
         {
             if (!unitPanels.TryGetValue(data.unit, out var panel) || panel == null) return;
@@ -369,7 +352,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         private IEnumerator FlashPanel(VisualElement panel, Color flashColor, float duration)
         {
             var originalColor = panel.style.backgroundColor;
@@ -377,7 +359,6 @@ namespace VirulentVentures
             yield return new WaitForSeconds(duration / combatConfig.CombatSpeed);
             panel.style.backgroundColor = originalColor;
         }
-
         private bool ValidateReferences()
         {
             if (uiConfig == null || eventBus == null || combatConfig == null)
@@ -387,7 +368,6 @@ namespace VirulentVentures
             }
             return true;
         }
-
         private VisualElement CreateUnitPanel(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, float heightPercent)
         {
             var panel = new VisualElement();
@@ -509,7 +489,6 @@ namespace VirulentVentures
             unitStatLabels[unit] = (atkLabel, defLabel, spdLabel, evaLabel, moraleLabel, rankLabel);
             return panel;
         }
-
         private void UpdateHealthBar(VisualElement fill, Label label, float health, float maxHealth)
         {
             if (fill == null || label == null) return;
@@ -521,7 +500,6 @@ namespace VirulentVentures
                 label.style.color = uiConfig.TextColor;
             }
         }
-
         private void UpdateMoraleBar(VisualElement fill, Label label, float morale, float maxMorale)
         {
             if (fill == null || label == null) return;
@@ -533,7 +511,6 @@ namespace VirulentVentures
                 label.style.color = uiConfig.TextColor;
             }
         }
-
         private void HandleUnitDied(ICombatUnit unit)
         {
             if (unitPanels.TryGetValue(unit, out var panel) && panel != null)
@@ -541,7 +518,6 @@ namespace VirulentVentures
                 panel.style.display = DisplayStyle.None;
             }
         }
-
         private void HandleLogMessage(EventBusSO.LogData data)
         {
             if (logContent == null || logScrollView == null)

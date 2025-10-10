@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
 namespace VirulentVentures
 {
     public class CombatVisualsComponent : MonoBehaviour
@@ -13,7 +12,7 @@ namespace VirulentVentures
         [SerializeField] private CharacterPositions characterPositions;
         private Dictionary<ICombatUnit, GameObject> unitGameObjects = new Dictionary<ICombatUnit, GameObject>();
         private GameObject backgroundGameObject;
-
+        private bool isPaused;
         void Awake()
         {
             if (!ValidateReferences()) return;
@@ -22,9 +21,10 @@ namespace VirulentVentures
             eventBus.OnUnitDamaged += HandleUnitDamaged;
             eventBus.OnUnitDied += HandleUnitDied;
             eventBus.OnUnitRetreated += HandleUnitRetreated;
+            eventBus.OnCombatPaused += () => isPaused = true;
+            eventBus.OnCombatPlayed += () => isPaused = false;
             SetupBackground();
         }
-
         void OnDestroy()
         {
             eventBus.OnCombatInitialized -= InitializeCombat;
@@ -32,10 +32,11 @@ namespace VirulentVentures
             eventBus.OnUnitDamaged -= HandleUnitDamaged;
             eventBus.OnUnitDied -= HandleUnitDied;
             eventBus.OnUnitRetreated -= HandleUnitRetreated;
+            eventBus.OnCombatPaused -= () => isPaused = true;
+            eventBus.OnCombatPlayed -= () => isPaused = false;
             if (backgroundGameObject != null)
                 Destroy(backgroundGameObject);
         }
-
         private void SetupBackground()
         {
             if (backgroundGameObject != null) Destroy(backgroundGameObject);
@@ -52,7 +53,6 @@ namespace VirulentVentures
             sr.sortingOrder = 0;
             backgroundGameObject.transform.localScale = new Vector3(2.24f, 0.65f, 1f);
         }
-
         private void InitializeCombat(EventBusSO.CombatInitData data)
         {
             unitGameObjects.Clear();
@@ -72,7 +72,6 @@ namespace VirulentVentures
                 unitGameObjects[unit] = go;
             }
         }
-
         private void HandleUnitAttacking(EventBusSO.AttackData data)
         {
             if (unitGameObjects.TryGetValue(data.attacker, out GameObject attackerGo))
@@ -82,11 +81,10 @@ namespace VirulentVentures
                 if (animator != null)
                 {
                     bool isHero = data.attacker is CharacterStats charStats && charStats.Type == CharacterType.Hero;
-                    animator.TiltForward(isHero, combatConfig.CombatSpeed);
+                    animator.TiltForward(isHero);
                 }
             }
         }
-
         private void HandleUnitDamaged(EventBusSO.DamagePopupData data)
         {
             if (unitGameObjects.TryGetValue(data.unit, out GameObject targetGo))
@@ -94,47 +92,46 @@ namespace VirulentVentures
                 if (!targetGo.activeSelf) return;
                 var animator = targetGo.GetComponent<SpriteAnimation>();
                 if (animator != null)
-                    animator.Jiggle(combatConfig.CombatSpeed);
+                    animator.Jiggle();
             }
         }
-
         private void HandleUnitDied(ICombatUnit unit)
         {
             if (unitGameObjects.TryGetValue(unit, out GameObject go) && go != null)
             {
                 var animator = go.GetComponent<SpriteAnimation>();
                 if (animator != null)
-                    animator.StopAllCoroutines(); // Cancel ongoing animations
-                go.SetActive(false); // Deactivate immediately
-                unitGameObjects.Remove(unit); // Clean up dictionary
+                    animator.StopAllCoroutines();
+                go.SetActive(false);
+                unitGameObjects.Remove(unit);
             }
         }
-
         private void HandleUnitRetreated(ICombatUnit unit)
         {
             if (unitGameObjects.TryGetValue(unit, out GameObject go))
             {
                 var animator = go.GetComponent<SpriteAnimation>();
                 if (animator != null)
-                    animator.StopAllCoroutines(); // Cancel ongoing animations
+                    animator.StopAllCoroutines();
                 StartCoroutine(DeactivateAfterFade(go));
             }
         }
-
-        private IEnumerator DeactivateAfterJiggle(GameObject go)
-        {
-            yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
-            if (go != null)
-                go.SetActive(false);
-        }
-
         private IEnumerator DeactivateAfterFade(GameObject go)
         {
-            yield return new WaitForSeconds(0.3f / combatConfig.CombatSpeed);
+            yield return ScaledWait(0.3f); // Use ScaledWait for consistency
             if (go != null)
                 go.SetActive(false);
         }
-
+        private IEnumerator ScaledWait(float baseDuration) // Added for pause and speed scaling
+        {
+            float elapsed = 0f;
+            while (elapsed < baseDuration)
+            {
+                if (isPaused) yield return null;
+                else elapsed += Time.deltaTime * combatConfig.CombatSpeed;
+                yield return null;
+            }
+        }
         private GameObject CreateUnitGameObject(ICombatUnit unit, CharacterStats.DisplayStats stats, bool isHero, Vector3 position)
         {
             var go = new GameObject(stats.name);
@@ -148,10 +145,12 @@ namespace VirulentVentures
             sr.sortingOrder = 1;
             go.transform.position = position;
             go.transform.localScale = new Vector3(2f, 2f, 1f);
-            go.AddComponent<SpriteAnimation>();
+            var spriteAnimation = go.AddComponent<SpriteAnimation>();
+            // Assign references to SpriteAnimation
+            spriteAnimation.GetType().GetField("combatConfig", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(spriteAnimation, combatConfig);
+            spriteAnimation.GetType().GetField("eventBus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(spriteAnimation, eventBus);
             return go;
         }
-
         private bool ValidateReferences()
         {
             if (visualConfig == null || eventBus == null || combatConfig == null || characterPositions == null)

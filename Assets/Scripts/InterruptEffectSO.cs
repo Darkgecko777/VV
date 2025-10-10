@@ -14,7 +14,6 @@ namespace VirulentVentures
 
         public override (TransmissionVector? changedVector, float delta) Execute(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
-            bool applied = false;
             foreach (var target in targets.ToList())
             {
                 var targetStats = target as CharacterStats;
@@ -25,7 +24,6 @@ namespace VirulentVentures
                     string dodgeMessage = $"{targetStats.Id} dodges {user.Id}'s {abilityId}!";
                     combatLogs.Add(dodgeMessage);
                     eventBus.RaiseLogMessage(dodgeMessage, Color.yellow);
-                    applied = true;
                     continue;
                 }
 
@@ -36,7 +34,6 @@ namespace VirulentVentures
                     string interruptMessage = $"{user.Id}'s {abilityId} interrupts {targetStats.Id}'s next attack!";
                     combatLogs.Add(interruptMessage);
                     eventBus.RaiseLogMessage(interruptMessage, Color.cyan);
-                    applied = true;
                 }
                 else
                 {

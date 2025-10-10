@@ -1,3 +1,4 @@
+// Revised EventBusSO.cs
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -102,6 +103,7 @@ namespace VirulentVentures
         public event Action<CombatSpeedData> OnCombatSpeedChanged;
         public event Action<AttackData> OnAbilitySelected;
         public event Action OnCureInfections;
+        public event Action<float> OnRequestSetCombatSpeed; // Added for dynamic speed requests
 
         public void RaiseLogMessage(string message, Color color)
         {
@@ -231,6 +233,11 @@ namespace VirulentVentures
         public void RaiseCureInfections()
         {
             OnCureInfections?.Invoke();
+        }
+
+        public void RaiseRequestSetCombatSpeed(float speed) // Added
+        {
+            OnRequestSetCombatSpeed?.Invoke(speed);
         }
     }
 }

@@ -13,6 +13,5 @@ MonoBehaviour:
   m_Name: Effect_SludgeSlam_Stat
   m_EditorClassIdentifier: 
   effectId: 
-  effectId: StatEffect
   targetStat: 2
-  amount: 0
+  amount: -2

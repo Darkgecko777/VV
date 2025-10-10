@@ -1,8 +1,8 @@
+// Revised CombatSceneComponent.cs
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
 namespace VirulentVentures
 {
     public class CombatSceneComponent : MonoBehaviour
@@ -51,6 +51,7 @@ namespace VirulentVentures
                 eventBus.OnCombatPaused += () => { isPaused = true; };
                 eventBus.OnCombatPlayed += () => { isPaused = false; };
                 eventBus.OnCombatEnded += (isVictory) => EndCombat(ExpeditionManager, isVictory);
+                eventBus.OnRequestSetCombatSpeed += SetCombatSpeed; // Added
                 hasSubscribed = true;
             }
         }
@@ -77,6 +78,7 @@ namespace VirulentVentures
                 eventBus.OnCombatPaused -= () => { isPaused = true; };
                 eventBus.OnCombatPlayed -= () => { isPaused = false; };
                 eventBus.OnCombatEnded -= (isVictory) => EndCombat(ExpeditionManager, isVictory);
+                eventBus.OnRequestSetCombatSpeed -= SetCombatSpeed; // Added
                 hasSubscribed = false;
             }
             if (activeCombatCoroutine != null)
@@ -348,10 +350,8 @@ namespace VirulentVentures
                     state.AttacksThisRound++;
                     if (unit is CharacterStats stats)
                     {
-                        Debug.Log($"CombatSceneComponent: Starting {unit.Id}'s PerformAbility");
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
-                        Debug.Log($"CombatSceneComponent: Finished {unit.Id}'s PerformAbility, waiting 1.2s / {combatConfig.CombatSpeed:F1}x");
-                        yield return new WaitForSeconds(1.2f / (combatConfig?.CombatSpeed ?? 1f)); // Increased to cover full animation (~1.1s at CombatSpeed=0.5f)
+                        yield return ScaledWait(0.95f); // Sync to TiltForward duration
                     }
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                     {
@@ -369,8 +369,8 @@ namespace VirulentVentures
                         state.AttacksThisRound++;
                         Debug.Log($"CombatSceneComponent: Starting {unit.Id}'s second PerformAbility");
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
-                        Debug.Log($"CombatSceneComponent: Finished {unit.Id}'s second PerformAbility, waiting 1.2s / {combatConfig.CombatSpeed:F1}x");
-                        yield return new WaitForSeconds(1.2f / (combatConfig?.CombatSpeed ?? 1f));
+                        Debug.Log($"CombatSceneComponent: Finished {unit.Id}'s second PerformAbility, waiting for animation tempo (~0.95s base)");
+                        yield return ScaledWait(0.95f); // Sync to TiltForward duration
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
                             isCombatActive = false;
@@ -395,6 +395,16 @@ namespace VirulentVentures
                     }
                 }
                 IncrementRound();
+            }
+        }
+        private IEnumerator ScaledWait(float baseDuration)
+        {
+            float elapsed = 0f;
+            while (elapsed < baseDuration)
+            {
+                if (isPaused) yield return null;
+                else elapsed += Time.deltaTime * combatConfig.CombatSpeed;
+                yield return null;
             }
         }
         private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)

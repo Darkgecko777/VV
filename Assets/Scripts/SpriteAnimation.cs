@@ -1,3 +1,4 @@
+// Revised SpriteAnimation.cs
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,23 +8,36 @@ namespace VirulentVentures
     public class SpriteAnimation : MonoBehaviour
     {
         private SpriteRenderer spriteRenderer;
+        [SerializeField] private CombatConfig combatConfig; // Added for dynamic speed
+        [SerializeField] private EventBusSO eventBus; // Added for pause events
         private bool isAnimating = false;
+        private bool isPaused; // Added for pause handling
         private Queue<IEnumerator> animationQueue = new Queue<IEnumerator>();
         public bool IsAnimating => isAnimating;
 
         void Awake()
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
+            if (combatConfig == null) Debug.LogError("SpriteAnimation: CombatConfig is null.");
+            if (eventBus == null) Debug.LogError("SpriteAnimation: EventBus is null.");
+            eventBus.OnCombatPaused += () => isPaused = true;
+            eventBus.OnCombatPlayed += () => isPaused = false;
         }
 
-        public void TiltForward(bool isHero, float speed = 1f)
+        void OnDestroy()
         {
-            EnqueueAnimation(TiltForwardCoroutine(isHero, Mathf.Clamp(speed, 0.5f, 1.5f)));
+            eventBus.OnCombatPaused -= () => isPaused = true;
+            eventBus.OnCombatPlayed -= () => isPaused = false;
         }
 
-        public void Jiggle(float speed = 1f)
+        public void TiltForward(bool isHero)
         {
-            EnqueueAnimation(JiggleCoroutine(Mathf.Clamp(speed, 0.5f, 1.5f)));
+            EnqueueAnimation(TiltForwardCoroutine(isHero));
+        }
+
+        public void Jiggle()
+        {
+            EnqueueAnimation(JiggleCoroutine());
         }
 
         private void EnqueueAnimation(IEnumerator animation)
@@ -52,35 +66,41 @@ namespace VirulentVentures
             isAnimating = false;
         }
 
-        private IEnumerator TiltForwardCoroutine(bool isHero, float speed)
+        private IEnumerator TiltForwardCoroutine(bool isHero)
         {
             if (!gameObject.activeSelf) yield break;
 
             Quaternion startRotation = transform.rotation;
             Quaternion targetRotation = Quaternion.Euler(0, 0, isHero ? -30f : 30f);
             float baseDuration = 0.4f; // Increased from 0.3f for more visible animation
-            float holdTime = 0.15f / speed;
+            float holdTime = 0.15f;
             float elapsed = 0f;
 
             // Tilt forward
             while (elapsed < baseDuration)
             {
-                if (!gameObject.activeSelf) yield break;
-                elapsed += Time.deltaTime * speed;
+                if (isPaused || !gameObject.activeSelf) yield return null;
+                elapsed += Time.deltaTime * combatConfig.CombatSpeed;
                 float t = Mathf.Clamp01(elapsed / baseDuration);
                 transform.rotation = Quaternion.Lerp(startRotation, targetRotation, t);
                 yield return null;
             }
 
             // Hold briefly
-            yield return new WaitForSeconds(holdTime);
+            elapsed = 0f;
+            while (elapsed < holdTime)
+            {
+                if (isPaused || !gameObject.activeSelf) yield return null;
+                elapsed += Time.deltaTime * combatConfig.CombatSpeed;
+                yield return null;
+            }
 
             // Revert to original rotation
             elapsed = 0f;
             while (elapsed < baseDuration)
             {
-                if (!gameObject.activeSelf) yield break;
-                elapsed += Time.deltaTime * speed;
+                if (isPaused || !gameObject.activeSelf) yield return null;
+                elapsed += Time.deltaTime * combatConfig.CombatSpeed;
                 float t = Mathf.Clamp01(elapsed / baseDuration);
                 transform.rotation = Quaternion.Lerp(targetRotation, startRotation, t);
                 yield return null;
@@ -90,7 +110,7 @@ namespace VirulentVentures
             transform.rotation = startRotation;
         }
 
-        private IEnumerator JiggleCoroutine(float speed)
+        private IEnumerator JiggleCoroutine()
         {
             if (!gameObject.activeSelf) yield break;
 
@@ -103,8 +123,8 @@ namespace VirulentVentures
 
             while (elapsed < baseDuration)
             {
-                if (!gameObject.activeSelf) yield break;
-                elapsed += Time.deltaTime * speed;
+                if (isPaused || !gameObject.activeSelf) yield return null;
+                elapsed += Time.deltaTime * combatConfig.CombatSpeed;
                 float t = elapsed / baseDuration;
                 float scale = 1f + scaleAmount * Mathf.Sin(t * Mathf.PI * 4f);
                 transform.localScale = startScale * scale;

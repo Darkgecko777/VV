@@ -90,13 +90,12 @@ namespace VirulentVentures
             }
 
             // Check cooldown
-            bool isOnCooldown = false;
+
             if (ability.CooldownParams.Type != GameTypes.CooldownType.None)
             {
                 if (ability.CooldownParams.Type == GameTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0 ||
                     ability.CooldownParams.Type == GameTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0)
                 {
-                    isOnCooldown = true;
                     return false; // Skip silently
                 }
             }

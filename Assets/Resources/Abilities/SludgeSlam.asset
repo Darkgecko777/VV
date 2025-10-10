@@ -12,15 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29faf0b94ba308b4ea591377b8c912b3, type: 3}
   m_Name: SludgeSlam
   m_EditorClassIdentifier: 
-  id: MeleeStrike
+  id: Sludge Slam
   animationTrigger: Attack
-  effects: []
+  effects:
+  - {fileID: 11400000, guid: 515005bacf5a4f245872768c81fcf1e2, type: 2}
+  - {fileID: 11400000, guid: c034262bba6a7d740846717b7f6eb45c, type: 2}
   rule:
-    Type: 0
+    Type: 2
     Target: 2
     MeleeOnly: 1
     Criteria: 0
   dodgeable: 1
   cooldownParams:
-    Type: 0
-    Duration: 0
+    Type: 2
+    Duration: 2

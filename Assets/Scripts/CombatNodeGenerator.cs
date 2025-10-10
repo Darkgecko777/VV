@@ -62,7 +62,6 @@ namespace VirulentVentures
             {
                 int randomIndex = Random.Range(0, monsters.Count);
                 monsters[randomIndex].Infections.Add(bogRotVirus);
-                Debug.Log($"CombatNodeGenerator: Seeded {bogRotVirus.VirusID} on {monsters[randomIndex].Id} in {biome} node.");
             }
             else
             {
