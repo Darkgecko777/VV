@@ -18,13 +18,11 @@ namespace VirulentVentures
         {
             if (targetPool == null || targetPool.Count == 0)
             {
-                Debug.LogWarning($"CombatUtils: Empty targetPool for {user.Id}. Returning empty list.");
                 return new List<ICombatUnit>();
             }
 
             if (ability == null)
             {
-                Debug.LogWarning($"CombatUtils: Null AbilitySO for {user.Id}. Returning empty list.");
                 return new List<ICombatUnit>();
             }
 
@@ -36,10 +34,7 @@ namespace VirulentVentures
                     float threshold = selfSacrifice.ThresholdPercent;
                     if (user.Health <= (threshold / 100f) * user.MaxHealth)
                     {
-                        string lowHealthMessage = $"{user.Id} needs more than {threshold}% health to use {ability.Id}!";
-                        combatLogs.Add(lowHealthMessage);
-                        eventBus.RaiseLogMessage(lowHealthMessage, Color.red);
-                        return new List<ICombatUnit>(); // Fail early to trigger fallback
+                        return new List<ICombatUnit>(); // Fail silently to allow PerformAbility to try next ability
                     }
                 }
             }
@@ -67,39 +62,24 @@ namespace VirulentVentures
                 }
                 return selectedPool.Take(1).ToList();
             }
-            else if (rule.Type == CombatTypes.TargetingRule.RuleType.SingleConditional)
-            {
-                if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.LowestHealth)
-                {
-                    selectedPool = selectedPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
-                }
-                else if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.Random)
-                {
-                    selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
-                }
-                return selectedPool.Take(1).ToList();
-            }
             else if (rule.Type == CombatTypes.TargetingRule.RuleType.All)
             {
-                if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.LowestHealth)
-                {
-                    selectedPool = selectedPool.OrderBy(t => (t as CharacterStats)?.Health / (float)(t as CharacterStats)?.MaxHealth ?? float.MaxValue).ToList();
-                }
-                else if (rule.Criteria == CombatTypes.TargetingRule.SelectionCriteria.Random)
-                {
-                    selectedPool = selectedPool.OrderBy(t => UnityEngine.Random.value).ToList();
-                }
-                return selectedPool; // Return all valid targets
+                return selectedPool;
+            }
+            else if (rule.Type == CombatTypes.TargetingRule.RuleType.SingleConditional)
+            {
+                // Add conditional logic if needed
+                return selectedPool.Take(1).ToList();
             }
 
-            return selectedPool.Take(1).ToList();
+            return new List<ICombatUnit>();
         }
 
-        public static bool ApplyEffect(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
+        public static bool ExecuteAbility(CharacterStats user, List<ICombatUnit> targets, AbilitySO ability, string abilityId, EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs, Action<ICombatUnit> updateUnitCallback, UnitAttackState attackState, CombatSceneComponent combatScene)
         {
-            if (ability == null || attackState == null || combatScene == null || ability.Effects == null)
+            if (ability == null || targets == null || attackState == null || combatScene == null || ability.Effects == null)
             {
-                Debug.LogWarning($"CombatUtils: Null ability, attackState, combatScene, or effects for {user.Id}.");
+                Debug.LogWarning($"CombatUtils: Invalid parameters for {user.Id}'s {abilityId}. Skipping execution.");
                 return false;
             }
 
@@ -110,10 +90,8 @@ namespace VirulentVentures
                 if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0 ||
                     ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0)
                 {
-                    string cooldownMessage = $"{user.Id}'s {abilityId} is on cooldown ({attackState.AbilityCooldowns.GetValueOrDefault(abilityId, 0)} actions/{attackState.RoundCooldowns.GetValueOrDefault(abilityId, 0)} rounds remaining).";
-                    combatLogs.Add(cooldownMessage);
-                    eventBus.RaiseLogMessage(cooldownMessage, Color.yellow);
-                    return false;
+                    isOnCooldown = true;
+                    return false; // Skip silently, PerformAbility will try next ability
                 }
             }
 
@@ -124,7 +102,7 @@ namespace VirulentVentures
                 applied |= (changedVector != null); // Consider applied if stat changed
 
                 // Trigger virus transmission for each target if a stat was changed
-                if (changedVector != null && targets.Any())
+                if (changedVector != null && delta != 0f && targets.Any())
                 {
                     foreach (var target in targets.OfType<CharacterStats>())
                     {
@@ -143,9 +121,6 @@ namespace VirulentVentures
                 {
                     attackState.RoundCooldowns[abilityId] = ability.CooldownParams.Duration;
                 }
-                string cooldownAppliedMessage = $"{user.Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} {ability.CooldownParams.Type.ToString().ToLower()}.";
-                combatLogs.Add(cooldownAppliedMessage);
-                eventBus.RaiseLogMessage(cooldownAppliedMessage, Color.yellow);
             }
 
             return applied;

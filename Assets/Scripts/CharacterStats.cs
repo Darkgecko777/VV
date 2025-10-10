@@ -63,7 +63,7 @@ namespace VirulentVentures
             Evasion = data.Evasion;
             Morale = Type == CharacterType.Hero ? data.Morale : 0;
             MaxMorale = Type == CharacterType.Hero ? data.MaxMorale : 0;
-            Immunity = data.Immunity; // Renamed from Infectivity
+            Immunity = data.Immunity;
             Infections = new List<VirusSO>();
             PartyPosition = data.PartyPosition;
             abilityIds = data.Abilities != null && data.Abilities.Length > 0 ? data.Abilities.Select(a => a.Id).ToArray() : new string[] { "MeleeStrike" };
@@ -74,47 +74,6 @@ namespace VirulentVentures
             }
             Rank = data.Rank;
             CombatSprite = data.CombatSprite;
-        }
-
-        public void AddInfection(VirusSO newVirus)
-        {
-            if (newVirus == null)
-            {
-                Debug.LogWarning($"CharacterStats: Attempted to add null VirusSO to {Id}.");
-                return;
-            }
-
-            var rarityOrder = new Dictionary<string, int>
-            {
-                { "Common", 1 },
-                { "Uncommon", 2 },
-                { "Rare", 3 },
-                { "Epic", 4 }
-            };
-
-            var existingVirus = Infections.FirstOrDefault(v => v.VirusID == newVirus.VirusID);
-            if (existingVirus != null)
-            {
-                int existingRarity = rarityOrder.ContainsKey(existingVirus.Rarity) ? rarityOrder[existingVirus.Rarity] : 0;
-                int newRarity = rarityOrder.ContainsKey(newVirus.Rarity) ? rarityOrder[newVirus.Rarity] : 0;
-
-                if (newRarity > existingRarity)
-                {
-                    Infections.Remove(existingVirus);
-                    Infections.Add(newVirus);
-                    Debug.Log($"CharacterStats: Replaced {newVirus.VirusID} ({existingVirus.Rarity}) with higher rarity ({newVirus.Rarity}) for {Id}.");
-                }
-                else
-                {
-                    Debug.LogWarning($"CharacterStats: {Id} already infected with {newVirus.VirusID} ({existingVirus.Rarity}). New virus ({newVirus.Rarity}) not added due to equal or lower rarity.");
-                    return;
-                }
-            }
-            else
-            {
-                Infections.Add(newVirus);
-                Debug.Log($"CharacterStats: Added {newVirus.VirusID} ({newVirus.Rarity}) to {Id}.");
-            }
         }
 
         public struct DisplayStats
@@ -128,7 +87,7 @@ namespace VirulentVentures
             public int evasion;
             public int morale;
             public int maxMorale;
-            public int immunity; // Renamed from infectivity
+            public int immunity;
             public bool isHero;
             public bool isInfected;
             public List<VirusSO> infections;
@@ -146,7 +105,7 @@ namespace VirulentVentures
                 this.evasion = evasion;
                 this.morale = morale;
                 this.maxMorale = maxMorale;
-                this.immunity = immunity; // Renamed
+                this.immunity = immunity;
                 this.isHero = isHero;
                 this.isInfected = isInfected;
                 this.infections = infections;
@@ -163,11 +122,11 @@ namespace VirulentVentures
                 maxHealth: MaxHealth,
                 attack: Attack,
                 defense: Defense,
-                speed: Mathf.Clamp(Speed, 1, 8),
-                evasion: Mathf.Clamp(Evasion, 0, 100),
+                speed: Speed,
+                evasion: Evasion,
                 morale: Morale,
                 maxMorale: MaxMorale,
-                immunity: Immunity, // Renamed
+                immunity: Immunity,
                 isHero: IsHero,
                 isInfected: IsInfected,
                 infections: Infections,
@@ -176,121 +135,158 @@ namespace VirulentVentures
             );
         }
 
-        public IEnumerator PerformAbility(UnitAttackState state, PartyData partyData, List<ICombatUnit> allTargets, EventBusSO eventBus, UIConfig uiConfig, CombatConfig combatConfig, List<string> combatLogs, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions, Action<ICombatUnit> updateUnitCallback, CombatSceneComponent combatScene)
+        public void AddInfection(VirusSO virus)
         {
-            if (state == null || Health <= 0 || HasRetreated)
+            if (virus != null && !Infections.Contains(virus))
             {
-                Debug.LogWarning($"PerformAbility: Invalid state or unit {Id} is dead/retreated");
-                yield break;
+                Infections.Add(virus);
             }
+        }
 
-            string noTargetMessage = null;
+        public IEnumerator PerformAbility(UnitAttackState attackState, PartyData partyData, List<ICombatUnit> allTargets, EventBusSO eventBus, UIConfig uiConfig, CombatConfig combatConfig, List<string> combatLogs, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions, Action<ICombatUnit> updateUnitCallback, CombatSceneComponent combatScene)
+        {
             bool abilityUsed = false;
+            string noTargetMessage = null;
 
-            foreach (var ability in abilities)
+            for (int i = 0; i < abilities.Length; i++)
             {
-                if (ability == null)
-                {
-                    Debug.LogWarning($"PerformAbility: Null AbilitySO for {Id}");
-                    continue;
-                }
+                var ability = abilities[i];
+                if (ability == null) continue;
 
-                var abilityId = ability.Id;
-                if (state.AbilityCooldowns.ContainsKey(abilityId) && state.AbilityCooldowns[abilityId] > 0)
-                {
-                    continue;
-                }
+                string abilityId = ability.Id;
 
-                var filteredPool = ability.GetTargets(this, partyData, allTargets);
-                if (filteredPool.Count == 0)
+                // Check cooldown silently
+                if (ability.CooldownParams.Type != CombatTypes.CooldownType.None)
                 {
-                    noTargetMessage = $"No qualifying targets for {abilityId} by {Id}.";
-                    combatLogs.Add(noTargetMessage);
-                    eventBus.RaiseLogMessage(noTargetMessage, Color.red);
-                    continue;
-                }
-
-                var selectedTargets = CombatUtils.SelectTargets(this, filteredPool, partyData, ability.Rule, heroPositions, monsterPositions, ability, combatLogs, eventBus, uiConfig);
-                if (selectedTargets.Any())
-                {
-                    string abilityMessage = $"{Id} uses {abilityId}!";
-                    combatLogs.Add(abilityMessage);
-                    eventBus.RaiseLogMessage(abilityMessage, uiConfig.TextColor);
-                    eventBus.RaiseUnitAttacking(this, null, abilityId);
-                    eventBus.RaiseAbilitySelected(new EventBusSO.AttackData { attacker = this, target = null, abilityId = abilityId });
-
-                    bool applied = CombatUtils.ApplyEffect(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, state, combatScene);
-                    if (applied)
+                    if ((ability.CooldownParams.Type == CombatTypes.CooldownType.Actions && attackState.AbilityCooldowns.ContainsKey(abilityId) && attackState.AbilityCooldowns[abilityId] > 0) ||
+                        (ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds && attackState.RoundCooldowns.ContainsKey(abilityId) && attackState.RoundCooldowns[abilityId] > 0))
                     {
-                        abilityUsed = true;
-                        yield return new WaitUntil(() => !combatScene.IsPaused);
-                        yield return new WaitForSeconds(0.5f / (combatConfig?.CombatSpeed ?? 1f));
+                        continue; // Skip to next ability without logging
                     }
-                    else
-                    {
-                        yield return new WaitForSeconds(0.1f / (combatConfig?.CombatSpeed ?? 1f));
-                        continue;
-                    }
+                }
 
-                    foreach (var target in selectedTargets.ToList())
+                // Get potential targets
+                var potentialTargets = ability.GetTargets(this, partyData, allTargets);
+
+                // Silently check for valid targets based on rule
+                var selectedTargets = CombatUtils.SelectTargets(this, potentialTargets, partyData, ability.Rule, heroPositions, monsterPositions, ability, combatLogs, eventBus, uiConfig);
+
+                if (selectedTargets.Count == 0)
+                {
+                    noTargetMessage = $"No qualifying targets for {Id}'s {abilityId}.";
+                    continue; // Skip to next ability
+                }
+
+                // Silently check effect-specific conditions (e.g., thresholds)
+                bool conditionsPassed = true;
+                foreach (var effect in ability.Effects)
+                {
+                    // For effects with user-based thresholds, check without logging
+                    if (effect is SelfSacrificeEffectSO selfSac && selfSac.ThresholdPercent > 0)
                     {
-                        if (target.Health <= 0)
+                        if (Health <= (selfSac.ThresholdPercent / 100f) * MaxHealth)
                         {
-                            if (!combatLogs.Contains($"{target.Id} dies!"))
-                            {
-                                eventBus.RaiseUnitDied(target);
-                                string deathMessage = $"{target.Id} dies!";
-                                combatLogs.Add(deathMessage);
-                                eventBus.RaiseLogMessage(deathMessage, Color.red);
-                                updateUnitCallback(target);
-                                if (target is CharacterStats statsTarget)
-                                {
-                                    if (statsTarget.Type == CharacterType.Hero)
-                                        heroPositions.Remove(statsTarget);
-                                    else
-                                        monsterPositions.Remove(statsTarget);
-                                }
-                            }
-                        }
-                        else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
-                        {
-                            partyData.ProcessRetreat(target, eventBus, uiConfig, combatLogs, combatConfig);
-                            updateUnitCallback(target);
+                            conditionsPassed = false;
+                            break;
                         }
                     }
+                    // Add similar silent checks for other effects if needed
+                }
 
-                    if (Health <= 0)
+                if (!conditionsPassed)
+                {
+                    continue; // Skip to next ability
+                }
+
+                // Valid ability found: Now animate, log, and execute
+                eventBus.RaiseUnitAttacking(this, selectedTargets.FirstOrDefault(), abilityId);
+                string attackMessage = $"{Id} uses {abilityId} on {string.Join(", ", selectedTargets.Select(t => t.Id))}!";
+                combatLogs.Add(attackMessage);
+                eventBus.RaiseLogMessage(attackMessage, uiConfig.TextColor);
+
+                // Execute the ability
+                bool applied = CombatUtils.ExecuteAbility(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, attackState, combatScene);
+
+                if (applied && ability.CooldownParams.Type != CombatTypes.CooldownType.None)
+                {
+                    if (ability.CooldownParams.Type == CombatTypes.CooldownType.Actions)
                     {
-                        if (!combatLogs.Contains($"{Id} dies!"))
+                        attackState.AbilityCooldowns[abilityId] = ability.CooldownParams.Duration;
+                    }
+                    else if (ability.CooldownParams.Type == CombatTypes.CooldownType.Rounds)
+                    {
+                        attackState.RoundCooldowns[abilityId] = ability.CooldownParams.Duration;
+                    }
+                    string cooldownAppliedMessage = $"{Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} {ability.CooldownParams.Type.ToString().ToLower()}.";
+                    combatLogs.Add(cooldownAppliedMessage);
+                    eventBus.RaiseLogMessage(cooldownAppliedMessage, Color.yellow);
+                }
+
+                abilityUsed = true;
+
+                // Check targets for death or retreat
+                foreach (var target in selectedTargets.ToList())
+                {
+                    if (target.Health <= 0)
+                    {
+                        if (!combatLogs.Contains($"{target.Id} dies!"))
                         {
-                            eventBus.RaiseUnitDied(this);
-                            string deathMessage = $"{Id} dies!";
+                            eventBus.RaiseUnitDied(target);
+                            string deathMessage = $"{target.Id} dies!";
                             combatLogs.Add(deathMessage);
                             eventBus.RaiseLogMessage(deathMessage, Color.red);
-                            updateUnitCallback(this);
-                            if (Type == CharacterType.Hero)
-                                heroPositions.Remove(this);
-                            else
-                                monsterPositions.Remove(this);
+                            updateUnitCallback(target);
+                            if (target is CharacterStats statsTarget)
+                            {
+                                if (statsTarget.Type == CharacterType.Hero)
+                                    heroPositions.Remove(statsTarget);
+                                else
+                                    monsterPositions.Remove(statsTarget);
+                            }
                         }
                     }
-                    else if (partyData.CheckRetreat(this, eventBus, uiConfig, combatConfig))
+                    else if (partyData.CheckRetreat(target, eventBus, uiConfig, combatConfig))
                     {
-                        partyData.ProcessRetreat(this, eventBus, uiConfig, combatLogs, combatConfig);
-                        updateUnitCallback(this);
+                        partyData.ProcessRetreat(target, eventBus, uiConfig, combatLogs, combatConfig);
+                        updateUnitCallback(target);
                     }
-
-                    yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
-                    yield break;
                 }
+
+                // Check user for death or retreat
+                if (Health <= 0)
+                {
+                    if (!combatLogs.Contains($"{Id} dies!"))
+                    {
+                        eventBus.RaiseUnitDied(this);
+                        string deathMessage = $"{Id} dies!";
+                        combatLogs.Add(deathMessage);
+                        eventBus.RaiseLogMessage(deathMessage, Color.red);
+                        updateUnitCallback(this);
+                        if (Type == CharacterType.Hero)
+                            heroPositions.Remove(this);
+                        else
+                            monsterPositions.Remove(this);
+                    }
+                }
+                else if (partyData.CheckRetreat(this, eventBus, uiConfig, combatConfig))
+                {
+                    partyData.ProcessRetreat(this, eventBus, uiConfig, combatLogs, combatConfig);
+                    updateUnitCallback(this);
+                }
+
+                yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
+                yield break; // Exit after first valid ability
             }
 
+            // If no ability was used, log the issue for design review
             if (!abilityUsed)
             {
-                noTargetMessage = noTargetMessage ?? $"No qualifying targets for any abilities of {Id}.";
+                noTargetMessage = noTargetMessage ?? $"No qualifying targets or conditions met for any abilities of {Id}.";
                 combatLogs.Add(noTargetMessage);
                 eventBus.RaiseLogMessage(noTargetMessage, Color.red);
+                Debug.LogWarning($"CharacterStats: {noTargetMessage} Review ability design for {Id}.");
             }
+
             yield return new WaitForSeconds(0.2f / (combatConfig?.CombatSpeed ?? 1f));
         }
     }
