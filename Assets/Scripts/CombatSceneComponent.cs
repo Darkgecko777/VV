@@ -332,7 +332,8 @@ namespace VirulentVentures
                             AbilityCooldowns = new Dictionary<string, int>(),
                             RoundCooldowns = new Dictionary<string, int>(),
                             SkipNextAttack = false,
-                            TempStats = new Dictionary<string, (int value, int duration)>()
+                            TempStats = new Dictionary<string, (int value, int duration)>(),
+                            ActiveEffects = new Dictionary<GameTypes.StatusEffectType, (int stacks, int duration)>()
                         };
                         unitAttackStates.Add(state);
                     }
@@ -345,6 +346,26 @@ namespace VirulentVentures
                         if (state.TempStats[tempStat.Key].duration <= 0)
                         {
                             state.TempStats.Remove(tempStat.Key);
+                        }
+                    }
+                    // Decrement ActiveEffects durations
+                    foreach (var effect in state.ActiveEffects.ToList())
+                    {
+                        var (stacks, duration) = effect.Value;
+                        if (duration > 0) // Skip permanent (-1)
+                        {
+                            duration--;
+                            if (duration <= 0)
+                            {
+                                state.ActiveEffects.Remove(effect.Key);
+                                string endMessage = $"{state.Unit.Id}'s {effect.Key} effect ends!";
+                                allCombatLogs.Add(endMessage);
+                                eventBus.RaiseLogMessage(endMessage, Color.yellow);
+                            }
+                            else
+                            {
+                                state.ActiveEffects[effect.Key] = (stacks, duration);
+                            }
                         }
                     }
                     if (!CanAttackThisRound(unit, state) || unit.Health <= 0 || unit.HasRetreated) continue;

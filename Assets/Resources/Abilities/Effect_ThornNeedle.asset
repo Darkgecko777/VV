@@ -9,11 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06f39f421f686a6468cae45de2ee20ae, type: 3}
-  m_Name: Effect_SBInterrupt
-  m_EditorClassIdentifier: Assembly-CSharp::VirulentVentures.InterruptEffectSO
+  m_Script: {fileID: 11500000, guid: aaa0da8dd2a595545b8e1ca8dace1cf1, type: 3}
+  m_Name: Effect_ThornNeedle
+  m_EditorClassIdentifier: 
   effectId: 
-  effectType: 0
-  stacksToAdd: 1
-  maxStacks: 1
-  duration: 1
+  multiplier: 1
+  defenseType: 1

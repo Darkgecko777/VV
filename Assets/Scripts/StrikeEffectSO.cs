@@ -37,6 +37,48 @@ namespace VirulentVentures
                     : user.Attack;
                 damage = Mathf.Max(0, Mathf.RoundToInt(damage * Multiplier));
 
+                // Check for Thorns
+                var targetState = combatScene.GetUnitAttackState(target);
+                if (targetState != null && targetState.ActiveEffects.TryGetValue(GameTypes.StatusEffectType.Thorns, out var thorns) && thorns.stacks > 0)
+                {
+                    int reflectDamage = targetStats.Defense; // Reflect damage equal to target's Defense
+                    user.Health -= Mathf.Max(0, reflectDamage);
+                    totalDelta += reflectDamage; // Add to delta for virus transmission
+                    string reflectMessage = $"{targetStats.Id}'s Thorns reflect {reflectDamage} damage to {user.Id}!";
+                    combatLogs.Add(reflectMessage);
+                    eventBus.RaiseLogMessage(reflectMessage, Color.red);
+                    eventBus.RaiseUnitDamaged(user, reflectMessage);
+                    updateUnitCallback(user);
+
+                    // Consume one stack
+                    targetState.ActiveEffects[GameTypes.StatusEffectType.Thorns] = (thorns.stacks - 1, thorns.duration);
+                    if (targetState.ActiveEffects[GameTypes.StatusEffectType.Thorns].stacks <= 0)
+                    {
+                        targetState.ActiveEffects.Remove(GameTypes.StatusEffectType.Thorns);
+                        string thornsEndMessage = $"{targetStats.Id}'s Thorns effect ends!";
+                        combatLogs.Add(thornsEndMessage);
+                        eventBus.RaiseLogMessage(thornsEndMessage, Color.yellow);
+                    }
+                }
+
+                // Check for HealthShield
+                if (targetState != null && targetState.ActiveEffects.TryGetValue(GameTypes.StatusEffectType.HealthShield, out var healthShield) && healthShield.stacks > 0)
+                {
+                    string shieldMessage = $"{targetStats.Id}'s HealthShield negates {damage} damage from {user.Id}'s {abilityId}!";
+                    combatLogs.Add(shieldMessage);
+                    eventBus.RaiseLogMessage(shieldMessage, Color.cyan);
+                    targetState.ActiveEffects[GameTypes.StatusEffectType.HealthShield] = (healthShield.stacks - 1, healthShield.duration);
+                    if (targetState.ActiveEffects[GameTypes.StatusEffectType.HealthShield].stacks <= 0)
+                    {
+                        targetState.ActiveEffects.Remove(GameTypes.StatusEffectType.HealthShield);
+                        string shieldEndMessage = $"{targetStats.Id}'s HealthShield effect ends!";
+                        combatLogs.Add(shieldEndMessage);
+                        eventBus.RaiseLogMessage(shieldEndMessage, Color.yellow);
+                    }
+                    applied = true;
+                    continue;
+                }
+
                 if (damage > 0)
                 {
                     targetStats.Health -= damage;

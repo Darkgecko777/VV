@@ -52,6 +52,50 @@ namespace VirulentVentures
                 int newValue = Mathf.Clamp(currentValue + effectAmount, 0, maxValue);
                 int change = newValue - currentValue;
 
+                // Check for MoraleShield if targeting Morale and reducing
+                if (TargetStat == GameTypes.TargetStat.Morale && change < 0)
+                {
+                    var targetState = combatScene.GetUnitAttackState(target);
+                    if (targetState != null && targetState.ActiveEffects.TryGetValue(GameTypes.StatusEffectType.MoraleShield, out var moraleShield) && moraleShield.stacks > 0)
+                    {
+                        string shieldMessage = $"{targetStats.Id}'s MoraleShield negates {Mathf.Abs(change)} Morale loss from {user.Id}'s {abilityId}!";
+                        combatLogs.Add(shieldMessage);
+                        eventBus.RaiseLogMessage(shieldMessage, Color.cyan);
+                        targetState.ActiveEffects[GameTypes.StatusEffectType.MoraleShield] = (moraleShield.stacks - 1, moraleShield.duration);
+                        if (targetState.ActiveEffects[GameTypes.StatusEffectType.MoraleShield].stacks <= 0)
+                        {
+                            targetState.ActiveEffects.Remove(GameTypes.StatusEffectType.MoraleShield);
+                            string shieldEndMessage = $"{targetStats.Id}'s MoraleShield effect ends!";
+                            combatLogs.Add(shieldEndMessage);
+                            eventBus.RaiseLogMessage(shieldEndMessage, Color.yellow);
+                        }
+                        applied = true;
+                        continue;
+                    }
+                }
+
+                // Check for HealthShield if targeting Health and reducing (future-proofing)
+                if (TargetStat == GameTypes.TargetStat.Health && change < 0)
+                {
+                    var targetState = combatScene.GetUnitAttackState(target);
+                    if (targetState != null && targetState.ActiveEffects.TryGetValue(GameTypes.StatusEffectType.HealthShield, out var healthShield) && healthShield.stacks > 0)
+                    {
+                        string shieldMessage = $"{targetStats.Id}'s HealthShield negates {Mathf.Abs(change)} Health loss from {user.Id}'s {abilityId}!";
+                        combatLogs.Add(shieldMessage);
+                        eventBus.RaiseLogMessage(shieldMessage, Color.cyan);
+                        targetState.ActiveEffects[GameTypes.StatusEffectType.HealthShield] = (healthShield.stacks - 1, healthShield.duration);
+                        if (targetState.ActiveEffects[GameTypes.StatusEffectType.HealthShield].stacks <= 0)
+                        {
+                            targetState.ActiveEffects.Remove(GameTypes.StatusEffectType.HealthShield);
+                            string shieldEndMessage = $"{targetStats.Id}'s HealthShield effect ends!";
+                            combatLogs.Add(shieldEndMessage);
+                            eventBus.RaiseLogMessage(shieldEndMessage, Color.yellow);
+                        }
+                        applied = true;
+                        continue;
+                    }
+                }
+
                 if (change != 0)
                 {
                     if (TargetStat == GameTypes.TargetStat.Health)

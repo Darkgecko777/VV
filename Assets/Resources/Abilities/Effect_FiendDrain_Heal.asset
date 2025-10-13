@@ -9,11 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06f39f421f686a6468cae45de2ee20ae, type: 3}
-  m_Name: Effect_SBInterrupt
-  m_EditorClassIdentifier: Assembly-CSharp::VirulentVentures.InterruptEffectSO
+  m_Script: {fileID: 11500000, guid: b0ff4d8027f20a34290011da3d893f78, type: 3}
+  m_Name: Effect_FiendDrain_Heal
+  m_EditorClassIdentifier: 
   effectId: 
-  effectType: 0
-  stacksToAdd: 1
-  maxStacks: 1
-  duration: 1
+  amountPercent: 10
+  thresholdPercent: 0
+  allowSuicide: 0
+  drain: 1

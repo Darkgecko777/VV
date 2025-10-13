@@ -9,11 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06f39f421f686a6468cae45de2ee20ae, type: 3}
-  m_Name: Effect_SBInterrupt
-  m_EditorClassIdentifier: Assembly-CSharp::VirulentVentures.InterruptEffectSO
+  m_Script: {fileID: 11500000, guid: 726f604ca9eba9844b44c9afa9ada1b9, type: 3}
+  m_Name: Effect_WOT
+  m_EditorClassIdentifier: 
   effectId: 
-  effectType: 0
-  stacksToAdd: 1
-  maxStacks: 1
-  duration: 1
+  targetStat: 2
+  amount: 2
+  targetSelf: 0
+  duration: 2

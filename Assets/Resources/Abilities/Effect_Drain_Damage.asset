@@ -9,11 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06f39f421f686a6468cae45de2ee20ae, type: 3}
-  m_Name: Effect_SBInterrupt
-  m_EditorClassIdentifier: Assembly-CSharp::VirulentVentures.InterruptEffectSO
+  m_Script: {fileID: 11500000, guid: 89ec6c01bc3c81b40bee282a48f098bc, type: 3}
+  m_Name: Effect_Drain_Damage
+  m_EditorClassIdentifier: 
   effectId: 
-  effectType: 0
-  stacksToAdd: 1
-  maxStacks: 1
-  duration: 1
+  flatAmount: 0
+  percentAmount: -10
+  usePercentage: 1
+  thresholdPercent: 0
+  targetStat: 0

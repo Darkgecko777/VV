@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 06f39f421f686a6468cae45de2ee20ae, type: 3}
-  m_Name: Effect_SBInterrupt
-  m_EditorClassIdentifier: Assembly-CSharp::VirulentVentures.InterruptEffectSO
+  m_Name: Effect_Thorns
+  m_EditorClassIdentifier: 
   effectId: 
-  effectType: 0
+  effectType: 1
   stacksToAdd: 1
-  maxStacks: 1
+  maxStacks: 2
   duration: 1

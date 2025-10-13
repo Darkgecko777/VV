@@ -30,4 +30,5 @@ MonoBehaviour:
   combatSprite: {fileID: -8095136766332345138, guid: b8576ef16bbfcce44abfee44601e108a, type: 3}
   abilities:
   - {fileID: 11400000, guid: f729e81ad0e85dc4097f15dec04ec3fc, type: 2}
+  - {fileID: 11400000, guid: fa62270954422b545a2501d017ac5a43, type: 2}
   - {fileID: 11400000, guid: 3f31297c48b9a884d9c8c621bb6f0455, type: 2}
