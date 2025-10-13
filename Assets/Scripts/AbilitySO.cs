@@ -16,7 +16,8 @@ namespace VirulentVentures
             Type = GameTypes.TargetingRule.RuleType.Single,
             Target = GameTypes.ConditionTarget.Enemy,
             MeleeOnly = true,
-            Criteria = GameTypes.TargetingRule.SelectionCriteria.Default
+            Criteria = GameTypes.TargetingRule.SelectionCriteria.Default,
+            TargetSelf = false
         };
         [SerializeField] private bool dodgeable = true;
         [SerializeField]
@@ -35,6 +36,11 @@ namespace VirulentVentures
 
         public List<ICombatUnit> GetTargets(CharacterStats user, PartyData party, List<ICombatUnit> allTargets)
         {
+            if (rule.TargetSelf)
+            {
+                return new List<ICombatUnit> { user }; // Return user if TargetSelf is true
+            }
+
             List<ICombatUnit> basePool;
             if (rule.Target == GameTypes.ConditionTarget.Ally)
             {

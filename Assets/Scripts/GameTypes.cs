@@ -32,7 +32,8 @@ namespace VirulentVentures
             Interrupt,
             SelfSacrifice,
             InstantKill,
-            StatEffect
+            StatEffect,
+            ApplyStatusEffect // Added for new effect
         }
 
         public enum TargetStat
@@ -44,6 +45,14 @@ namespace VirulentVentures
             Defense,
             Evasion,
             Immunity
+        }
+
+        public enum StatusEffectType
+        {
+            Interrupt,
+            Thorns,
+            HealthShield,
+            MoraleShield
         }
 
         [Serializable]
@@ -68,13 +77,14 @@ namespace VirulentVentures
                 Default,
                 LowestHealth,
                 Random,
-                HighestHealth // Added for ScoutSniperShot
+                HighestHealth
             }
 
             public RuleType Type;
             public ConditionTarget Target;
             public bool MeleeOnly;
             public SelectionCriteria Criteria;
+            public bool TargetSelf; // Added to support self-targeting
         }
 
         [Serializable]
