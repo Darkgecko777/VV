@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: Effect_SludgeSlam_Stat
   m_EditorClassIdentifier: 
   effectId: 
-  targetStat: 2
-  amount: -2
+  targetStat: 3
+  amount: 4
+  targetSelf: 0
+  duration: 2

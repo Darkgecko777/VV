@@ -22,9 +22,7 @@ MonoBehaviour:
     Target: 2
     MeleeOnly: 1
     Criteria: 0
-  attackParams:
-    Defense: 1
-    Dodgeable: 0
+  dodgeable: 1
   cooldownParams:
-    Type: 2
-    Duration: 1
+    Type: 1
+    Duration: 2

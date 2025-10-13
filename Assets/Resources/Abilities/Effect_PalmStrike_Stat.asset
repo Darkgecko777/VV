@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Effect_PalmStrike_Stat
   m_EditorClassIdentifier: 
   effectId: 
-  targetStat: 2
-  amount: 0
-  targetSelf: 0
-  duration: -1
+  targetStat: 5
+  amount: 10
+  targetSelf: 1
+  duration: 2

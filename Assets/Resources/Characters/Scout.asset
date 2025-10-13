@@ -29,4 +29,6 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: 734949a86c4cad746aa490b0eb29dea8, type: 3}
   combatSprite: {fileID: 7206731815439886665, guid: 0a22559072da48245bbc0fdcd02c64ec, type: 3}
   abilities:
-  - {fileID: 11400000, guid: 3f31297c48b9a884d9c8c621bb6f0455, type: 2}
+  - {fileID: 11400000, guid: e09208e6c26a47b4e95b328d5ff2b446, type: 2}
+  - {fileID: 11400000, guid: 328692529df267646a477f47acf6125b, type: 2}
+  - {fileID: 11400000, guid: c078da18993457c419e32ea90fb81d8f, type: 2}

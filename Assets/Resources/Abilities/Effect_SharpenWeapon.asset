@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Effect_SharpenWeapon
   m_EditorClassIdentifier: 
   effectId: 
-  targetStat: 2
-  amount: 0
+  targetStat: 3
+  amount: 4
   targetSelf: 0
-  duration: -1
+  duration: 2

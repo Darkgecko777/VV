@@ -1,8 +1,8 @@
-// Revised CombatSceneComponent.cs
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+
 namespace VirulentVentures
 {
     public class CombatSceneComponent : MonoBehaviour
@@ -30,10 +30,12 @@ namespace VirulentVentures
         public bool IsPaused => isPaused;
         public EventBusSO EventBus => eventBus;
         public UIConfig UIConfig => uiConfig;
+
         public UnitAttackState GetUnitAttackState(ICombatUnit unit)
         {
             return unitAttackStates.Find(s => s.Unit == unit);
         }
+
         void Awake()
         {
             isCombatActive = false;
@@ -51,10 +53,11 @@ namespace VirulentVentures
                 eventBus.OnCombatPaused += () => { isPaused = true; };
                 eventBus.OnCombatPlayed += () => { isPaused = false; };
                 eventBus.OnCombatEnded += (isVictory) => EndCombat(ExpeditionManager, isVictory);
-                eventBus.OnRequestSetCombatSpeed += SetCombatSpeed; // Added
+                eventBus.OnRequestSetCombatSpeed += SetCombatSpeed;
                 hasSubscribed = true;
             }
         }
+
         void Start()
         {
             if (!ValidateReferences())
@@ -71,6 +74,7 @@ namespace VirulentVentures
             InitializeUnits(expedition.Party.GetHeroes(), expedition.NodeData[expedition.CurrentNodeIndex].Monsters);
             StartCombatLoop(expedition.Party);
         }
+
         void OnDestroy()
         {
             if (hasSubscribed)
@@ -78,7 +82,7 @@ namespace VirulentVentures
                 eventBus.OnCombatPaused -= () => { isPaused = true; };
                 eventBus.OnCombatPlayed -= () => { isPaused = false; };
                 eventBus.OnCombatEnded -= (isVictory) => EndCombat(ExpeditionManager, isVictory);
-                eventBus.OnRequestSetCombatSpeed -= SetCombatSpeed; // Added
+                eventBus.OnRequestSetCombatSpeed -= SetCombatSpeed;
                 hasSubscribed = false;
             }
             if (activeCombatCoroutine != null)
@@ -87,16 +91,19 @@ namespace VirulentVentures
                 activeCombatCoroutine = null;
             }
         }
+
         public void PauseCombat()
         {
             isPaused = true;
             eventBus.RaiseCombatPaused();
         }
+
         public void PlayCombat()
         {
             isPaused = false;
             eventBus.RaiseCombatPlayed();
         }
+
         public void SetCombatSpeed(float speed)
         {
             if (combatConfig != null)
@@ -113,6 +120,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         public void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
         {
             string initMessage = "Combat begins!";
@@ -172,6 +180,7 @@ namespace VirulentVentures
             monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
             eventBus.RaiseCombatInitialized(units);
         }
+
         public void UpdateUnit(ICombatUnit unit, string damageMessage = null)
         {
             if (unit == null) return;
@@ -197,9 +206,11 @@ namespace VirulentVentures
                 }
             }
         }
+
         public void TryInfectUnit(CharacterStats source, CharacterStats target, TransmissionVector changedVector, float delta, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
             if (source == null || target == null || target.Health <= 0 || target.HasRetreated) return;
+
             // Standard infection (source to target if source infected)
             if (source.Infections.Any(v => v.TransmissionVector == changedVector))
             {
@@ -209,7 +220,6 @@ namespace VirulentVentures
                     string chanceMessage = $"{source.Id} attempts to infect {target.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
                     combatLogs.Add(chanceMessage);
                     eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
-                    Debug.Log($"CombatSceneComponent: {chanceMessage}");
                     if (Random.value <= infectionChance)
                     {
                         target.AddInfection(virus);
@@ -221,6 +231,7 @@ namespace VirulentVentures
                     }
                 }
             }
+
             // Counter-infection (target to source if target infected, with 0.3 multiplier)
             if (target.Infections.Any(v => v.TransmissionVector == changedVector))
             {
@@ -231,7 +242,6 @@ namespace VirulentVentures
                     string chanceMessage = $"{target.Id} attempts counter-infection on {source.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
                     combatLogs.Add(chanceMessage);
                     eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
-                    Debug.Log($"CombatSceneComponent: {chanceMessage}");
                     if (Random.value <= infectionChance)
                     {
                         source.AddInfection(virus);
@@ -244,6 +254,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         public void StartCombatLoop(PartyData party)
         {
             if (partyData == null)
@@ -264,6 +275,7 @@ namespace VirulentVentures
             isCombatActive = true;
             activeCombatCoroutine = StartCoroutine(RunCombat());
         }
+
         private IEnumerator RunCombat()
         {
             if (!isCombatActive)
@@ -326,17 +338,6 @@ namespace VirulentVentures
                     }
                     state.AttacksThisRound = 0;
                     state.RoundCounter++;
-                    foreach (var abilityCd in state.AbilityCooldowns.ToList())
-                    {
-                        state.AbilityCooldowns[abilityCd.Key] = Mathf.Max(0, abilityCd.Value - 1);
-                        if (state.AbilityCooldowns[abilityCd.Key] == 0)
-                        {
-                            state.AbilityCooldowns.Remove(abilityCd.Key);
-                            string cooldownEndMessage = $"{unit.Id}'s {abilityCd.Key} is off cooldown!";
-                            allCombatLogs.Add(cooldownEndMessage);
-                            eventBus.RaiseLogMessage(cooldownEndMessage, uiConfig.TextColor);
-                        }
-                    }
                     foreach (var tempStat in state.TempStats.ToList())
                     {
                         if (tempStat.Value.duration == -1) continue; // Combat-end effects persist
@@ -397,6 +398,7 @@ namespace VirulentVentures
                 IncrementRound();
             }
         }
+
         private IEnumerator ScaledWait(float baseDuration)
         {
             float elapsed = 0f;
@@ -407,6 +409,7 @@ namespace VirulentVentures
                 yield return null;
             }
         }
+
         private bool CanAttackThisRound(ICombatUnit unit, UnitAttackState state)
         {
             if (unit is not CharacterStats stats) return false;
@@ -425,6 +428,7 @@ namespace VirulentVentures
                 return state.RoundCounter % 2 == 1 && state.AttacksThisRound < 1;
             return false;
         }
+
         private void IncrementRound()
         {
             roundNumber++;
@@ -432,6 +436,7 @@ namespace VirulentVentures
             allCombatLogs.Add(roundMessage);
             eventBus.RaiseLogMessage(roundMessage, uiConfig.TextColor);
         }
+
         private void EndCombat(ExpeditionManager expeditionManager, bool isVictory)
         {
             float currentTime = Time.time;
@@ -447,6 +452,7 @@ namespace VirulentVentures
                 allCombatLogs.Add(endMessage);
                 eventBus?.RaiseLogMessage(endMessage, uiConfig?.TextColor ?? Color.white);
             }
+
             // Reset temporary stat changes (except Health and Morale)
             foreach (var state in unitAttackStates)
             {
@@ -466,6 +472,7 @@ namespace VirulentVentures
                     }
                 }
             }
+
             expeditionManager.SaveProgress();
             unitAttackStates.Clear();
             heroPositions.Clear();
@@ -502,6 +509,7 @@ namespace VirulentVentures
                 }
             }
         }
+
         private bool ValidateReferences()
         {
             if (combatConfig == null)
@@ -518,6 +526,7 @@ namespace VirulentVentures
                 return false;
             return true;
         }
+
         private int GetOriginalStatValue(CharacterStats stats, string statKey)
         {
             return statKey switch
@@ -530,6 +539,7 @@ namespace VirulentVentures
                 _ => 0
             };
         }
+
         private void SetStatValue(CharacterStats stats, string statKey, int value)
         {
             switch (statKey)

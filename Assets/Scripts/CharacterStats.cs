@@ -152,7 +152,6 @@ namespace VirulentVentures
             {
                 var ability = abilities[i];
                 if (ability == null) continue;
-
                 string abilityId = ability.Id;
 
                 // Check cooldown silently
@@ -170,7 +169,6 @@ namespace VirulentVentures
 
                 // Silently check for valid targets based on rule
                 var selectedTargets = CombatUtils.SelectTargets(this, potentialTargets, partyData, ability.Rule, heroPositions, monsterPositions, ability, combatLogs, eventBus, uiConfig);
-
                 if (selectedTargets.Count == 0)
                 {
                     noTargetMessage = $"No qualifying targets for {Id}'s {abilityId}.";
@@ -190,7 +188,6 @@ namespace VirulentVentures
                         }
                     }
                 }
-
                 if (!userConditionsPassed)
                 {
                     noTargetMessage = $"User conditions not met for {Id}'s {abilityId}.";
@@ -232,7 +229,6 @@ namespace VirulentVentures
                     }
                     if (targetConditionsPassed) break;
                 }
-
                 if (!targetConditionsPassed)
                 {
                     noTargetMessage = $"Target conditions not met for {Id}'s {abilityId}.";
@@ -241,7 +237,6 @@ namespace VirulentVentures
 
                 // Valid ability found: Trigger animation and wait for completion
                 eventBus.RaiseUnitAttacking(this, selectedTargets.FirstOrDefault(), abilityId);
-
                 // Find the SpriteAnimation component for this unit
                 var unitEntry = combatScene.GetComponentsInChildren<SpriteAnimation>()
                     .FirstOrDefault(sa => combatScene.units.Any(u => u.unit == this && u.go == sa.gameObject));
@@ -260,6 +255,25 @@ namespace VirulentVentures
 
                 // Execute the ability
                 bool applied = CombatUtils.ExecuteAbility(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, attackState, combatScene);
+
+                if (applied)
+                {
+                    // Decrement action-based cooldowns for this unit's other abilities
+                    foreach (var cd in attackState.AbilityCooldowns.ToList())
+                    {
+                        if (cd.Key != abilityId) // Skip the ability just used
+                        {
+                            attackState.AbilityCooldowns[cd.Key] = Mathf.Max(0, cd.Value - 1);
+                            if (attackState.AbilityCooldowns[cd.Key] == 0)
+                            {
+                                attackState.AbilityCooldowns.Remove(cd.Key);
+                                string cooldownEndMessage = $"{Id}'s {cd.Key} is off cooldown!";
+                                combatLogs.Add(cooldownEndMessage);
+                                eventBus.RaiseLogMessage(cooldownEndMessage, uiConfig.TextColor);
+                            }
+                        }
+                    }
+                }
 
                 if (applied && ability.CooldownParams.Type != GameTypes.CooldownType.None)
                 {

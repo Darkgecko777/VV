@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Effect_SniperShot
   m_EditorClassIdentifier: 
   effectId: 
-  multiplier: 1
+  multiplier: 1.5
   defenseType: 0

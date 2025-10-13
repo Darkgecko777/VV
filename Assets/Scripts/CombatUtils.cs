@@ -60,10 +60,6 @@ namespace VirulentVentures
                         .OrderBy(t => (float)t.Health / t.MaxHealth)
                         .Cast<ICombatUnit>()
                         .ToList();
-                    if (selectedPool.Any())
-                    {
-                        Debug.Log($"CombatUtils: Selected {selectedPool[0].Id} with {((CharacterStats)selectedPool[0]).Health / (float)((CharacterStats)selectedPool[0]).MaxHealth:F2} health ratio for {user.Id}'s {ability.Id}");
-                    }
                     return selectedPool.Take(1).ToList();
                 }
                 else if (rule.Criteria == GameTypes.TargetingRule.SelectionCriteria.HighestHealth)
@@ -74,10 +70,6 @@ namespace VirulentVentures
                         .OrderByDescending(t => (float)t.Health / t.MaxHealth)
                         .Cast<ICombatUnit>()
                         .ToList();
-                    if (selectedPool.Any())
-                    {
-                        Debug.Log($"CombatUtils: Selected {selectedPool[0].Id} with {((CharacterStats)selectedPool[0]).Health / (float)((CharacterStats)selectedPool[0]).MaxHealth:F2} health ratio for {user.Id}'s {ability.Id}");
-                    }
                     return selectedPool.Take(1).ToList();
                 }
                 else if (rule.Criteria == GameTypes.TargetingRule.SelectionCriteria.Random)
@@ -134,10 +126,14 @@ namespace VirulentVentures
                 if (ability.CooldownParams.Type == GameTypes.CooldownType.Actions)
                 {
                     attackState.AbilityCooldowns[abilityId] = ability.CooldownParams.Duration;
+                    combatLogs.Add($"{user.Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} actions.");
+                    eventBus.RaiseLogMessage($"{user.Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} actions.", Color.yellow);
                 }
                 else if (ability.CooldownParams.Type == GameTypes.CooldownType.Rounds)
                 {
                     attackState.RoundCooldowns[abilityId] = ability.CooldownParams.Duration;
+                    combatLogs.Add($"{user.Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} rounds.");
+                    eventBus.RaiseLogMessage($"{user.Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} rounds.", Color.yellow);
                 }
             }
 
