@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   effectId: 
   multiplier: 1
-  defenseType: 0
+  defenseType: 1

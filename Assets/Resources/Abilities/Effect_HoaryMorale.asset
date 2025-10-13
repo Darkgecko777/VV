@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Effect_HoaryMorale
   m_EditorClassIdentifier: 
   effectId: 
-  flatAmount: 15
+  flatAmount: 5
   percentAmount: 0
   usePercentage: 0
-  thresholdPercent: 80
-  targetStat: 0
+  thresholdPercent: 0
+  targetStat: 1

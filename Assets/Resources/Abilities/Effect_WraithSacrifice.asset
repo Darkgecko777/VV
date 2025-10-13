@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Effect_WraithSacrifice
   m_EditorClassIdentifier: 
   effectId: 
-  amountPercent: 5
-  thresholdPercent: 25
-  allowSuicide: 0
+  amountPercent: 10
+  thresholdPercent: 0
+  allowSuicide: 1
   drain: 0

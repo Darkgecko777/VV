@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Effect_HoaryDefense
   m_EditorClassIdentifier: 
   effectId: 
-  targetStat: 2
-  amount: 0
+  targetStat: 4
+  amount: -3
   targetSelf: 0
-  duration: -1
+  duration: 1
