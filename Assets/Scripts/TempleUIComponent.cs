@@ -67,13 +67,11 @@ namespace VirulentVentures
                 root.Q<VisualElement>("VirusTabContent")
             };
             tabButtons = new List<Button> { recruitTabButton, expeditionTabButton, virusTabButton };
-            if (virusDropdown == null || nodeDropdown == null || generateButton == null || launchButton == null || seedVirusButton == null ||
-                favourLabel == null || recruitPortraitContainer == null || expeditionPortraitContainer == null || nodeContainer == null ||
+            if (favourLabel == null || recruitPortraitContainer == null || expeditionPortraitContainer == null || nodeContainer == null ||
                 tabContentContainer == null || recruitTabButton == null || expeditionTabButton == null || virusTabButton == null ||
-                autoHealPopup == null || autoHealLabel == null || continueButton == null)
+                autoHealPopup == null || autoHealLabel == null || continueButton == null || generateButton == null || launchButton == null)
             {
-                Debug.LogError($"TempleUIComponent: Missing UI elements! VirusDropdown: {virusDropdown != null}, NodeDropdown: {nodeDropdown != null}, " +
-                    $"GenerateButton: {generateButton != null}, LaunchButton: {launchButton != null}, SeedVirusButton: {seedVirusButton != null}, " +
+                Debug.LogError($"TempleUIComponent: Missing UI elements! GenerateButton: {generateButton != null}, LaunchButton: {launchButton != null}, " +
                     $"FavourLabel: {favourLabel != null}, RecruitPortraitContainer: {recruitPortraitContainer != null}, " +
                     $"ExpeditionPortraitContainer: {expeditionPortraitContainer != null}, NodeContainer: {nodeContainer != null}, " +
                     $"TabContentContainer: {tabContentContainer != null}, RecruitTab: {recruitTabButton != null}, " +
@@ -420,18 +418,8 @@ namespace VirulentVentures
                 Debug.LogWarning("TempleUIComponent: ExpeditionData or nodeContainer is null, skipping node update.");
                 return;
             }
-            nodeDropdown.choices.Clear();
-            var nodes = data.expeditionData.NodeData;
-            for (int i = 0; i < nodes.Count; i++)
-            {
-                nodeDropdown.choices.Add($"Node {i + 1} ({nodes[i].NodeType})");
-            }
-            nodeDropdown.value = nodeDropdown.choices.Count > 0 ? nodeDropdown.choices[0] : null;
-            if (nodeDropdown != null && uiConfig != null)
-            {
-                nodeDropdown.style.color = uiConfig.TextColor;
-            }
             nodeContainer.Clear();
+            var nodes = data.expeditionData.NodeData;
             for (int i = 0; i < nodes.Count; i++)
             {
                 VisualElement nodeBox = new VisualElement();
@@ -472,11 +460,10 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
-            if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || virusConfig == null || partyData == null)
+            if (uiDocument == null || uiConfig == null || visualConfig == null || eventBus == null || partyData == null)
             {
                 Debug.LogError($"TempleUIComponent: Missing references! UIDocument: {uiDocument != null}, UIConfig: {uiConfig != null}, " +
-                    $"VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, VirusConfig: {virusConfig != null}, " +
-                    $"PartyData: {partyData != null}");
+                    $"VisualConfig: {visualConfig != null}, EventBus: {eventBus != null}, PartyData: {partyData != null}");
                 return false;
             }
             return true;

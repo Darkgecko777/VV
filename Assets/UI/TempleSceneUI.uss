@@ -135,3 +135,19 @@
     padding: 10px;
     border-radius: 5px;
 }
+
+.virus-grid-cell {
+    border-width: 2px;
+    border-color: white;
+    background-color: rgba(51, 51, 51, 0.8);
+    margin: 0px;
+}
+
+.virus-trait-icon {
+    -unity-background-scale-mode: scale-to-fit;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.virus-trait-icon.dragging {
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
+}

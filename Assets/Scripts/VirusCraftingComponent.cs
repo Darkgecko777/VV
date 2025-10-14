@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UIElements;
 using System.Linq;
 
 namespace VirulentVentures
@@ -10,13 +11,68 @@ namespace VirulentVentures
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private HealingConfig healingConfig;
         [SerializeField] private VirusConfigSO virusConfig;
+        [SerializeField] private UIDocument uiDocument;
+        [SerializeField] private Sprite virusTraitSprite;
+        private VisualElement virusCraftingContainer;
+        private VisualElement virusTraitIcon;
+        private Vector2 originalPosition;
+        private bool isDragging;
 
         void Awake()
         {
-            if (!ValidateReferences())
+            if (!ValidateReferences()) return;
+            virusCraftingContainer = uiDocument.rootVisualElement.Q<VisualElement>("VirusCraftingContainer");
+            virusTraitIcon = virusCraftingContainer.Q<VisualElement>("VirusTraitIcon");
+            if (virusTraitIcon == null)
             {
-                Debug.LogError("VirusCraftingComponent: Initialization failed due to missing references.");
+                Debug.LogError("VirusCraftingComponent: VirusTraitIcon not found in UI!");
+                return;
             }
+            virusTraitIcon.style.backgroundImage = new StyleBackground(virusTraitSprite);
+            originalPosition = new Vector2(0, 0); // Top-left cell
+            RegisterDragEvents();
+        }
+
+        private void RegisterDragEvents()
+        {
+            virusTraitIcon.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                isDragging = true;
+                virusTraitIcon.AddToClassList("dragging");
+                virusTraitIcon.CapturePointer(evt.pointerId);
+            });
+
+            virusTraitIcon.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if (isDragging)
+                {
+                    Vector2 localPos = virusCraftingContainer.WorldToLocal(evt.position);
+                    virusTraitIcon.style.left = localPos.x - 32; // Center sprite on pointer
+                    virusTraitIcon.style.top = localPos.y - 32;
+                }
+            });
+
+            virusTraitIcon.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (isDragging)
+                {
+                    isDragging = false;
+                    virusTraitIcon.RemoveFromClassList("dragging");
+                    virusTraitIcon.ReleasePointer(evt.pointerId);
+                    Vector2 localPos = virusCraftingContainer.WorldToLocal(evt.position);
+                    if (IsInGrid(localPos))
+                    {
+                        virusTraitIcon.style.left = originalPosition.x;
+                        virusTraitIcon.style.top = originalPosition.y;
+                    }
+                }
+            });
+        }
+
+        private bool IsInGrid(Vector2 localPos)
+        {
+            // Grid is 192x192px (3x3 cells of 64x64) at (0, 0) in VirusCraftingContainer
+            return localPos.x >= 0 && localPos.x <= 192 && localPos.y >= 0 && localPos.y <= 192;
         }
 
         public void CureInfections()
@@ -48,17 +104,43 @@ namespace VirulentVentures
 
         private bool ValidateReferences()
         {
+            bool isValid = true;
             if (playerProgress == null)
+            {
                 Debug.LogError("VirusCraftingComponent: playerProgress is null.");
+                isValid = false;
+            }
             if (partyData == null)
+            {
                 Debug.LogError("VirusCraftingComponent: partyData is null.");
+                isValid = false;
+            }
             if (eventBus == null)
+            {
                 Debug.LogError("VirusCraftingComponent: eventBus is null.");
+                isValid = false;
+            }
             if (healingConfig == null)
+            {
                 Debug.LogError("VirusCraftingComponent: healingConfig is null.");
+                isValid = false;
+            }
             if (virusConfig == null)
+            {
                 Debug.LogError("VirusCraftingComponent: virusConfig is null.");
-            return playerProgress != null && partyData != null && eventBus != null && healingConfig != null && virusConfig != null;
+                isValid = false;
+            }
+            if (uiDocument == null)
+            {
+                Debug.LogError("VirusCraftingComponent: uiDocument is null.");
+                isValid = false;
+            }
+            if (virusTraitSprite == null)
+            {
+                Debug.LogError("VirusCraftingComponent: virusTraitSprite is null.");
+                isValid = false;
+            }
+            return isValid;
         }
     }
 }

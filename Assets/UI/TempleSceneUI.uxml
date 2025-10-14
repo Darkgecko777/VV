@@ -21,10 +21,17 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="VirusTabContent" class="tab-content" style="display: none;">
-                <ui:VisualElement name="VirusSeedingContainer" style="position: absolute; top: 10px; width: 400px; height: 150px; flex-direction: column;">
-                    <ui:DropdownField name="VirusDropdown" label="Select Virus" class="dropdown" />
-                    <ui:DropdownField name="NodeDropdown" label="Select Node" class="dropdown" />
-                    <ui:Button name="SeedVirusButton" text="Seed Virus" class="button" />
+                <ui:VisualElement name="VirusCraftingContainer" style="position: absolute; top: 10px; left: 15px; width: 192px; height: 192px; flex-direction: row; flex-wrap: wrap;">
+                    <ui:VisualElement name="VirusGridCell_0_0" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusGridCell_0_1" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusGridCell_0_2" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusGridCell_1_0" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusGridCell_1_1" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusGridCell_1_2" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusGridCell_2_0" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusGridCell_2_1" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusGridCell_2_2" class="virus-grid-cell" style="width: 64px; height: 64px;" />
+                    <ui:VisualElement name="VirusTraitIcon" class="virus-trait-icon" style="position: absolute; width: 64px; height: 64px; left: 0px; top: 0px;" />
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
