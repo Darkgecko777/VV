@@ -26,7 +26,6 @@ namespace VirulentVentures
             eventBus.OnExpeditionGenerated += GenerateExpedition;
             eventBus.OnVirusSeeded += SeedVirus;
             eventBus.OnLaunchExpedition += LaunchExpedition;
-            eventBus.OnCureInfections += RaiseCureInfections;
         }
 
         void Start()
@@ -52,13 +51,7 @@ namespace VirulentVentures
                 eventBus.OnExpeditionGenerated -= GenerateExpedition;
                 eventBus.OnVirusSeeded -= SeedVirus;
                 eventBus.OnLaunchExpedition -= LaunchExpedition;
-                eventBus.OnCureInfections -= RaiseCureInfections;
             }
-        }
-
-        private void RaiseCureInfections()
-        {
-            virusCraftingComponent.CureInfections();
         }
 
         private void GenerateExpedition(EventBusSO.ExpeditionGeneratedData data)

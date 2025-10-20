@@ -9,6 +9,7 @@ namespace VirulentVentures
         [SerializeField] private List<string> unlockedHeroes = new List<string> { "Fighter", "Healer", "Scout", "Monk" };
         [SerializeField] private int templeRank = 1;
         [SerializeField] private List<string> virusTokens = new List<string>();
+        [SerializeField] private HashSet<string> discoveredVirusIDs = new HashSet<string>();
         [SerializeField] private List<string> relics = new List<string>();
         [SerializeField] private List<string> artifacts = new List<string>();
         [SerializeField] private int favour = 0;
@@ -17,6 +18,7 @@ namespace VirulentVentures
         public List<string> UnlockedHeroes => unlockedHeroes;
         public int TempleRank => templeRank;
         public List<string> VirusTokens => virusTokens;
+        public HashSet<string> DiscoveredVirusIDs => discoveredVirusIDs;
         public List<string> Relics => relics;
         public List<string> Artifacts => artifacts;
         public int Favour => favour;
@@ -75,6 +77,8 @@ namespace VirulentVentures
             templeRank = other.templeRank;
             virusTokens.Clear();
             virusTokens.AddRange(other.virusTokens);
+            discoveredVirusIDs.Clear();
+            discoveredVirusIDs.UnionWith(other.discoveredVirusIDs);
             relics.Clear();
             relics.AddRange(other.relics);
             artifacts.Clear();
@@ -89,6 +93,7 @@ namespace VirulentVentures
             unlockedHeroes.AddRange(new List<string> { "Fighter", "Healer", "Scout", "Monk" });
             templeRank = 1;
             virusTokens.Clear();
+            discoveredVirusIDs.Clear();
             relics.Clear();
             artifacts.Clear();
             favour = 0;

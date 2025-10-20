@@ -52,7 +52,7 @@ namespace VirulentVentures
                 return false;
             return HeroStats.Any(hero =>
                 !hero.HasRetreated && hero.Health > 0 &&
-                (hero.Health < hero.MaxHealth || hero.Morale < hero.MaxMorale));
+                (hero.Health < hero.MaxHealth || hero.Morale < hero.MaxMorale || hero.Infections.Any()));
         }
 
         public bool CheckRetreat(ICombatUnit unit, EventBusSO eventBus, UIConfig uiConfig, CombatConfig combatConfig)
@@ -145,6 +145,15 @@ namespace VirulentVentures
                         int damage = Mathf.RoundToInt(hero.MaxHealth * virus.EffectStrength);
                         hero.Health = Mathf.Max(1, hero.Health - damage);
                         string virusMessage = $"{hero.Id} suffers {damage} damage from {virus.VirusID}!";
+                        combatLogs.Add(virusMessage);
+                        eventBus.RaiseLogMessage(virusMessage, Color.red);
+                        eventBus.RaiseUnitUpdated(hero, hero.GetDisplayStats());
+                    }
+                    else if (virus.Effect == "SpeedDrain")
+                    {
+                        int speedReduction = Mathf.RoundToInt(virus.EffectStrength);
+                        hero.Speed = Mathf.Max(0, hero.Speed + speedReduction); // Negative effectStrength reduces Speed
+                        string virusMessage = $"{hero.Id}'s Speed reduced by {Mathf.Abs(speedReduction)} from {virus.VirusID}!";
                         combatLogs.Add(virusMessage);
                         eventBus.RaiseLogMessage(virusMessage, Color.red);
                         eventBus.RaiseUnitUpdated(hero, hero.GetDisplayStats());
