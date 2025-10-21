@@ -16,7 +16,7 @@ MonoBehaviour:
   type: 0
   health: 90
   maxHealth: 90
-  attack: 20
+  attack: 30
   defense: 4
   speed: 5
   evasion: 35
