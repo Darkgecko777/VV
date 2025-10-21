@@ -12,10 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89649693723118348809d57813b8e897, type: 3}
   m_Name: BogRot
   m_EditorClassIdentifier: 
-  virusID: Bog Rot
+  virusID: BogRot
   transmissionVector: 0
-  effect: 
-  baseInfectionChance: 0
+  infectivityModifier: -0.1
   effectStrength: 0.05
   rarity: Common
   labelColor: {r: 0.25481573, g: 0.6226415, b: 0.11454255, a: 1}
+  sprite: {fileID: 0}
+  modifier:
+    Type: 
+    Value: 0
+  biome: 0
+  isCrafted: 0
+  combatEffect: {fileID: 0}
+  nonCombatEffect: {fileID: 0}

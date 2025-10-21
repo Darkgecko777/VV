@@ -283,7 +283,7 @@ MonoBehaviour:
   healingConfig: {fileID: 11400000, guid: 6a1e4f63fa251a445a7bf57aefb9948d, type: 2}
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   virusCraftingComponent: {fileID: 1302402189}
-  virusTraitDatabase: {fileID: 11400000, guid: 4182aab18c047e342bb9a093b1147934, type: 2}
+  virusConfig: {fileID: 11400000, guid: f3cf837d6271acc4a8761637dd96e765, type: 2}
 --- !u!4 &527303798
 Transform:
   m_ObjectHideFlags: 0
@@ -333,7 +333,6 @@ MonoBehaviour:
   eventBus: {fileID: 11400000, guid: cb0afc104b9b4f64b86ef1ca2c7f788c, type: 2}
   healingConfig: {fileID: 11400000, guid: 6a1e4f63fa251a445a7bf57aefb9948d, type: 2}
   virusConfig: {fileID: 11400000, guid: f3cf837d6271acc4a8761637dd96e765, type: 2}
-  virusTraitDatabase: {fileID: 11400000, guid: 4182aab18c047e342bb9a093b1147934, type: 2}
   uiDocument: {fileID: 335239196}
   virusTraitSprite: {fileID: 21300000, guid: 596ee142f056c5d4d880c8287558a03c, type: 3}
 --- !u!4 &1302402190
