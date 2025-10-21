@@ -1,4 +1,3 @@
-// <DOCUMENT filename="VirusSO.cs">
 using UnityEngine;
 using System;
 
@@ -8,17 +7,24 @@ namespace VirulentVentures
     {
         Health,
         Morale,
-        Buff,
-        Food,
         Environment,
         Obstacle
+    }
+
+    public enum VirusRarity
+    {
+        Common,
+        Uncommon,
+        Rare,
+        Epic
     }
 
     public enum Biome
     {
         Ruins,
         Swamps,
-        Forests
+        Forests,
+        Caverns
     }
 
     [CreateAssetMenu(fileName = "VirusSO", menuName = "VirulentVentures/VirusSO", order = 13)]
@@ -31,33 +37,27 @@ namespace VirulentVentures
             public float Value; // e.g., -1f
         }
 
-        [SerializeField] private string virusID; // e.g., "BogRot"
+        [SerializeField] private string virusID;
+        [SerializeField] private string displayName;
         [SerializeField] private TransmissionVector transmissionVector = TransmissionVector.Health;
         [SerializeField] private float infectivityModifier = -0.1f;
-        [SerializeField] private float effectStrength = 0.05f;
-        [SerializeField] private string rarity = "Common";
+        [SerializeField] private VirusRarity rarity = VirusRarity.Common;
         [SerializeField] private Color labelColor = Color.red;
-        [SerializeField] private Sprite sprite; // Token visual
-        [SerializeField] private Modifier modifier; // Stat effect
-        [SerializeField] private Biome biome; // Biome association
-        [SerializeField] private bool isCrafted; // Natural or crafted
+        [SerializeField] private Sprite sprite;
+        [SerializeField] private Biome biome;
+        [SerializeField] private bool isCrafted;
 
-        [Header("Effects")]
-        [SerializeField] private EffectSO combatEffect;  // Primary combat effect
-        [SerializeField] private EffectSO nonCombatEffect;  // Environmental effect
+        // REMOVED: [Header("Effects")] combatEffect, nonCombatEffect
 
         public string VirusID => virusID;
+        public string DisplayName => displayName ?? virusID;
         public TransmissionVector TransmissionVector => transmissionVector;
         public float InfectivityModifier => infectivityModifier;
-        public float EffectStrength => effectStrength;
-        public string Rarity => rarity;
+        public VirusRarity Rarity => rarity;
+        public string RarityString => rarity.ToString();
         public Color LabelColor => labelColor;
         public Sprite Sprite => sprite;
-        public Modifier VirusModifier => modifier;
         public Biome Biome => biome;
         public bool IsCrafted => isCrafted;
-        public EffectSO CombatEffect => combatEffect;
-        public EffectSO NonCombatEffect => nonCombatEffect;
     }
 }
-// </DOCUMENT>

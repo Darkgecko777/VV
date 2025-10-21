@@ -22,7 +22,7 @@ namespace VirulentVentures
         {
             bool applied = false;
             float totalDelta = 0f;
-            TransmissionVector? vector = TransmissionVector.Buff;
+            TransmissionVector? vector = TransmissionVector.Obstacle;
 
             if (TargetSelf)
             {

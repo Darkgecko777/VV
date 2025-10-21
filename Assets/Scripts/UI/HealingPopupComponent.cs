@@ -1,5 +1,4 @@
-﻿// <DOCUMENT filename="HealingPopupComponent.cs">
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -15,7 +14,7 @@ namespace VirulentVentures
         [SerializeField] private HealingConfig healingConfig;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private VirusCraftingComponent virusCraftingComponent;
-        [SerializeField] private VirusConfigSO virusConfig; // REPLACED: VirusTraitDatabaseSO
+        [SerializeField] private VirusConfigSO virusConfig;
         private VisualElement root;
         private VisualElement popupContainer;
         private VisualElement traitPopup;
@@ -65,7 +64,6 @@ namespace VirulentVentures
                 return;
             }
             popupContainer.style.display = DisplayStyle.Flex;
-
             traitPopup = new VisualElement();
             traitPopup.AddToClassList("trait-popup");
             traitPopup.style.width = 200;
@@ -154,16 +152,13 @@ namespace VirulentVentures
                 int startMorale = hero.Morale;
                 int targetMorale = hero.MaxMorale;
                 int moraleRestored = targetMorale - startMorale;
-
-                // REVISED: VirusConfigSO Integration - Remove VirusTraitDatabaseSO
                 float virusFavour = 0f;
                 List<string> tokensGained = new List<string>();
+
                 foreach (var virus in hero.Infections.ToList())
                 {
-                    // REPLACED: virusTraitDatabase.GetTrait() → virusConfig.GetVirus()
                     var virusData = virusConfig.GetVirus(virus.VirusID);
                     bool isFirstDiscovery = !playerProgress.DiscoveredVirusIDs.Contains(virus.VirusID);
-
                     if (isFirstDiscovery)
                     {
                         playerProgress.DiscoveredVirusIDs.Add(virus.VirusID);
@@ -171,14 +166,12 @@ namespace VirulentVentures
                     }
                     virusFavour += healingConfig.FavourPerTrait;
 
-                    // Natural viruses only yield tokens
                     if (!virus.IsCrafted || healingConfig.AllowCraftedTokenRecycling)
                     {
                         string token = $"{virus.VirusID}_Token";
                         playerProgress.VirusTokens.Add(token);
                         tokensGained.Add(token);
 
-                        // Add to trait popup
                         VisualElement traitIcon = new VisualElement();
                         traitIcon.style.width = 64;
                         traitIcon.style.height = 64;
@@ -186,13 +179,15 @@ namespace VirulentVentures
                         traitIcon.style.opacity = virus.IsCrafted ? 0.8f : 1f;
                         traitPopup.Add(traitIcon);
 
-                        Label traitLabel = new Label($"{virus.VirusID}: {virusData.VirusModifier.Type} {virusData.VirusModifier.Value:+0;-0}");
+                        // FIXED: Use VirusEffectLibrary.GetEffect (static)
+                        var effect = VirusEffectLibrary.GetEffect(virus.VirusID, virus.Rarity);
+                        Label traitLabel = new Label($"{virusData.DisplayName}: {effect.Stat} {effect.Value:+0;-0}");
                         traitLabel.style.unityFont = uiConfig.PixelFont;
                         traitLabel.style.color = virusData.LabelColor;
                         traitPopup.Add(traitLabel);
                     }
                     hero.Infections.Remove(virus);
-                    eventBus.RaiseLogMessage($"{hero.Id} cured of {virus.VirusID}, gained {tokensGained.LastOrDefault() ?? "no token"}!", Color.green);
+                    eventBus.RaiseLogMessage($"{hero.Id} cured of {virusData.DisplayName}, gained {tokensGained.LastOrDefault() ?? "no token"}!", Color.green);
                     eventBus.RaiseCureInfections();
                 }
 
@@ -211,17 +206,14 @@ namespace VirulentVentures
                     float healthPercent = (float)currentHealth / hero.MaxHealth;
                     healthBar.style.width = new StyleLength(Length.Percent(healthPercent * 100));
                     hpLabel.text = $"HP: {currentHealth}/{hero.MaxHealth}";
-
                     int currentMorale = Mathf.RoundToInt(Mathf.Lerp(startMorale, targetMorale, t));
                     float moralePercent = (float)currentMorale / hero.MaxMorale;
                     moraleBar.style.width = new StyleLength(Length.Percent(moralePercent * 100));
                     moraleLabel.text = $"Morale: {currentMorale}/{hero.MaxMorale}";
-
                     float currentFavour = Mathf.Lerp(0, favour, t);
                     favourLabel.text = $"Favour: {Mathf.RoundToInt(currentFavour)}";
                     totalFavourLabel.text = $"Total Favour: {totalFavour - Mathf.RoundToInt(favour) + Mathf.RoundToInt(currentFavour)}";
                     tokensLabel.text = $"Tokens Gained: {(tokensGained.Any() ? string.Join(", ", tokensGained) : "None")}";
-
                     yield return null;
                 }
 
@@ -230,6 +222,7 @@ namespace VirulentVentures
                 virusLabel.text = "Viruses: None";
                 favourLabel.text = $"Favour: {Mathf.RoundToInt(favour)}";
                 totalFavourLabel.text = $"Total Favour: {totalFavour}";
+
                 yield return new WaitForSeconds(0.5f);
                 popupContainer.Remove(heroPanel);
                 traitPopup.Clear();
@@ -269,4 +262,3 @@ namespace VirulentVentures
         }
     }
 }
-// </DOCUMENT>

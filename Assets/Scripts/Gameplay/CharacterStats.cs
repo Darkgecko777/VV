@@ -143,17 +143,52 @@ namespace VirulentVentures
             }
         }
 
+        public void ApplyMaxPercentMod(string stat, float percent)
+        {
+            int change = Mathf.RoundToInt((percent / 100f) * (stat == "MaxHealth" ? MaxHealth : MaxMorale));
+            if (stat == "MaxHealth")
+            {
+                MaxHealth = Mathf.Max(1, MaxHealth + change);
+                if (Type == CharacterType.Hero) Health = Mathf.Min(Health, MaxHealth);
+            }
+            else
+            {
+                MaxMorale = Mathf.Max(1, MaxMorale + change);
+                if (Type == CharacterType.Hero) Morale = Mathf.Min(Morale, MaxMorale);
+            }
+        }
+
+        public void ApplyDoTHoT(string stat, float amount)
+        {
+            int value = Mathf.RoundToInt(amount);
+            if (Type == CharacterType.Hero)
+            {
+                // DoT: Heroes take damage
+                if (stat == "Health") Health = Mathf.Max(1, Health + value);
+                else Morale = Mathf.Max(0, Morale + value);
+            }
+            else
+            {
+                // HoT: Monsters heal
+                if (stat == "Health") Health = Mathf.Min(MaxHealth, Health - value);
+                else Morale = Mathf.Min(MaxMorale, Morale - value);
+            }
+        }
+
+        public bool RollVirusEffect(string effect, float chance)
+        {
+            return UnityEngine.Random.value < (chance / 100f);
+        }
+
         public IEnumerator PerformAbility(UnitAttackState attackState, PartyData partyData, List<ICombatUnit> allTargets, EventBusSO eventBus, UIConfig uiConfig, CombatConfig combatConfig, List<string> combatLogs, List<CharacterStats> heroPositions, List<CharacterStats> monsterPositions, Action<ICombatUnit> updateUnitCallback, CombatSceneComponent combatScene)
         {
             bool abilityUsed = false;
             string noTargetMessage = null;
-
             for (int i = 0; i < abilities.Length; i++)
             {
                 var ability = abilities[i];
                 if (ability == null) continue;
                 string abilityId = ability.Id;
-
                 // Check cooldown silently
                 if (ability.CooldownParams.Type != GameTypes.CooldownType.None)
                 {
@@ -163,10 +198,8 @@ namespace VirulentVentures
                         continue; // Skip to next ability without logging
                     }
                 }
-
                 // Get potential targets
                 var potentialTargets = ability.GetTargets(this, partyData, allTargets);
-
                 // Silently check for valid targets based on rule
                 var selectedTargets = CombatUtils.SelectTargets(this, potentialTargets, partyData, ability.Rule, heroPositions, monsterPositions, ability, combatLogs, eventBus, uiConfig);
                 if (selectedTargets.Count == 0)
@@ -174,7 +207,6 @@ namespace VirulentVentures
                     noTargetMessage = $"No qualifying targets for {Id}'s {abilityId}.";
                     continue; // Skip to next ability
                 }
-
                 // Silently check effect-specific conditions (user-based)
                 bool userConditionsPassed = true;
                 foreach (var effect in ability.Effects)
@@ -193,7 +225,6 @@ namespace VirulentVentures
                     noTargetMessage = $"User conditions not met for {Id}'s {abilityId}.";
                     continue; // Skip to next ability
                 }
-
                 // Silently check effect-specific conditions (target-based)
                 bool targetConditionsPassed = false;
                 foreach (var effect in ability.Effects)
@@ -234,7 +265,6 @@ namespace VirulentVentures
                     noTargetMessage = $"Target conditions not met for {Id}'s {abilityId}.";
                     continue; // Skip to next ability
                 }
-
                 // Valid ability found: Trigger animation and wait for completion
                 eventBus.RaiseUnitAttacking(this, selectedTargets.FirstOrDefault(), abilityId);
                 // Find the SpriteAnimation component for this unit
@@ -247,15 +277,12 @@ namespace VirulentVentures
                         yield return null;
                     }
                 }
-
                 // Log the ability attempt
                 string attackMessage = $"{Id} uses {abilityId} on {string.Join(", ", selectedTargets.Select(t => t.Id))}!";
                 combatLogs.Add(attackMessage);
                 eventBus.RaiseLogMessage(attackMessage, uiConfig.TextColor);
-
                 // Execute the ability
                 bool applied = CombatUtils.ExecuteAbility(this, selectedTargets, ability, abilityId, eventBus, uiConfig, combatLogs, updateUnitCallback, attackState, combatScene);
-
                 if (applied)
                 {
                     // Decrement action-based cooldowns for this unit's other abilities
@@ -274,7 +301,6 @@ namespace VirulentVentures
                         }
                     }
                 }
-
                 if (applied && ability.CooldownParams.Type != GameTypes.CooldownType.None)
                 {
                     if (ability.CooldownParams.Type == GameTypes.CooldownType.Actions)
@@ -289,9 +315,7 @@ namespace VirulentVentures
                     combatLogs.Add(cooldownAppliedMessage);
                     eventBus.RaiseLogMessage(cooldownAppliedMessage, Color.yellow);
                 }
-
                 abilityUsed = true;
-
                 // Check targets for death or retreat
                 foreach (var target in selectedTargets.ToList())
                 {
@@ -319,7 +343,6 @@ namespace VirulentVentures
                         updateUnitCallback(target);
                     }
                 }
-
                 // Check user for death or retreat
                 if (Health <= 0)
                 {
@@ -341,11 +364,9 @@ namespace VirulentVentures
                     partyData.ProcessRetreat(this, eventBus, uiConfig, combatLogs, combatConfig);
                     updateUnitCallback(this);
                 }
-
                 yield return new WaitForSeconds(0.3f / (combatConfig?.CombatSpeed ?? 1f));
                 yield break; // Exit after first valid ability
             }
-
             // If no ability was used, log the issue for design review
             if (!abilityUsed)
             {
@@ -354,7 +375,6 @@ namespace VirulentVentures
                 eventBus.RaiseLogMessage(noTargetMessage, Color.red);
                 Debug.LogWarning($"CharacterStats: {noTargetMessage} Review ability design for {Id}.");
             }
-
             yield return new WaitForSeconds(0.3f / (combatConfig?.CombatSpeed ?? 1f));
         }
     }

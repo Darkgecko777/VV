@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: BogRot
   m_EditorClassIdentifier: 
   virusID: BogRot
+  displayName: Bog Rot
   transmissionVector: 0
-  infectivityModifier: -0.1
-  effectStrength: 0.05
-  rarity: Common
+  infectivityModifier: 0
+  rarity: 0
   labelColor: {r: 0.25481573, g: 0.6226415, b: 0.11454255, a: 1}
-  sprite: {fileID: 0}
+  sprite: {fileID: 21300000, guid: 596ee142f056c5d4d880c8287558a03c, type: 3}
   modifier:
     Type: 
     Value: 0

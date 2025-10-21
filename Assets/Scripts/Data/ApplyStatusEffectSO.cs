@@ -57,7 +57,7 @@ namespace VirulentVentures
                 applied = true;
             }
 
-            return applied ? (TransmissionVector.Buff, 0f) : (null, 0f); // Buff vector, no delta since no direct stat change
+            return applied ? (TransmissionVector.Obstacle, 0f) : (null, 0f); // Buff vector, no delta since no direct stat change
         }
     }
 }
