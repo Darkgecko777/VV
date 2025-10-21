@@ -1,4 +1,6 @@
+﻿// <DOCUMENT filename="HealingPopupComponent.cs">
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
@@ -13,10 +15,10 @@ namespace VirulentVentures
         [SerializeField] private HealingConfig healingConfig;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private VirusCraftingComponent virusCraftingComponent;
-        [SerializeField] private VirusTraitDatabaseSO virusTraitDatabase; // Added for trait lookup
+        [SerializeField] private VirusConfigSO virusConfig; // REPLACED: VirusTraitDatabaseSO
         private VisualElement root;
         private VisualElement popupContainer;
-        private VisualElement traitPopup; // Sub-panel for traits
+        private VisualElement traitPopup;
         private bool isInitialized;
 
         void Awake()
@@ -56,7 +58,6 @@ namespace VirulentVentures
                 Debug.LogWarning("HealingPopupComponent: Cannot show popup, missing references or party data.");
                 return;
             }
-
             popupContainer = root.Q<VisualElement>("HealingPopupContainer");
             if (popupContainer == null)
             {
@@ -65,13 +66,12 @@ namespace VirulentVentures
             }
             popupContainer.style.display = DisplayStyle.Flex;
 
-            // Initialize trait popup
             traitPopup = new VisualElement();
             traitPopup.AddToClassList("trait-popup");
             traitPopup.style.width = 200;
             traitPopup.style.height = 100;
             traitPopup.style.position = Position.Absolute;
-            traitPopup.style.top = 300; // Below hero panels
+            traitPopup.style.top = 300;
             traitPopup.style.left = 50;
             traitPopup.style.backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f, 0.8f));
             popupContainer.Add(traitPopup);
@@ -84,11 +84,10 @@ namespace VirulentVentures
                 popupContainer.style.display = DisplayStyle.None;
                 return;
             }
-
             StartCoroutine(ShowHeroPopups(healableHeroes));
         }
 
-        private IEnumerator ShowHeroPopups(System.Collections.Generic.List<CharacterStats> heroes)
+        private IEnumerator ShowHeroPopups(List<CharacterStats> heroes)
         {
             int totalFavour = 0;
             Label totalFavourLabel = new Label("Total Favour: 0");
@@ -100,12 +99,10 @@ namespace VirulentVentures
             popupContainer.Add(totalFavourLabel);
 
             var playerProgress = ExpeditionManager.Instance.GetPlayerProgress();
-
             foreach (var hero in heroes)
             {
                 VisualElement heroPanel = new VisualElement();
                 heroPanel.AddToClassList("hero-healing-panel");
-
                 var heroData = CharacterLibrary.GetHeroData(hero.Id);
                 Image portrait = new Image { image = heroData?.Portrait?.texture, style = { width = 100, height = 100 } };
                 portrait.AddToClassList("portrait");
@@ -158,20 +155,23 @@ namespace VirulentVentures
                 int targetMorale = hero.MaxMorale;
                 int moraleRestored = targetMorale - startMorale;
 
-                // Virus curing logic
+                // REVISED: VirusConfigSO Integration - Remove VirusTraitDatabaseSO
                 float virusFavour = 0f;
-                System.Collections.Generic.List<string> tokensGained = new System.Collections.Generic.List<string>();
+                List<string> tokensGained = new List<string>();
                 foreach (var virus in hero.Infections.ToList())
                 {
-                    var trait = virusTraitDatabase.GetTrait(virus.VirusID);
+                    // REPLACED: virusTraitDatabase.GetTrait() → virusConfig.GetVirus()
+                    var virusData = virusConfig.GetVirus(virus.VirusID);
                     bool isFirstDiscovery = !playerProgress.DiscoveredVirusIDs.Contains(virus.VirusID);
+
                     if (isFirstDiscovery)
                     {
                         playerProgress.DiscoveredVirusIDs.Add(virus.VirusID);
                         virusFavour += healingConfig.FirstDiscoveryFavourBonus;
                     }
+                    virusFavour += healingConfig.FavourPerTrait;
 
-                    virusFavour += healingConfig.FavourPerTrait; // 1 trait per virus
+                    // Natural viruses only yield tokens
                     if (!virus.IsCrafted || healingConfig.AllowCraftedTokenRecycling)
                     {
                         string token = $"{virus.VirusID}_Token";
@@ -182,16 +182,15 @@ namespace VirulentVentures
                         VisualElement traitIcon = new VisualElement();
                         traitIcon.style.width = 64;
                         traitIcon.style.height = 64;
-                        traitIcon.style.backgroundImage = new StyleBackground(trait.Sprite);
-                        traitIcon.style.opacity = trait.IsCrafted ? 0.8f : 1f; // Distinguish crafted
+                        traitIcon.style.backgroundImage = new StyleBackground(virusData.Sprite);
+                        traitIcon.style.opacity = virus.IsCrafted ? 0.8f : 1f;
                         traitPopup.Add(traitIcon);
 
-                        Label traitLabel = new Label($"{virus.VirusID}: {trait.Modifier.Type} {trait.Modifier.Value:+0;-0}");
+                        Label traitLabel = new Label($"{virus.VirusID}: {virusData.VirusModifier.Type} {virusData.VirusModifier.Value:+0;-0}");
                         traitLabel.style.unityFont = uiConfig.PixelFont;
-                        traitLabel.style.color = virus.LabelColor;
+                        traitLabel.style.color = virusData.LabelColor;
                         traitPopup.Add(traitLabel);
                     }
-
                     hero.Infections.Remove(virus);
                     eventBus.RaiseLogMessage($"{hero.Id} cured of {virus.VirusID}, gained {tokensGained.LastOrDefault() ?? "no token"}!", Color.green);
                     eventBus.RaiseCureInfections();
@@ -221,7 +220,6 @@ namespace VirulentVentures
                     float currentFavour = Mathf.Lerp(0, favour, t);
                     favourLabel.text = $"Favour: {Mathf.RoundToInt(currentFavour)}";
                     totalFavourLabel.text = $"Total Favour: {totalFavour - Mathf.RoundToInt(favour) + Mathf.RoundToInt(currentFavour)}";
-
                     tokensLabel.text = $"Tokens Gained: {(tokensGained.Any() ? string.Join(", ", tokensGained) : "None")}";
 
                     yield return null;
@@ -234,7 +232,7 @@ namespace VirulentVentures
                 totalFavourLabel.text = $"Total Favour: {totalFavour}";
                 yield return new WaitForSeconds(0.5f);
                 popupContainer.Remove(heroPanel);
-                traitPopup.Clear(); // Clear trait popup after each hero
+                traitPopup.Clear();
             }
 
             if (totalFavour > 0)
@@ -259,15 +257,16 @@ namespace VirulentVentures
         private bool ValidateReferences()
         {
             if (uiDocument == null || uiConfig == null || partyData == null || healingConfig == null ||
-                eventBus == null || virusCraftingComponent == null || virusTraitDatabase == null)
+                eventBus == null || virusCraftingComponent == null || virusConfig == null)
             {
                 Debug.LogError($"HealingPopupComponent: Missing references! UIDocument: {uiDocument != null}, " +
                     $"UIConfig: {uiConfig != null}, PartyData: {partyData != null}, HealingConfig: {healingConfig != null}, " +
                     $"EventBus: {eventBus != null}, VirusCraftingComponent: {virusCraftingComponent != null}, " +
-                    $"VirusTraitDatabase: {virusTraitDatabase != null}");
+                    $"VirusConfig: {virusConfig != null}");
                 return false;
             }
             return true;
         }
     }
 }
+// </DOCUMENT>

@@ -1,3 +1,4 @@
+﻿// <DOCUMENT filename="VirusCraftingComponent.cs">
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
@@ -11,8 +12,7 @@ namespace VirulentVentures
         [SerializeField] private PartyData partyData;
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private HealingConfig healingConfig;
-        [SerializeField] private VirusConfigSO virusConfig;
-        [SerializeField] private VirusTraitDatabaseSO virusTraitDatabase;
+        [SerializeField] private VirusConfigSO virusConfig; // REPLACED: VirusTraitDatabaseSO
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private Sprite virusTraitSprite; // Fallback sprite
         private VisualElement virusCraftingContainer;
@@ -57,7 +57,9 @@ namespace VirulentVentures
                 int row = index / gridSize;
                 int col = index % gridSize;
                 string virusID = group.Token.Replace("_Token", "");
-                var trait = virusTraitDatabase.GetTrait(virusID);
+
+                // REPLACED: virusTraitDatabase.GetTrait() → virusConfig.GetVirus()
+                var virus = virusConfig.GetVirus(virusID);
 
                 VisualElement cell = new VisualElement();
                 cell.style.width = 64;
@@ -65,11 +67,11 @@ namespace VirulentVentures
                 cell.style.position = Position.Absolute;
                 cell.style.left = col * 64;
                 cell.style.top = row * 64;
-                cell.style.backgroundImage = new StyleBackground(trait.Sprite ?? virusTraitSprite);
-                cell.style.opacity = trait.IsCrafted ? 0.8f : 1f;
+                cell.style.backgroundImage = new StyleBackground(virus.Sprite ?? virusTraitSprite);
+                cell.style.opacity = virus.IsCrafted ? 0.8f : 1f;
 
                 Label countLabel = new Label($"x{group.Count}");
-                countLabel.style.unityFont = uiDocument.rootVisualElement.Q<Label>().style.unityFont; // Use UI font
+                countLabel.style.unityFont = uiDocument.rootVisualElement.Q<Label>().style.unityFont;
                 countLabel.style.color = new StyleColor(Color.white);
                 countLabel.style.fontSize = 12;
                 countLabel.style.unityTextAlign = TextAnchor.LowerRight;
@@ -83,7 +85,6 @@ namespace VirulentVentures
 
         private void RegisterDragEvents()
         {
-            // Drag logic will be expanded later for crafting
             foreach (var cell in tokenCells.Values)
             {
                 cell.RegisterCallback<PointerDownEvent>(evt =>
@@ -120,47 +121,15 @@ namespace VirulentVentures
         private bool ValidateReferences()
         {
             bool isValid = true;
-            if (playerProgress == null)
-            {
-                Debug.LogError("VirusCraftingComponent: playerProgress is null.");
-                isValid = false;
-            }
-            if (partyData == null)
-            {
-                Debug.LogError("VirusCraftingComponent: partyData is null.");
-                isValid = false;
-            }
-            if (eventBus == null)
-            {
-                Debug.LogError("VirusCraftingComponent: eventBus is null.");
-                isValid = false;
-            }
-            if (healingConfig == null)
-            {
-                Debug.LogError("VirusCraftingComponent: healingConfig is null.");
-                isValid = false;
-            }
-            if (virusConfig == null)
-            {
-                Debug.LogError("VirusCraftingComponent: virusConfig is null.");
-                isValid = false;
-            }
-            if (virusTraitDatabase == null)
-            {
-                Debug.LogError("VirusCraftingComponent: virusTraitDatabase is null.");
-                isValid = false;
-            }
-            if (uiDocument == null)
-            {
-                Debug.LogError("VirusCraftingComponent: uiDocument is null.");
-                isValid = false;
-            }
-            if (virusTraitSprite == null)
-            {
-                Debug.LogError("VirusCraftingComponent: virusTraitSprite is null.");
-                isValid = false;
-            }
+            if (playerProgress == null) { Debug.LogError("VirusCraftingComponent: playerProgress is null."); isValid = false; }
+            if (partyData == null) { Debug.LogError("VirusCraftingComponent: partyData is null."); isValid = false; }
+            if (eventBus == null) { Debug.LogError("VirusCraftingComponent: eventBus is null."); isValid = false; }
+            if (healingConfig == null) { Debug.LogError("VirusCraftingComponent: healingConfig is null."); isValid = false; }
+            if (virusConfig == null) { Debug.LogError("VirusCraftingComponent: virusConfig is null."); isValid = false; }
+            if (uiDocument == null) { Debug.LogError("VirusCraftingComponent: uiDocument is null."); isValid = false; }
+            if (virusTraitSprite == null) { Debug.LogError("VirusCraftingComponent: virusTraitSprite is null."); isValid = false; }
             return isValid;
         }
     }
 }
+// </DOCUMENT>

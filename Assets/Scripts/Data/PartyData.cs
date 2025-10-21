@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿// <DOCUMENT filename="PartyData.cs">
+using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
@@ -98,7 +99,6 @@ namespace VirulentVentures
                 { 3, positions[2] },
                 { 4, positions[3] }
             };
-
             foreach (var heroId in HeroIds)
             {
                 var data = CharacterLibrary.GetHeroData(heroId);
@@ -125,7 +125,6 @@ namespace VirulentVentures
                     Debug.LogWarning($"PartyData: PartyPosition {partyPosition} for {heroId} already occupied or invalid.");
                 }
             }
-
             HeroStats = HeroStats.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList();
         }
 
@@ -134,32 +133,90 @@ namespace VirulentVentures
             return HeroStats?.Find(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition == position);
         }
 
+        // REVISED: EffectSO Integration - Replace string effects
         public void ApplyVirusEffects(EventBusSO eventBus, UIConfig uiConfig, List<string> combatLogs)
         {
             foreach (var hero in HeroStats.Where(h => h.Infections.Any() && h.Health > 0 && !h.HasRetreated))
             {
                 foreach (var virus in hero.Infections)
                 {
-                    if (virus.Effect == "HPDrain")
+                    if (virus.CombatEffect != null)
                     {
-                        int damage = Mathf.RoundToInt(hero.MaxHealth * virus.EffectStrength);
-                        hero.Health = Mathf.Max(1, hero.Health - damage);
-                        string virusMessage = $"{hero.Id} suffers {damage} damage from {virus.VirusID}!";
-                        combatLogs.Add(virusMessage);
-                        eventBus.RaiseLogMessage(virusMessage, Color.red);
-                        eventBus.RaiseUnitUpdated(hero, hero.GetDisplayStats());
-                    }
-                    else if (virus.Effect == "SpeedDrain")
-                    {
-                        int speedReduction = Mathf.RoundToInt(virus.EffectStrength);
-                        hero.Speed = Mathf.Max(0, hero.Speed + speedReduction); // Negative effectStrength reduces Speed
-                        string virusMessage = $"{hero.Id}'s Speed reduced by {Mathf.Abs(speedReduction)} from {virus.VirusID}!";
-                        combatLogs.Add(virusMessage);
-                        eventBus.RaiseLogMessage(virusMessage, Color.red);
-                        eventBus.RaiseUnitUpdated(hero, hero.GetDisplayStats());
+                        var (changedVector, delta) = virus.CombatEffect.Execute(
+                            hero, new List<ICombatUnit>(), null, virus.VirusID, eventBus,
+                            uiConfig, combatLogs, u => eventBus.RaiseUnitUpdated(u, ((CharacterStats)u).GetDisplayStats()),
+                            null, null);
+
+                        if (changedVector.HasValue && delta != 0)
+                        {
+                            ApplyEffectDelta(hero, changedVector.Value, delta, virus, combatLogs, eventBus, uiConfig);
+                        }
                     }
                 }
             }
         }
+
+        private void ApplyEffectDelta(CharacterStats hero, TransmissionVector vector, float delta, VirusSO virus,
+            List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
+        {
+            string vectorName = vector.ToString();
+            string message = delta > 0 ? $"gains" : $"loses";
+            string formattedDelta = Mathf.Abs(delta).ToString("F1");
+
+            switch (vector)
+            {
+                case TransmissionVector.Health:
+                    int healthChange = Mathf.RoundToInt(delta);
+                    hero.Health = Mathf.Clamp(hero.Health + healthChange, 1, hero.MaxHealth);
+                    combatLogs.Add($"{hero.Id} {message} {formattedDelta} {vectorName} from {virus.VirusID}!");
+                    break;
+                case TransmissionVector.Morale:
+                    int moraleChange = Mathf.RoundToInt(delta);
+                    hero.Morale = Mathf.Clamp(hero.Morale + moraleChange, 0, hero.MaxMorale);
+                    combatLogs.Add($"{hero.Id} {message} {formattedDelta} {vectorName} from {virus.VirusID}!");
+                    break;
+                case TransmissionVector.Buff:
+                    // Apply modifier to stats
+                    ApplyStatModifier(hero, virus.VirusModifier, combatLogs, eventBus, uiConfig);
+                    return;
+                default:
+                    return;
+            }
+
+            eventBus.RaiseLogMessage($"{hero.Id} {message} {formattedDelta} {vectorName} from {virus.VirusID}!", Color.red);
+            eventBus.RaiseUnitUpdated(hero, hero.GetDisplayStats());
+        }
+
+        private void ApplyStatModifier(CharacterStats hero, VirusSO.Modifier modifier, List<string> combatLogs,
+            EventBusSO eventBus, UIConfig uiConfig)
+        {
+            int value = Mathf.RoundToInt(modifier.Value);
+            string statName = modifier.Type.ToLower();
+
+            switch (modifier.Type.ToLower())
+            {
+                case "speed":
+                    hero.Speed = Mathf.Max(0, hero.Speed + value);
+                    break;
+                case "attack":
+                    hero.Attack = Mathf.Max(0, hero.Attack + value);
+                    break;
+                case "defense":
+                    hero.Defense = Mathf.Max(0, hero.Defense + value);
+                    break;
+                case "evasion":
+                    hero.Evasion = Mathf.Max(0, hero.Evasion + value);
+                    break;
+                case "immunity":
+                    hero.Immunity = Mathf.Clamp(hero.Immunity + value, 0, 100);
+                    break;
+            }
+
+            string message = value >= 0 ? $"gains" : $"loses";
+            combatLogs.Add($"{hero.Id} {message} {Mathf.Abs(value)} {statName} from {modifier.Type}!");
+            eventBus.RaiseLogMessage($"{hero.Id} {message} {Mathf.Abs(value)} {statName} from {modifier.Type}!", Color.red);
+            eventBus.RaiseUnitUpdated(hero, hero.GetDisplayStats());
+        }
     }
 }
+// </DOCUMENT>

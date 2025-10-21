@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Monk
   type: 0
-  health: 90
-  maxHealth: 90
+  health: 135
+  maxHealth: 135
   attack: 30
   defense: 4
   speed: 5

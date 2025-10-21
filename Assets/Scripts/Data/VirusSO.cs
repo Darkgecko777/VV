@@ -1,3 +1,4 @@
+// <DOCUMENT filename="VirusSO.cs">
 using UnityEngine;
 using System;
 
@@ -32,7 +33,6 @@ namespace VirulentVentures
 
         [SerializeField] private string virusID; // e.g., "BogRot"
         [SerializeField] private TransmissionVector transmissionVector = TransmissionVector.Health;
-        [SerializeField] private string effect; // e.g., "SpeedDrain"
         [SerializeField] private float infectivityModifier = -0.1f;
         [SerializeField] private float effectStrength = 0.05f;
         [SerializeField] private string rarity = "Common";
@@ -42,16 +42,22 @@ namespace VirulentVentures
         [SerializeField] private Biome biome; // Biome association
         [SerializeField] private bool isCrafted; // Natural or crafted
 
+        [Header("Effects")]
+        [SerializeField] private EffectSO combatEffect;  // Primary combat effect
+        [SerializeField] private EffectSO nonCombatEffect;  // Environmental effect
+
         public string VirusID => virusID;
         public TransmissionVector TransmissionVector => transmissionVector;
-        public string Effect => effect;
         public float InfectivityModifier => infectivityModifier;
         public float EffectStrength => effectStrength;
         public string Rarity => rarity;
         public Color LabelColor => labelColor;
         public Sprite Sprite => sprite;
-        public Modifier VirusModifier => modifier; // Renamed to avoid conflict
+        public Modifier VirusModifier => modifier;
         public Biome Biome => biome;
         public bool IsCrafted => isCrafted;
+        public EffectSO CombatEffect => combatEffect;
+        public EffectSO NonCombatEffect => nonCombatEffect;
     }
 }
+// </DOCUMENT>
