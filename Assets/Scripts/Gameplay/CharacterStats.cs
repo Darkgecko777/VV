@@ -125,7 +125,7 @@ namespace VirulentVentures
                 speed: Speed,
                 evasion: Evasion,
                 morale: Morale,
-                maxMorale: MaxMorale,
+                maxMorale : MaxMorale,
                 immunity: Immunity,
                 isHero: IsHero,
                 isInfected: IsInfected,
@@ -294,9 +294,6 @@ namespace VirulentVentures
                             if (attackState.AbilityCooldowns[cd.Key] == 0)
                             {
                                 attackState.AbilityCooldowns.Remove(cd.Key);
-                                string cooldownEndMessage = $"{Id}'s {cd.Key} is off cooldown!";
-                                combatLogs.Add(cooldownEndMessage);
-                                eventBus.RaiseLogMessage(cooldownEndMessage, uiConfig.TextColor);
                             }
                         }
                     }
@@ -311,9 +308,10 @@ namespace VirulentVentures
                     {
                         attackState.RoundCooldowns[abilityId] = ability.CooldownParams.Duration;
                     }
-                    string cooldownAppliedMessage = $"{Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} {ability.CooldownParams.Type.ToString().ToLower()}.";
-                    combatLogs.Add(cooldownAppliedMessage);
-                    eventBus.RaiseLogMessage(cooldownAppliedMessage, Color.yellow);
+                    // **FIX: REMOVED DOUBLE LOG - HANDLED BY CombatSceneComponent**
+                    // string cooldownAppliedMessage = $"{Id}'s {abilityId} is now on cooldown for {ability.CooldownParams.Duration} {ability.CooldownParams.Type.ToString().ToLower()}.";
+                    // combatLogs.Add(cooldownAppliedMessage);
+                    // eventBus.RaiseLogMessage(cooldownAppliedMessage, Color.yellow);
                 }
                 abilityUsed = true;
                 // Check targets for death or retreat
