@@ -40,7 +40,6 @@ namespace VirulentVentures
         [SerializeField] private string virusID;
         [SerializeField] private string displayName;
         [SerializeField] private TransmissionVector transmissionVector = TransmissionVector.Health;
-        [SerializeField] private float infectivityModifier = -0.1f;
         [SerializeField] private VirusRarity rarity = VirusRarity.Common;
         [SerializeField] private Color labelColor = Color.red;
         [SerializeField] private Sprite sprite;
@@ -48,11 +47,11 @@ namespace VirulentVentures
         [SerializeField] private bool isCrafted;
 
         // REMOVED: [Header("Effects")] combatEffect, nonCombatEffect
+        // UPDATED: Removed infectivityModifier
 
         public string VirusID => virusID;
         public string DisplayName => displayName ?? virusID;
         public TransmissionVector TransmissionVector => transmissionVector;
-        public float InfectivityModifier => infectivityModifier;
         public VirusRarity Rarity => rarity;
         public string RarityString => rarity.ToString();
         public Color LabelColor => labelColor;

@@ -9,6 +9,7 @@ namespace VirulentVentures
         [SerializeField] private List<string> monsterIds = new List<string>();
         [SerializeField] private bool isCombatNode = true;
         [SerializeField] private CharacterPositions positions;
+        [SerializeField] private VirusSeederComponent virusSeeder; 
 
         public bool IsCombatNode => isCombatNode;
         public CharacterPositions Positions { get => positions; set => positions = value; }
@@ -63,6 +64,14 @@ namespace VirulentVentures
                 renderer.transform.localScale = new Vector3(2f, 2f, 1f);
                 var monsterStats = new CharacterStats(monsterData, positions.monsterPositions[i]);
                 monsters.Add(monsterStats);
+            }
+
+            // NEW: Seed viruses AFTER spawning
+            if (virusSeeder != null)
+            {
+                // FIXED: Use private field expeditionData
+                int depth = ExpeditionManager.Instance?.expeditionData?.CurrentNodeIndex ?? 0;
+                virusSeeder.SeedVirusesForMonsters(monsters, depth);
             }
 
             return monsters;

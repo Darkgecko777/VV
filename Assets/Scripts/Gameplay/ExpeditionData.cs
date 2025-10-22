@@ -1,3 +1,4 @@
+// Full revised ExpeditionData.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,10 +10,16 @@ namespace VirulentVentures
         [SerializeField] private List<NodeData> nodeData = new List<NodeData>();
         [SerializeField] private int currentNodeIndex = 0;
         [SerializeField] private PartyData party;
+        [SerializeField] private VirusSO customVirus; // NEW: Player-crafted virus from Temple
 
         public List<NodeData> NodeData => nodeData;
         public int CurrentNodeIndex { get => currentNodeIndex; set => currentNodeIndex = value; }
         public PartyData Party => party;
+        public VirusSO CustomVirus
+        {
+            get => customVirus;
+            set => customVirus = value;
+        }
 
         public bool IsValid()
         {

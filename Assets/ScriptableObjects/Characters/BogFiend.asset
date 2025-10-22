@@ -32,3 +32,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f729e81ad0e85dc4097f15dec04ec3fc, type: 2}
   - {fileID: 11400000, guid: fa62270954422b545a2501d017ac5a43, type: 2}
   - {fileID: 11400000, guid: 3f31297c48b9a884d9c8c621bb6f0455, type: 2}
+  capabilities:
+    canTransmitHealth: 1
+    canTransmitMorale: 0
+    canTransmitEnvironment: 0
+    canTransmitObstacle: 0

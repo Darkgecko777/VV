@@ -1,11 +1,22 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System; // NEW: For Serializable
 
 namespace VirulentVentures
 {
     [CreateAssetMenu(fileName = "CharacterSO", menuName = "VirulentVentures/CharacterSO")]
     public class CharacterSO : ScriptableObject
     {
+        // NEW: Capabilities for virus transmission (monsters only)
+        [Serializable]
+        public struct MonsterCapabilities
+        {
+            public bool canTransmitHealth;
+            public bool canTransmitMorale;
+            public bool canTransmitEnvironment;
+            public bool canTransmitObstacle;
+        }
+
         [SerializeField] private string id;
         [SerializeField] private CharacterType type;
         [SerializeField] private int health; // For heroes; monsters use maxHealth
@@ -23,6 +34,7 @@ namespace VirulentVentures
         [SerializeField] private Sprite portrait; // For Temple scene
         [SerializeField] private Sprite combatSprite; // For Combat scene
         [SerializeField] private AbilitySO[] abilities = new AbilitySO[0];
+        [SerializeField] private MonsterCapabilities capabilities; // NEW: For monsters
 
         public string Id => id;
         public CharacterType Type => type;
@@ -41,6 +53,7 @@ namespace VirulentVentures
         public Sprite Portrait => portrait;
         public Sprite CombatSprite => combatSprite;
         public AbilitySO[] Abilities => abilities;
+        public MonsterCapabilities Capabilities => capabilities; // NEW
 
         public CharacterStats.DisplayStats GetDisplayStats(bool isHero)
         {
@@ -92,6 +105,11 @@ namespace VirulentVentures
             if (abilities == null || abilities.Length == 0)
             {
                 Debug.LogWarning($"CharacterSO {id}: No Abilities assigned; will use defaults from AbilityDatabase.");
+            }
+            // NEW: Validate capabilities for monsters
+            if (type == CharacterType.Monster && !capabilities.canTransmitHealth && !capabilities.canTransmitMorale && !capabilities.canTransmitEnvironment && !capabilities.canTransmitObstacle)
+            {
+                Debug.LogWarning($"CharacterSO {id}: Monster has no transmission capabilities—will not seed viruses.");
             }
         }
     }

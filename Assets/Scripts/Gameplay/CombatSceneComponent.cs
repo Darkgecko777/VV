@@ -25,18 +25,15 @@ namespace VirulentVentures
         private float lastEndCombatTime;
         private const float logDuplicateWindow = 1f;
         private static bool hasSubscribed;
-
         public ExpeditionManager ExpeditionManager => ExpeditionManager.Instance;
         public List<string> AllCombatLogs => allCombatLogs;
         public bool IsPaused => isPaused;
         public EventBusSO EventBus => eventBus;
         public UIConfig UIConfig => uiConfig;
-
         public UnitAttackState GetUnitAttackState(ICombatUnit unit)
         {
             return unitAttackStates.Find(s => s.Unit == unit);
         }
-
         void Awake()
         {
             isCombatActive = false;
@@ -58,7 +55,6 @@ namespace VirulentVentures
                 hasSubscribed = true;
             }
         }
-
         void Start()
         {
             if (!ValidateReferences())
@@ -75,7 +71,6 @@ namespace VirulentVentures
             InitializeUnits(expedition.Party.GetHeroes(), expedition.NodeData[expedition.CurrentNodeIndex].Monsters);
             StartCombatLoop(expedition.Party);
         }
-
         void OnDestroy()
         {
             if (hasSubscribed)
@@ -92,19 +87,16 @@ namespace VirulentVentures
                 activeCombatCoroutine = null;
             }
         }
-
         public void PauseCombat()
         {
             isPaused = true;
             eventBus.RaiseCombatPaused();
         }
-
         public void PlayCombat()
         {
             isPaused = false;
             eventBus.RaiseCombatPlayed();
         }
-
         public void SetCombatSpeed(float speed)
         {
             if (combatConfig != null)
@@ -121,7 +113,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         public void InitializeUnits(List<CharacterStats> heroStats, List<CharacterStats> monsterStats)
         {
             string initMessage = "Combat begins!";
@@ -194,7 +185,6 @@ namespace VirulentVentures
             monsterPositions = monsterPositions.OrderBy(m => m.PartyPosition).ToList();
             eventBus.RaiseCombatInitialized(units);
         }
-
         public void UpdateUnit(ICombatUnit unit, string damageMessage = null)
         {
             if (unit == null) return;
@@ -222,7 +212,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         public void TryInfectUnit(CharacterStats source, CharacterStats target, TransmissionVector changedVector, float delta, List<string> combatLogs, EventBusSO eventBus, UIConfig uiConfig)
         {
             if (source == null || target == null || target.Health <= 0 || target.HasRetreated) return;
@@ -231,14 +220,14 @@ namespace VirulentVentures
             {
                 foreach (var virus in source.Infections.Where(v => v.TransmissionVector == changedVector))
                 {
-                    float infectionChance = Mathf.Clamp01(1f - ((target.Immunity / 100f) + virus.InfectivityModifier));
-                    string chanceMessage = $"{source.Id} attempts to infect {target.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
+                    float infectionChance = Mathf.Clamp01(0.15f + (int)virus.Rarity * 0.05f - (target.Immunity / 100f));
+                    string chanceMessage = $"{source.Id} attempts to infect {target.Id} with {virus.DisplayName} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
                     combatLogs.Add(chanceMessage);
                     eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
                     if (Random.value <= infectionChance)
                     {
                         target.AddInfection(virus);
-                        string infectMessage = $"{target.Id} infected with {virus.VirusID}!";
+                        string infectMessage = $"{target.Id} infected with {virus.DisplayName}!";
                         combatLogs.Add(infectMessage);
                         eventBus.RaiseLogMessage(infectMessage, Color.red);
                         eventBus.RaiseUnitInfected(target, virus.VirusID);
@@ -251,15 +240,15 @@ namespace VirulentVentures
             {
                 foreach (var virus in target.Infections.Where(v => v.TransmissionVector == changedVector))
                 {
-                    float baseChance = 1f - (source.Immunity / 100f + virus.InfectivityModifier);
+                    float baseChance = 0.15f + (int)virus.Rarity * 0.05f - (source.Immunity / 100f);
                     float infectionChance = Mathf.Clamp01(baseChance * 0.3f);
-                    string chanceMessage = $"{target.Id} attempts counter-infection on {source.Id} with {virus.VirusID} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
+                    string chanceMessage = $"{target.Id} attempts counter-infection on {source.Id} with {virus.DisplayName} after {(delta > 0 ? "+" : "")}{delta} {changedVector}: {(infectionChance * 100):F0}% chance";
                     combatLogs.Add(chanceMessage);
                     eventBus.RaiseLogMessage(chanceMessage, uiConfig.TextColor);
                     if (Random.value <= infectionChance)
                     {
                         source.AddInfection(virus);
-                        string infectMessage = $"{source.Id} infected with {virus.VirusID} via counter-attack!";
+                        string infectMessage = $"{source.Id} infected with {virus.DisplayName} via counter-attack!";
                         combatLogs.Add(infectMessage);
                         eventBus.RaiseLogMessage(infectMessage, Color.red);
                         eventBus.RaiseUnitInfected(source, virus.VirusID);
@@ -268,7 +257,6 @@ namespace VirulentVentures
                 }
             }
         }
-
         public void StartCombatLoop(PartyData party)
         {
             if (partyData == null)
@@ -289,7 +277,6 @@ namespace VirulentVentures
             isCombatActive = true;
             activeCombatCoroutine = StartCoroutine(RunCombat());
         }
-
         private IEnumerator RunCombat()
         {
             if (!isCombatActive)
@@ -393,7 +380,8 @@ namespace VirulentVentures
                     state.AttacksThisRound++;
                     if (unit is CharacterStats stats)
                     {
-                        yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
+                        // FIXED: Explicit lambda block
+                        yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, (u) => { UpdateUnit(u); }, this);
                         yield return ScaledWait(0.95f); // Sync to TiltForward duration
                     }
                     if (heroPositions.Count == 0 || monsterPositions.Count == 0)
@@ -411,7 +399,8 @@ namespace VirulentVentures
                     {
                         state.AttacksThisRound++;
                         Debug.Log($"CombatSceneComponent: Starting {unit.Id}'s second PerformAbility");
-                        yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, u => UpdateUnit(u), this);
+                        // FIXED: Explicit lambda block
+                        yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, (u) => { UpdateUnit(u); }, this);
                         Debug.Log($"CombatSceneComponent: Finished {unit.Id}'s second PerformAbility, waiting for animation tempo (~0.95s base)");
                         yield return ScaledWait(0.95f); // Sync to TiltForward duration
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
@@ -422,7 +411,6 @@ namespace VirulentVentures
                         }
                     }
                 }
-
                 // **FIXED: CENTRALIZED COOLDOWN LOGGING**
                 foreach (var state in unitAttackStates)
                 {
@@ -433,7 +421,7 @@ namespace VirulentVentures
                         if (state.RoundCooldowns[roundCd.Key] == 0)
                         {
                             state.RoundCooldowns.Remove(roundCd.Key);
-                            LogCooldownEnd((CharacterStats)state.Unit, roundCd.Key);  // ← SINGLE SOURCE
+                            LogCooldownEnd((CharacterStats)state.Unit, roundCd.Key); // ← SINGLE SOURCE
                         }
                     }
                 }
@@ -445,7 +433,7 @@ namespace VirulentVentures
         private void LogCooldownEnd(CharacterStats unit, string abilityId)
         {
             string message = $"{unit.Id}'s {abilityId} is off cooldown!";
-            if (!allCombatLogs.Any(log => log == message))  // Prevent duplicates
+            if (!allCombatLogs.Any(log => log == message)) // Prevent duplicates
             {
                 allCombatLogs.Add(message);
                 eventBus.RaiseLogMessage(message, uiConfig.TextColor);

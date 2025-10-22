@@ -31,3 +31,8 @@ MonoBehaviour:
   abilities:
   - {fileID: 11400000, guid: b9307005e10d090469c764b5ea5f9180, type: 2}
   - {fileID: 11400000, guid: d99fd864f5415db47875bee8aef4e1d2, type: 2}
+  capabilities:
+    canTransmitHealth: 1
+    canTransmitMorale: 0
+    canTransmitEnvironment: 0
+    canTransmitObstacle: 0

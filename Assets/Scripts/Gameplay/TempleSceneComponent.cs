@@ -136,19 +136,26 @@ namespace VirulentVentures
 
         private void SeedVirus(EventBusSO.VirusSeededData data)
         {
-            if (!isExpeditionGenerated || data.nodeIndex < 0 || data.nodeIndex >= expeditionData.NodeData.Count)
+            if (!isExpeditionGenerated || data.virus == null)
             {
-                Debug.LogWarning($"TempleSceneComponent: Invalid virus seeding! Generated: {isExpeditionGenerated}, NodeIndex: {data.nodeIndex}");
+                Debug.LogWarning($"TempleSceneComponent: Invalid virus seeding! Generated: {isExpeditionGenerated}, Virus: {data.virus != null}");
                 return;
             }
-            VirusSO virus = availableViruses.Find(v => v.VirusID == data.virusID);
-            if (virus == null)
+
+            // FIXED: Use data.virus directly (no virusID lookup needed)
+            VirusSO virus = data.virus;
+
+            // FIXED: Derive nodeIndex from current expedition context (since not in new struct)
+            int nodeIndex = expeditionData.CurrentNodeIndex;
+            if (nodeIndex < 0 || nodeIndex >= expeditionData.NodeData.Count)
             {
-                Debug.LogWarning($"TempleSceneComponent: Virus {data.virusID} not found!");
+                Debug.LogWarning($"TempleSceneComponent: Invalid node index {nodeIndex} for seeding!");
                 return;
             }
-            expeditionData.NodeData[data.nodeIndex].SeededViruses.Add(virus);
-            Debug.Log($"TempleSceneComponent: Seeded {virus.VirusID} to Node {data.nodeIndex}");
+
+            // Add to current node (temple virus seeding affects active expedition node)
+            expeditionData.NodeData[nodeIndex].SeededViruses.Add(virus);
+            Debug.Log($"TempleSceneComponent: Seeded {virus.DisplayName} to Node {nodeIndex}");
             eventBus.RaiseExpeditionUpdated(expeditionData, partyData);
         }
 

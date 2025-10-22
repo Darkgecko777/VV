@@ -1,10 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace VirulentVentures
 {
     public class NonCombatNodeGenerator : MonoBehaviour
     {
+        private static List<NonCombatEncounterSO> encounterCache = new List<NonCombatEncounterSO>();
+        private static bool isInitialized = false;
+
         private readonly Dictionary<string, string[]> flavourTextPool = new Dictionary<string, string[]>
         {
             { "Swamp", new[] {
@@ -15,23 +22,52 @@ namespace VirulentVentures
             } }
         };
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void InitializeCache()
+        {
+            if (isInitialized) return;
+
+            encounterCache.Clear();
+
+#if UNITY_EDITOR
+            string[] guids = AssetDatabase.FindAssets("t:NonCombatEncounterSO", new[] { "Assets/ScriptableObjects/NonCombat" });
+            foreach (string guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var encounter = AssetDatabase.LoadAssetAtPath<NonCombatEncounterSO>(path);
+                if (encounter != null) encounterCache.Add(encounter);
+            }
+#endif
+
+            isInitialized = true;
+        }
+
         public NodeData GenerateNonCombatNode(string biome, int level, int rating, bool isTempleNode = false)
         {
-            string[] texts = isTempleNode ? new[] { "" } : (flavourTextPool.ContainsKey(biome) ? flavourTextPool[biome] : new[] { "A quiet rest spot." });
-            string flavourText = texts[Random.Range(0, texts.Length)];
+            if (isTempleNode)
+            {
+                return new NodeData(new List<CharacterStats>(), "Temple", biome, false, "", new List<VirusSO>(), rating);
+            }
 
-            // Placeholder: Scale virus seeding chance and loot tier based on rating
-            float virusChance = 0.05f + (rating - 3) * 0.05f; // 5% at R=3, 20% at R=6
-            int lootTier = Mathf.CeilToInt(rating / 2f); // R=3-4: tier 2, R=5-6: tier 3
+            if (encounterCache.Count == 0)
+            {
+                Debug.LogWarning("NonCombatNodeGenerator: No encounters cached. Using placeholder.");
+                string[] texts = flavourTextPool.ContainsKey(biome) ? flavourTextPool[biome] : new[] { "A quiet rest spot." };
+                return new NodeData(new List<CharacterStats>(), "NonCombat", biome, false, texts[Random.Range(0, texts.Length)], new List<VirusSO>(), rating);
+            }
+
+            NonCombatEncounterSO encounter = encounterCache.OrderBy(_ => Random.value).First(); // Random
+            float virusChance = 0.05f + (rating - 3) * 0.05f; // Placeholder
 
             return new NodeData(
                 monsters: new List<CharacterStats>(),
-                nodeType: isTempleNode ? "Temple" : "NonCombat",
+                nodeType: "NonCombat",
                 biome: biome,
                 isCombat: false,
-                flavourText: flavourText,
+                flavourText: encounter.Description,
                 seededViruses: new List<VirusSO>(),
-                challengeRating: rating
+                challengeRating: rating,
+                vector: encounter.Vector // NEW
             );
         }
     }

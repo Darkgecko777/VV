@@ -14,6 +14,7 @@ namespace VirulentVentures
         [SerializeField] private List<VirusSO> seededViruses;
         [SerializeField] private int challengeRating;
         [SerializeField] private bool completed;
+        [SerializeField] private TransmissionVector vector; // NEW: For non-combat
 
         public List<CharacterStats> Monsters => monsters;
         public string NodeType => nodeType;
@@ -23,8 +24,9 @@ namespace VirulentVentures
         public List<VirusSO> SeededViruses => seededViruses;
         public int ChallengeRating => challengeRating;
         public bool Completed { get => completed; set => completed = value; }
+        public TransmissionVector Vector => vector; // NEW
 
-        public NodeData(List<CharacterStats> monsters, string nodeType, string biome, bool isCombat, string flavourText, List<VirusSO> seededViruses, int challengeRating = 0, bool completed = false)
+        public NodeData(List<CharacterStats> monsters, string nodeType, string biome, bool isCombat, string flavourText, List<VirusSO> seededViruses, int challengeRating = 0, bool completed = false, TransmissionVector vector = TransmissionVector.Health)
         {
             this.monsters = monsters ?? new List<CharacterStats>();
             this.nodeType = nodeType ?? "NonCombat";
@@ -34,6 +36,7 @@ namespace VirulentVentures
             this.seededViruses = seededViruses ?? new List<VirusSO>();
             this.challengeRating = challengeRating;
             this.completed = completed;
+            this.vector = vector; // NEW
         }
     }
 }

@@ -21,6 +21,8 @@ namespace VirulentVentures
         [SerializeField] private VirusEffect[] effects = new VirusEffect[0];
 
         private static Dictionary<string, VirusEffect> effectCache = new Dictionary<string, VirusEffect>();
+        // NEW: Cache for VirusSOs by biome
+        private static Dictionary<Biome, List<VirusSO>> virusCache = new Dictionary<Biome, List<VirusSO>>();
         private static bool isInitialized = false;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -29,10 +31,12 @@ namespace VirulentVentures
             if (isInitialized) return;
 
             effectCache.Clear();
+            virusCache.Clear();
 
 #if UNITY_EDITOR
-            string[] guids = AssetDatabase.FindAssets("t:VirusEffectLibrary", new[] { "Assets/ScriptableObjects/Viruses" });
-            foreach (string guid in guids)
+            // Scan for VirusEffectLibrary assets (effects)
+            string[] effectGuids = AssetDatabase.FindAssets("t:VirusEffectLibrary", new[] { "Assets/ScriptableObjects/Viruses" });
+            foreach (string guid in effectGuids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 var library = AssetDatabase.LoadAssetAtPath<VirusEffectLibrary>(path);
@@ -45,12 +49,25 @@ namespace VirulentVentures
                     }
                 }
             }
+
+            // NEW: Scan for all VirusSO assets (including subfolders like Swamps/)
+            string[] virusGuids = AssetDatabase.FindAssets("t:VirusSO", new[] { "Assets/ScriptableObjects/Viruses" });
+            foreach (string guid in virusGuids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var virus = AssetDatabase.LoadAssetAtPath<VirusSO>(path);
+                if (virus != null)
+                {
+                    if (!virusCache.ContainsKey(virus.Biome))
+                        virusCache[virus.Biome] = new List<VirusSO>();
+                    virusCache[virus.Biome].Add(virus);
+                }
+            }
 #endif
 
             isInitialized = true;
         }
 
-        // FIXED: ALL STATIC METHODS
         private static float GetRarityMultiplier(VirusRarity rarity) => rarity switch
         {
             VirusRarity.Common => 1f,
@@ -60,7 +77,6 @@ namespace VirulentVentures
             _ => 1f
         };
 
-        // FIXED: STATIC - NO INSTANCE
         public static VirusEffect GetEffect(string virusID, VirusRarity rarity)
         {
             if (effectCache.TryGetValue(virusID, out var baseEffect))
@@ -76,6 +92,15 @@ namespace VirulentVentures
 
             Debug.LogWarning($"VirusEffectLibrary: VirusID '{virusID}' not found in cache");
             return new VirusEffect { VirusID = virusID, Stat = "Speed", Value = -1f * GetRarityMultiplier(rarity) };
+        }
+
+        // NEW: Get viruses for a biome (all rarities)
+        public static List<VirusSO> GetBiomeViruses(Biome biome)
+        {
+            if (virusCache.TryGetValue(biome, out var viruses))
+                return viruses;
+            Debug.LogWarning($"VirusEffectLibrary: No viruses found for biome {biome}");
+            return new List<VirusSO>();
         }
     }
 }

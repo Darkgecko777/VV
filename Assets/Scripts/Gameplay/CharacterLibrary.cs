@@ -1,4 +1,3 @@
-// <DOCUMENT filename="CharacterLibrary.cs">
 using System.Collections.Generic;
 using UnityEngine;
 using System.Reflection;
@@ -18,12 +17,10 @@ namespace VirulentVentures
         private static void InitializeCaches()
         {
             if (isInitialized) return;
-
             heroCache.Clear();
             monsterCache.Clear();
 
 #if UNITY_EDITOR
-            // STYLE GUIDE COMPLIANT: Load from Assets/ScriptableObjects/Characters
             string[] guids = AssetDatabase.FindAssets("t:CharacterSO", new[] { "Assets/ScriptableObjects/Characters" });
             foreach (string guid in guids)
             {
@@ -38,7 +35,6 @@ namespace VirulentVentures
                 }
             }
 #endif
-
             isInitialized = true;
         }
 
@@ -46,7 +42,6 @@ namespace VirulentVentures
         {
             if (heroCache.TryGetValue(id, out var data))
                 return data;
-
             Debug.LogWarning($"CharacterLibrary: Hero ID {id} not found, returning default");
             return CreateDefaultCharacter(id, CharacterType.Hero);
         }
@@ -55,8 +50,19 @@ namespace VirulentVentures
         {
             if (monsterCache.TryGetValue(id, out var data))
                 return data;
-
             Debug.LogWarning($"CharacterLibrary: Monster ID {id} not found, returning default");
+            return CreateDefaultCharacter(id, CharacterType.Monster);
+        }
+
+        // NEW: Universal lookup for VirusSeederComponent
+        public static CharacterSO GetCharacterData(string id)
+        {
+            if (heroCache.TryGetValue(id, out var heroData))
+                return heroData;
+            if (monsterCache.TryGetValue(id, out var monsterData))
+                return monsterData;
+
+            Debug.LogWarning($"CharacterLibrary: Character ID {id} not found");
             return CreateDefaultCharacter(id, CharacterType.Monster);
         }
 
@@ -70,13 +76,11 @@ namespace VirulentVentures
             var defaultSO = ScriptableObject.CreateInstance<CharacterSO>();
             defaultSO.name = type == CharacterType.Hero ? "DefaultHero" : "DefaultMonster";
 
-            // FIXED: Direct property assignment (no reflection needed for public fields)
             typeof(CharacterSO).GetField("id", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(defaultSO, id);
             typeof(CharacterSO).GetField("type", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(defaultSO, type);
 
             if (type == CharacterType.Hero)
             {
-                // Hero defaults
                 SetField(defaultSO, "health", 50);
                 SetField(defaultSO, "maxHealth", 50);
                 SetField(defaultSO, "morale", 100);
@@ -84,22 +88,34 @@ namespace VirulentVentures
             }
             else
             {
-                // Monster defaults
-                SetField(defaultSO, "health", 0); // Uses maxHealth
+                SetField(defaultSO, "health", 0);
                 SetField(defaultSO, "maxHealth", 50);
                 SetField(defaultSO, "morale", 0);
                 SetField(defaultSO, "maxMorale", 0);
             }
-
             SetField(defaultSO, "attack", 10);
             SetField(defaultSO, "defense", 5);
             SetField(defaultSO, "speed", 3);
             SetField(defaultSO, "evasion", 10);
-            SetField(defaultSO, "immunity", 20); // FIXED: was "infectivity"
+            SetField(defaultSO, "immunity", 20);
             SetField(defaultSO, "canBeCultist", false);
             SetField(defaultSO, "partyPosition", type == CharacterType.Hero ? 1 : 0);
             SetField(defaultSO, "rank", 1);
-            SetField(defaultSO, "abilities", new AbilitySO[0]); // FIXED: array assignment
+            SetField(defaultSO, "abilities", new AbilitySO[0]);
+
+            // NEW: Set default capabilities for monsters
+            var capsField = typeof(CharacterSO).GetField("capabilities", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (capsField != null)
+            {
+                var caps = new CharacterSO.MonsterCapabilities
+                {
+                    canTransmitHealth = true,
+                    canTransmitMorale = type == CharacterType.Monster, // False for heroes
+                    canTransmitEnvironment = true,
+                    canTransmitObstacle = true
+                };
+                capsField.SetValue(defaultSO, caps);
+            }
 
             return defaultSO;
         }
@@ -114,4 +130,3 @@ namespace VirulentVentures
         }
     }
 }
-// </DOCUMENT>

@@ -144,7 +144,18 @@ namespace VirulentVentures
                 {
                     if (nodeDropdown.index >= 0 && virusDropdown.index >= 0)
                     {
-                        eventBus.RaiseVirusSeeded(virusDropdown.value, nodeDropdown.index);
+                        // FIXED LINE 147: Convert dropdown values to VirusSO + CharacterStats
+                        VirusSO selectedVirus = virusConfig?.GetVirus(virusDropdown.value);
+                        CharacterStats selectedHero = partyData?.GetHeroes()?.FirstOrDefault(); // Use first hero as placeholder
+
+                        if (selectedVirus != null && selectedHero != null)
+                        {
+                            eventBus.RaiseVirusSeeded(selectedVirus, selectedHero);
+                        }
+                        else
+                        {
+                            Debug.LogWarning("TempleUIComponent: Invalid virus or hero selection for seeding!");
+                        }
                     }
                     else
                     {
@@ -447,14 +458,12 @@ namespace VirulentVentures
         {
             if (!isInitialized || nodeContainer == null) return;
             var nodes = nodeContainer.Children().ToList();
-            if (data.nodeIndex >= 0 && data.nodeIndex < nodes.Count())
+            if (data.virus != null && nodes.Count > 0)
             {
-                var nodeBox = nodes[data.nodeIndex];
-                var virus = virusConfig?.GetVirus(data.virusID);
-                if (virus != null)
-                {
-                    nodeBox.tooltip = nodeBox.tooltip + (string.IsNullOrEmpty(nodeBox.tooltip) ? "" : ", ") + virus.VirusID;
-                }
+                // FIXED: Use current expedition node index
+                int currentNodeIndex = ExpeditionManager.Instance.expeditionData?.CurrentNodeIndex ?? 0;
+                var nodeBox = nodes[Mathf.Clamp(currentNodeIndex, 0, nodes.Count - 1)];
+                nodeBox.tooltip = nodeBox.tooltip + (string.IsNullOrEmpty(nodeBox.tooltip) ? "" : ", ") + data.virus.VirusID;
             }
         }
 

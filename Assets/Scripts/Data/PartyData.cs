@@ -235,5 +235,32 @@ namespace VirulentVentures
             eventBus.RaiseLogMessage($"{unit.Id} {message} {Mathf.Abs(value)} {statName} from {modifier.Type}!", Color.red);
             eventBus.RaiseUnitUpdated(unit, unit.GetDisplayStats());
         }
+        // Add to PartyData.cs after existing methods
+        public CharacterStats FindBestForStat(SkillType skill)
+        {
+            return HeroStats.Where(h => h.Health > 0 && !h.HasRetreated)
+                .OrderByDescending(h => GetStatValue(h, skill))
+                .FirstOrDefault();
+        }
+
+        public CharacterStats FindWorstForStat(SkillType skill)
+        {
+            return HeroStats.Where(h => h.Health > 0 && !h.HasRetreated)
+                .OrderBy(h => GetStatValue(h, skill))
+                .FirstOrDefault();
+        }
+
+        private int GetStatValue(CharacterStats h, SkillType skill) => skill switch
+        {
+            SkillType.Speed => h.Speed,
+            SkillType.Attack => h.Attack,
+            SkillType.Defense => h.Defense,
+            SkillType.Evasion => h.Evasion,
+            SkillType.Immunity => h.Immunity,
+            SkillType.Morale => h.Morale,
+            SkillType.Health => h.Health,
+            _ => 0
+        };
     }
+
 }

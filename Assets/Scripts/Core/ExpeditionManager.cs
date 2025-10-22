@@ -10,7 +10,7 @@ namespace VirulentVentures
 {
     public class ExpeditionManager : MonoBehaviour
     {
-        [SerializeField] private ExpeditionData expeditionData;
+        [SerializeField] public ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
         [SerializeField] private PlayerProgress playerProgress;
         [SerializeField] private EventBusSO eventBus;

@@ -44,9 +44,10 @@ namespace VirulentVentures
         [System.Serializable]
         public struct VirusSeededData
         {
-            public string virusID;
-            public int nodeIndex;
+            public VirusSO virus;
+            public CharacterStats unit;
         }
+
 
         [System.Serializable]
         public struct AttackData
@@ -139,9 +140,9 @@ namespace VirulentVentures
             OnExpeditionGenerated?.Invoke(new ExpeditionGeneratedData { expeditionData = expeditionData, partyData = partyData });
         }
 
-        public void RaiseVirusSeeded(string virusID, int nodeIndex)
+        public void RaiseVirusSeeded(VirusSO virus, CharacterStats unit)
         {
-            OnVirusSeeded?.Invoke(new VirusSeededData { virusID = virusID, nodeIndex = nodeIndex });
+            OnVirusSeeded?.Invoke(new VirusSeededData { virus = virus, unit = unit });
         }
 
         public void RaisePartyUpdated(PartyData partyData)

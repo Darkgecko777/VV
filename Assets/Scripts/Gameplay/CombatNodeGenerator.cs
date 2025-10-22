@@ -1,3 +1,4 @@
+// Full revised CombatNodeGenerator.cs
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -56,18 +57,6 @@ namespace VirulentVentures
             encounterData.InitializeEncounter(selectedIds);
             List<CharacterStats> monsters = encounterData.SpawnMonsters();
 
-            // Guarantee BogRot on one random monster
-            VirusSO bogRotVirus = virusConfig?.GetVirus("BogRot");
-            if (monsters.Count > 0 && bogRotVirus != null)
-            {
-                int randomIndex = Random.Range(0, monsters.Count);
-                monsters[randomIndex].Infections.Add(bogRotVirus);
-            }
-            else
-            {
-                Debug.LogError($"CombatNodeGenerator: Cannot seed virus, BogRot not found or no monsters. Virus: {bogRotVirus != null}, Monsters: {monsters.Count}");
-            }
-
             monsters = monsters
                 .GroupBy(m => m.PartyPosition)
                 .OrderBy(g => g.Key)
@@ -83,7 +72,7 @@ namespace VirulentVentures
                 biome: biome,
                 isCombat: true,
                 flavourText: flavourText,
-                seededViruses: bogRotVirus != null ? new List<VirusSO> { bogRotVirus } : new List<VirusSO>(),
+                seededViruses: new List<VirusSO>(),
                 challengeRating: rating
             );
         }
