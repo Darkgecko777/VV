@@ -208,6 +208,8 @@ namespace VirulentVentures
                         heroPositions.Remove(stats);
                     else
                         monsterPositions.Remove(stats);
+                    eventBus.RaiseUnitDied(stats);
+                    eventBus.RaiseUnitUpdated(stats, newStats);  
                 }
             }
         }

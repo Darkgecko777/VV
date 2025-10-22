@@ -101,9 +101,14 @@ namespace VirulentVentures
                 Debug.LogError("ExpeditionSceneComponent: Invalid node data or index!");
                 return;
             }
+
             var currentNode = data.nodes[data.currentIndex];
+
+            // **FIX: DISABLE BUTTON IMMEDIATELY ON COMBAT NODE**
             if (currentNode.IsCombat && !currentNode.Completed)
             {
+                viewComponent?.SetContinueButtonEnabled(false);  // DISABLE IMMEDIATELY
+
                 if (viewComponent != null)
                 {
                     viewComponent.FadeToCombat(() => {
@@ -114,19 +119,22 @@ namespace VirulentVentures
                 {
                     ExpeditionManager.Instance.TransitionToCombatScene();
                 }
+                return;  // Exit - no more processing
             }
-            else
+
+            // **RE-ENABLE BUTTON FOR NON-COMBAT NODES**
+            viewComponent?.SetContinueButtonEnabled(true);
+
+            eventBus.RaiseLogMessage(currentNode.Completed ? "Combat Won!" : currentNode.FlavourText, Color.white);
+            eventBus.RaisePartyUpdated(partyData);
+
+            // Check for hero deaths after node processing
+            if (CheckForHeroDeaths())
             {
-                eventBus.RaiseLogMessage(currentNode.Completed ? "Combat Won!" : currentNode.FlavourText, Color.white);
-                eventBus.RaisePartyUpdated(partyData);
-                // Check for hero deaths after node processing
-                if (CheckForHeroDeaths())
-                {
-                    Debug.Log($"ExpeditionSceneComponent: Hero death detected after node {data.currentIndex}, will transition to Temple on Continue");
-                    return;
-                }
-                CheckExpeditionFailure();
+                Debug.Log($"ExpeditionSceneComponent: Hero death detected after node {data.currentIndex}, will transition to Temple on Continue");
+                return;
             }
+            CheckExpeditionFailure();
         }
 
         private void HandleContinueClicked()
@@ -137,6 +145,7 @@ namespace VirulentVentures
                 Debug.LogError("ExpeditionSceneComponent: Expedition or NodeData is null in HandleContinueClicked!");
                 return;
             }
+
             // Check for hero deaths before advancing
             if (CheckForHeroDeaths())
             {

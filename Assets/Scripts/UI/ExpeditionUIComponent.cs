@@ -92,6 +92,21 @@ namespace VirulentVentures
             }
         }
 
+        public void SetContinueButtonEnabled(bool enabled)
+        {
+            var continueButton = root.Q<Button>("ContinueButton");
+            if (continueButton != null)
+            {
+                continueButton.SetEnabled(enabled);
+                continueButton.style.opacity = enabled ? 1f : 0.5f;
+                Debug.Log($"ExpeditionUIComponent: Continue button {(enabled ? "ENABLED" : "DISABLED")}");
+            }
+            else
+            {
+                Debug.LogWarning("ExpeditionUIComponent: ContinueButton not found in UXML!");
+            }
+        }
+
         private IEnumerator InitializeNodes()
         {
             yield return new WaitForEndOfFrame();

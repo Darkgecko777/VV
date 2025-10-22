@@ -1,4 +1,3 @@
-// Revised EventBusSO.cs
 using System;
 using System.Collections.Generic;
 using UnityEngine;
