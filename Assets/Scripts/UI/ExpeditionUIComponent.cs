@@ -20,9 +20,6 @@ namespace VirulentVentures
         private VisualElement fadeOverlay;
         private VisualElement nodeContainer;
         private VisualElement partyPanel;
-        private VisualElement skillCheckPopup;
-        private Label skillCheckLabel;
-        private VisualElement virusIconsContainer;
         private float fadeDuration = 0.5f;
         private bool isInitialized;
 
@@ -40,13 +37,7 @@ namespace VirulentVentures
             fadeOverlay = root.Q<VisualElement>("FadeOverlay");
             nodeContainer = root.Q<VisualElement>("NodeContainer");
             partyPanel = new VisualElement { name = "PartyPanel" };
-            skillCheckPopup = new VisualElement { name = "SkillCheckPopup" };
-            skillCheckLabel = new Label { name = "SkillCheckLabel" };
-            virusIconsContainer = new VisualElement { name = "VirusIconsContainer" };
-            skillCheckPopup.Add(skillCheckLabel);
-            skillCheckPopup.Add(virusIconsContainer);
             root.Add(partyPanel);
-            root.Add(skillCheckPopup);
             if (popoutContainer == null || flavourText == null || continueButton == null || nodeContainer == null)
             {
                 Debug.LogError($"ExpeditionUIComponent: Missing critical UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, FadeOverlay: {fadeOverlay != null}, NodeContainer: {nodeContainer != null}");
@@ -64,7 +55,6 @@ namespace VirulentVentures
         {
             if (isInitialized)
             {
-                Debug.Log($"ExpeditionUIComponent: Loaded UXML from {uiDocument.visualTreeAsset?.name}");
                 StartCoroutine(InitializeUIAsync());
                 SubscribeToEventBus();
                 StartCoroutine(InitializeNodes());
@@ -129,17 +119,6 @@ namespace VirulentVentures
             partyPanel.style.borderTopRightRadius = 10;
             partyPanel.style.borderBottomLeftRadius = 10;
             partyPanel.style.borderBottomRightRadius = 10;
-            skillCheckPopup.AddToClassList("skill-check-popup");
-            skillCheckPopup.style.display = DisplayStyle.None;
-            skillCheckPopup.style.position = Position.Absolute;
-            skillCheckPopup.style.top = 200;
-            skillCheckPopup.style.left = Length.Percent(50);
-            skillCheckPopup.style.marginLeft = -300;
-            skillCheckPopup.style.width = 600;
-            skillCheckPopup.style.height = 300;
-            skillCheckPopup.pickingMode = PickingMode.Position;
-            skillCheckLabel.style.color = uiConfig.TextColor;
-            virusIconsContainer.style.flexDirection = FlexDirection.Row;
         }
 
         public void SetContinueButtonEnabled(bool enabled)
@@ -181,7 +160,6 @@ namespace VirulentVentures
             fadeOverlay = null;
             nodeContainer = null;
             partyPanel = null;
-            skillCheckPopup = null;
         }
 
         private void UpdateNodeVisuals(EventBusSO.NodeUpdateData data)
@@ -287,7 +265,6 @@ namespace VirulentVentures
             eventBus.OnSceneTransitionCompleted += UpdateUI;
             eventBus.OnSceneTransitionCompleted += UpdateNodeVisuals;
             eventBus.OnPartyUpdated += UpdatePartyPanel;
-            eventBus.OnVirusSeeded += UpdateVirusIcons;
         }
 
         private void UnsubscribeFromEventBus()
@@ -297,7 +274,6 @@ namespace VirulentVentures
             eventBus.OnSceneTransitionCompleted -= UpdateUI;
             eventBus.OnSceneTransitionCompleted -= UpdateNodeVisuals;
             eventBus.OnPartyUpdated -= UpdatePartyPanel;
-            eventBus.OnVirusSeeded -= UpdateVirusIcons;
         }
 
         private void UpdateUI(EventBusSO.NodeUpdateData data)
@@ -309,15 +285,6 @@ namespace VirulentVentures
             {
                 flavourText.text = nodes[currentIndex].IsCombat && nodes[currentIndex].Completed ? "Combat Won!" : nodes[currentIndex].FlavourText;
                 popoutContainer.style.display = (nodes[currentIndex].IsCombat && !nodes[currentIndex].Completed || currentIndex == 0) ? DisplayStyle.None : DisplayStyle.Flex;
-                if (!nodes[currentIndex].IsCombat && !nodes[currentIndex].Completed)
-                {
-                    skillCheckPopup.style.display = DisplayStyle.Flex;
-                    skillCheckLabel.text = "Skill Check: " + nodes[currentIndex].FlavourText;
-                }
-                else
-                {
-                    skillCheckPopup.style.display = DisplayStyle.None;
-                }
             }
         }
 
@@ -390,18 +357,6 @@ namespace VirulentVentures
 
                 partyPanel.Add(heroCard);
             }
-        }
-
-        private void UpdateVirusIcons(EventBusSO.VirusSeededData data)
-        {
-            if (!isInitialized || virusIconsContainer == null) return;
-            virusIconsContainer.Clear();
-            Image virusIcon = new Image();
-            virusIcon.image = data.virus.Sprite?.texture;
-            virusIcon.style.width = 50;
-            virusIcon.style.height = 50;
-            virusIcon.tooltip = data.virus.DisplayName + " (" + data.virus.RarityString + ")";
-            virusIconsContainer.Add(virusIcon);
         }
 
         private bool ValidateReferences()

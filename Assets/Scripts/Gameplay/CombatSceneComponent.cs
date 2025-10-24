@@ -397,10 +397,7 @@ namespace VirulentVentures
                     if (unit is CharacterStats stats && stats.Speed >= combatConfig.SpeedTwoAttacksThreshold && state.AttacksThisRound < 2)
                     {
                         state.AttacksThisRound++;
-                        Debug.Log($"CombatSceneComponent: Starting {unit.Id}'s second PerformAbility");
-                        // FIXED: Explicit lambda block
                         yield return stats.PerformAbility(state, partyData, unitList, eventBus, uiConfig, combatConfig, allCombatLogs, heroPositions, monsterPositions, (u) => { UpdateUnit(u); }, this);
-                        Debug.Log($"CombatSceneComponent: Finished {unit.Id}'s second PerformAbility, waiting for animation tempo (~0.95s base)");
                         yield return ScaledWait(0.95f); // Sync to TiltForward duration
                         if (heroPositions.Count == 0 || monsterPositions.Count == 0)
                         {
