@@ -19,6 +19,10 @@ namespace VirulentVentures
         private VisualElement fadeOverlay;
         private VisualElement nodeContainer;
         private VisualElement portraitContainer;
+        private VisualElement partyPanel; // NEW: Party display panel
+        private VisualElement skillCheckPopup; // NEW: Non-combat skill check popup
+        private Label skillCheckLabel; // NEW: Skill check text
+        private VisualElement virusIconsContainer; // NEW: For virus visuals in popup
         private float fadeDuration = 0.5f;
         private bool isInitialized;
 
@@ -35,6 +39,15 @@ namespace VirulentVentures
             continueButton = root.Q<Button>("ContinueButton");
             fadeOverlay = root.Q<VisualElement>("FadeOverlay");
             nodeContainer = root.Q<VisualElement>("NodeContainer");
+            // NEW: Initialize partyPanel and skillCheckPopup
+            partyPanel = new VisualElement { name = "PartyPanel" };
+            skillCheckPopup = new VisualElement { name = "SkillCheckPopup" };
+            skillCheckLabel = new Label { name = "SkillCheckLabel" };
+            virusIconsContainer = new VisualElement { name = "VirusIconsContainer" };
+            skillCheckPopup.Add(skillCheckLabel);
+            skillCheckPopup.Add(virusIconsContainer);
+            root.Add(partyPanel);
+            root.Add(skillCheckPopup);
             if (popoutContainer == null || flavourText == null || continueButton == null || fadeOverlay == null || nodeContainer == null)
             {
                 Debug.LogError($"ExpeditionUIComponent: Missing UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, FadeOverlay: {fadeOverlay != null}, NodeContainer: {nodeContainer != null}");
@@ -90,6 +103,20 @@ namespace VirulentVentures
                     eventBus.RaiseContinueClicked();
                 };
             }
+            // NEW: Style partyPanel and skillCheckPopup
+            partyPanel.style.flexDirection = FlexDirection.Row;
+            partyPanel.style.justifyContent = Justify.SpaceAround;
+            partyPanel.style.height = Length.Percent(20); // Bottom 20% of screen
+            skillCheckPopup.style.display = DisplayStyle.None;
+            skillCheckPopup.style.position = Position.Absolute;
+            skillCheckPopup.style.top = Length.Percent(30);
+            skillCheckPopup.style.left = Length.Percent(30);
+            skillCheckPopup.style.width = Length.Percent(40);
+            skillCheckPopup.style.height = Length.Percent(40);
+            skillCheckPopup.style.backgroundColor = new StyleColor(Color.gray);
+            skillCheckPopup.style.alignItems = Align.Center;
+            skillCheckLabel.style.color = uiConfig.TextColor;
+            virusIconsContainer.style.flexDirection = FlexDirection.Row;
         }
 
         public void SetContinueButtonEnabled(bool enabled)
@@ -99,7 +126,6 @@ namespace VirulentVentures
             {
                 continueButton.SetEnabled(enabled);
                 continueButton.style.opacity = enabled ? 1f : 0.5f;
-                Debug.Log($"ExpeditionUIComponent: Continue button {(enabled ? "ENABLED" : "DISABLED")}");
             }
             else
             {
@@ -132,6 +158,8 @@ namespace VirulentVentures
             fadeOverlay = null;
             portraitContainer = null;
             nodeContainer = null;
+            partyPanel = null; // NEW
+            skillCheckPopup = null; // NEW
         }
 
         private void InitializePortraits()
@@ -251,6 +279,8 @@ namespace VirulentVentures
             eventBus.OnSceneTransitionCompleted += UpdateUI;
             eventBus.OnSceneTransitionCompleted += UpdateNodeVisuals;
             eventBus.OnPartyUpdated += UpdatePortraits;
+            eventBus.OnPartyUpdated += UpdatePartyPanel; // NEW: Update party panel on party changes
+            eventBus.OnVirusSeeded += UpdateVirusIcons; // NEW: Update viruses in popup
         }
 
         private void UnsubscribeFromEventBus()
@@ -260,6 +290,8 @@ namespace VirulentVentures
             eventBus.OnSceneTransitionCompleted -= UpdateUI;
             eventBus.OnSceneTransitionCompleted -= UpdateNodeVisuals;
             eventBus.OnPartyUpdated -= UpdatePortraits;
+            eventBus.OnPartyUpdated -= UpdatePartyPanel; // NEW
+            eventBus.OnVirusSeeded -= UpdateVirusIcons; // NEW
         }
 
         private void UpdateUI(EventBusSO.NodeUpdateData data)
@@ -271,6 +303,16 @@ namespace VirulentVentures
             {
                 flavourText.text = nodes[currentIndex].IsCombat && nodes[currentIndex].Completed ? "Combat Won!" : nodes[currentIndex].FlavourText;
                 popoutContainer.style.display = (nodes[currentIndex].IsCombat && !nodes[currentIndex].Completed || currentIndex == 0) ? DisplayStyle.None : DisplayStyle.Flex;
+                // NEW: Show skill check popup for non-combat
+                if (!nodes[currentIndex].IsCombat && !nodes[currentIndex].Completed)
+                {
+                    skillCheckPopup.style.display = DisplayStyle.Flex;
+                    skillCheckLabel.text = "Skill Check: " + nodes[currentIndex].FlavourText; // Stub - extend with skill details
+                }
+                else
+                {
+                    skillCheckPopup.style.display = DisplayStyle.None;
+                }
             }
         }
 
@@ -289,6 +331,45 @@ namespace VirulentVentures
                 }
                 portraitContainer.Add(portrait);
             }
+        }
+
+        // NEW: Update party panel with stats and viruses
+        private void UpdatePartyPanel(PartyData partyData)
+        {
+            if (!isInitialized || partyPanel == null) return;
+            partyPanel.Clear();
+            foreach (var hero in partyData.GetHeroes())
+            {
+                VisualElement heroCard = new VisualElement { name = $"HeroCard_{hero.Id}" };
+                heroCard.AddToClassList("hero-card");
+                Label statsLabel = new Label($"HP: {hero.Health}/{hero.MaxHealth} Morale: {hero.Morale}/{hero.MaxMorale}");
+                heroCard.Add(statsLabel);
+                VisualElement viruses = new VisualElement { name = "Viruses" };
+                foreach (var virus in hero.Infections)
+                {
+                    Image virusIcon = new Image();
+                    virusIcon.image = virus.Sprite?.texture; // Use virus sprite
+                    virusIcon.style.width = 20;
+                    virusIcon.style.height = 20;
+                    virusIcon.tooltip = virus.DisplayName + " (" + virus.RarityString + ")";
+                    viruses.Add(virusIcon);
+                }
+                heroCard.Add(viruses);
+                partyPanel.Add(heroCard);
+            }
+        }
+
+        // NEW: Update virus icons in skill check popup on failure
+        private void UpdateVirusIcons(EventBusSO.VirusSeededData data)
+        {
+            if (!isInitialized || virusIconsContainer == null) return;
+            virusIconsContainer.Clear();
+            Image virusIcon = new Image();
+            virusIcon.image = data.virus.Sprite?.texture;
+            virusIcon.style.width = 50;
+            virusIcon.style.height = 50;
+            virusIcon.tooltip = data.virus.DisplayName + " (" + data.virus.RarityString + ")";
+            virusIconsContainer.Add(virusIcon);
         }
 
         private bool ValidateReferences()

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using System; // NEW: For Serializable
 
@@ -109,7 +109,7 @@ namespace VirulentVentures
             // NEW: Validate capabilities for monsters
             if (type == CharacterType.Monster && !capabilities.canTransmitHealth && !capabilities.canTransmitMorale && !capabilities.canTransmitEnvironment && !capabilities.canTransmitObstacle)
             {
-                Debug.LogWarning($"CharacterSO {id}: Monster has no transmission capabilities�will not seed viruses.");
+                Debug.LogWarning($"CharacterSO {id}: Monster has no transmission capabilities—will not seed viruses.");
             }
         }
     }
