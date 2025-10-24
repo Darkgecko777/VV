@@ -129,14 +129,15 @@ namespace VirulentVentures
             partyPanel.style.borderTopRightRadius = 10;
             partyPanel.style.borderBottomLeftRadius = 10;
             partyPanel.style.borderBottomRightRadius = 10;
+            skillCheckPopup.AddToClassList("skill-check-popup");
             skillCheckPopup.style.display = DisplayStyle.None;
             skillCheckPopup.style.position = Position.Absolute;
-            skillCheckPopup.style.top = Length.Percent(30);
-            skillCheckPopup.style.left = Length.Percent(30);
-            skillCheckPopup.style.width = Length.Percent(40);
-            skillCheckPopup.style.height = Length.Percent(40);
-            skillCheckPopup.style.backgroundColor = new StyleColor(Color.gray);
-            skillCheckPopup.style.alignItems = Align.Center;
+            skillCheckPopup.style.top = 200;
+            skillCheckPopup.style.left = Length.Percent(50);
+            skillCheckPopup.style.marginLeft = -300;
+            skillCheckPopup.style.width = 600;
+            skillCheckPopup.style.height = 300;
+            skillCheckPopup.pickingMode = PickingMode.Position;
             skillCheckLabel.style.color = uiConfig.TextColor;
             virusIconsContainer.style.flexDirection = FlexDirection.Row;
         }

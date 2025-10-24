@@ -103,7 +103,6 @@ namespace VirulentVentures
             {
                 float oldSpeed = combatConfig.CombatSpeed;
                 combatConfig.CombatSpeed = Mathf.Clamp(speed, combatConfig.MinCombatSpeed, combatConfig.MaxCombatSpeed);
-                Debug.Log($"CombatSceneComponent: CombatSpeed set to {combatConfig.CombatSpeed:F1}x (was {oldSpeed:F1}x)");
                 if (oldSpeed != combatConfig.CombatSpeed)
                 {
                     string speedMessage = $"Combat speed set to {combatConfig.CombatSpeed:F1}x!";

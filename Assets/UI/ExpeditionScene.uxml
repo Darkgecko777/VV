@@ -14,7 +14,9 @@
         <ui:VisualElement name="PopoutContainer" style="position: absolute; top: 300px; left: 460px; width: 1000px; height: 400px; display: none;">
             <ui:Label name="FlavourText" text="Swamp miasma clouds your mind." class="flavour-text" />
         </ui:VisualElement>
+        <ui:VisualElement name="SkillCheckPopup" class="skill-check-popup" style="position: absolute; top: 200px; left: 50%; margin-left: -300px; width: 600px; height: 300px; display: none;" />
         <ui:Button name="ContinueButton" text="Continue" class="continue-button" style="position: absolute; top: 650px; left: 860px;" />
         <ui:VisualElement name="PartyPanel" style="position: absolute; bottom: 50px; left: 50%; margin-left: -300px; width: 600px; height: 300px; flex-direction: row; flex-wrap: wrap; justify-content: space-around; align-items: center;" />
+        <ui:VisualElement name="FadeOverlay" style="width: 1920px; height: 1080px; display: none;" />
     </ui:VisualElement>
 </ui:UXML>
