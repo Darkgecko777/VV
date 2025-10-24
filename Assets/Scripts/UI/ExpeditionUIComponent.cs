@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -18,11 +19,10 @@ namespace VirulentVentures
         private Button continueButton;
         private VisualElement fadeOverlay;
         private VisualElement nodeContainer;
-        private VisualElement portraitContainer;
-        private VisualElement partyPanel; // NEW: Party display panel
-        private VisualElement skillCheckPopup; // NEW: Non-combat skill check popup
-        private Label skillCheckLabel; // NEW: Skill check text
-        private VisualElement virusIconsContainer; // NEW: For virus visuals in popup
+        private VisualElement partyPanel;
+        private VisualElement skillCheckPopup;
+        private Label skillCheckLabel;
+        private VisualElement virusIconsContainer;
         private float fadeDuration = 0.5f;
         private bool isInitialized;
 
@@ -39,7 +39,6 @@ namespace VirulentVentures
             continueButton = root.Q<Button>("ContinueButton");
             fadeOverlay = root.Q<VisualElement>("FadeOverlay");
             nodeContainer = root.Q<VisualElement>("NodeContainer");
-            // NEW: Initialize partyPanel and skillCheckPopup
             partyPanel = new VisualElement { name = "PartyPanel" };
             skillCheckPopup = new VisualElement { name = "SkillCheckPopup" };
             skillCheckLabel = new Label { name = "SkillCheckLabel" };
@@ -48,11 +47,15 @@ namespace VirulentVentures
             skillCheckPopup.Add(virusIconsContainer);
             root.Add(partyPanel);
             root.Add(skillCheckPopup);
-            if (popoutContainer == null || flavourText == null || continueButton == null || fadeOverlay == null || nodeContainer == null)
+            if (popoutContainer == null || flavourText == null || continueButton == null || nodeContainer == null)
             {
-                Debug.LogError($"ExpeditionUIComponent: Missing UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, FadeOverlay: {fadeOverlay != null}, NodeContainer: {nodeContainer != null}");
+                Debug.LogError($"ExpeditionUIComponent: Missing critical UI elements! PopoutContainer: {popoutContainer != null}, FlavourText: {flavourText != null}, ContinueButton: {continueButton != null}, FadeOverlay: {fadeOverlay != null}, NodeContainer: {nodeContainer != null}");
                 isInitialized = false;
                 return;
+            }
+            if (fadeOverlay == null)
+            {
+                Debug.LogWarning("ExpeditionUIComponent: FadeOverlay not found in UXML, proceeding without fade effects.");
             }
             isInitialized = true;
         }
@@ -61,16 +64,16 @@ namespace VirulentVentures
         {
             if (isInitialized)
             {
+                Debug.Log($"ExpeditionUIComponent: Loaded UXML from {uiDocument.visualTreeAsset?.name}");
                 StartCoroutine(InitializeUIAsync());
                 SubscribeToEventBus();
-                InitializePortraits();
                 StartCoroutine(InitializeNodes());
             }
         }
 
         private IEnumerator InitializeUIAsync()
         {
-            yield return null; // Wait one frame to ensure main thread
+            yield return null;
             if (uiConfig == null)
             {
                 Debug.LogWarning("ExpeditionUIComponent: uiConfig is null, skipping style assignments.");
@@ -103,10 +106,29 @@ namespace VirulentVentures
                     eventBus.RaiseContinueClicked();
                 };
             }
-            // NEW: Style partyPanel and skillCheckPopup
+            partyPanel.style.position = Position.Absolute;
+            partyPanel.style.bottom = 50;
+            partyPanel.style.left = Length.Percent(50);
+            partyPanel.style.marginLeft = -300;
+            partyPanel.style.width = 600;
+            partyPanel.style.height = 300;
             partyPanel.style.flexDirection = FlexDirection.Row;
+            partyPanel.style.flexWrap = Wrap.Wrap;
             partyPanel.style.justifyContent = Justify.SpaceAround;
-            partyPanel.style.height = Length.Percent(20); // Bottom 20% of screen
+            partyPanel.style.alignItems = Align.Center;
+            partyPanel.style.backgroundColor = new StyleColor(new Color(0.1f, 0.1f, 0.1f, 0.8f));
+            partyPanel.style.borderTopWidth = 2;
+            partyPanel.style.borderBottomWidth = 2;
+            partyPanel.style.borderLeftWidth = 2;
+            partyPanel.style.borderRightWidth = 2;
+            partyPanel.style.borderTopColor = new StyleColor(Color.black);
+            partyPanel.style.borderBottomColor = new StyleColor(Color.black);
+            partyPanel.style.borderLeftColor = new StyleColor(Color.black);
+            partyPanel.style.borderRightColor = new StyleColor(Color.black);
+            partyPanel.style.borderTopLeftRadius = 10;
+            partyPanel.style.borderTopRightRadius = 10;
+            partyPanel.style.borderBottomLeftRadius = 10;
+            partyPanel.style.borderBottomRightRadius = 10;
             skillCheckPopup.style.display = DisplayStyle.None;
             skillCheckPopup.style.position = Position.Absolute;
             skillCheckPopup.style.top = Length.Percent(30);
@@ -156,29 +178,9 @@ namespace VirulentVentures
             flavourText = null;
             continueButton = null;
             fadeOverlay = null;
-            portraitContainer = null;
             nodeContainer = null;
-            partyPanel = null; // NEW
-            skillCheckPopup = null; // NEW
-        }
-
-        private void InitializePortraits()
-        {
-            portraitContainer = new VisualElement { name = "PortraitContainer" };
-            root.Add(portraitContainer);
-            portraitContainer.style.flexDirection = FlexDirection.Row;
-            var heroes = ExpeditionManager.Instance.GetExpedition().Party.HeroStats;
-            foreach (var hero in heroes)
-            {
-                VisualElement portrait = new VisualElement { name = $"Portrait_{hero.Id}" };
-                portrait.AddToClassList("portrait");
-                Sprite sprite = visualConfig.GetPortrait(hero.Id);
-                if (sprite != null)
-                {
-                    portrait.style.backgroundImage = new StyleBackground(sprite);
-                }
-                portraitContainer.Add(portrait);
-            }
+            partyPanel = null;
+            skillCheckPopup = null;
         }
 
         private void UpdateNodeVisuals(EventBusSO.NodeUpdateData data)
@@ -228,7 +230,12 @@ namespace VirulentVentures
 
         public void FadeToCombat(System.Action onStartLoad = null)
         {
-            if (fadeOverlay == null) return;
+            if (fadeOverlay == null)
+            {
+                Debug.LogWarning("ExpeditionUIComponent: FadeOverlay is null, skipping fade effect.");
+                onStartLoad?.Invoke();
+                return;
+            }
             StartCoroutine(FadeRoutine(onStartLoad));
         }
 
@@ -278,9 +285,8 @@ namespace VirulentVentures
             eventBus.OnNodeUpdated += UpdateNodeVisuals;
             eventBus.OnSceneTransitionCompleted += UpdateUI;
             eventBus.OnSceneTransitionCompleted += UpdateNodeVisuals;
-            eventBus.OnPartyUpdated += UpdatePortraits;
-            eventBus.OnPartyUpdated += UpdatePartyPanel; // NEW: Update party panel on party changes
-            eventBus.OnVirusSeeded += UpdateVirusIcons; // NEW: Update viruses in popup
+            eventBus.OnPartyUpdated += UpdatePartyPanel;
+            eventBus.OnVirusSeeded += UpdateVirusIcons;
         }
 
         private void UnsubscribeFromEventBus()
@@ -289,9 +295,8 @@ namespace VirulentVentures
             eventBus.OnNodeUpdated -= UpdateNodeVisuals;
             eventBus.OnSceneTransitionCompleted -= UpdateUI;
             eventBus.OnSceneTransitionCompleted -= UpdateNodeVisuals;
-            eventBus.OnPartyUpdated -= UpdatePortraits;
-            eventBus.OnPartyUpdated -= UpdatePartyPanel; // NEW
-            eventBus.OnVirusSeeded -= UpdateVirusIcons; // NEW
+            eventBus.OnPartyUpdated -= UpdatePartyPanel;
+            eventBus.OnVirusSeeded -= UpdateVirusIcons;
         }
 
         private void UpdateUI(EventBusSO.NodeUpdateData data)
@@ -303,11 +308,10 @@ namespace VirulentVentures
             {
                 flavourText.text = nodes[currentIndex].IsCombat && nodes[currentIndex].Completed ? "Combat Won!" : nodes[currentIndex].FlavourText;
                 popoutContainer.style.display = (nodes[currentIndex].IsCombat && !nodes[currentIndex].Completed || currentIndex == 0) ? DisplayStyle.None : DisplayStyle.Flex;
-                // NEW: Show skill check popup for non-combat
                 if (!nodes[currentIndex].IsCombat && !nodes[currentIndex].Completed)
                 {
                     skillCheckPopup.style.display = DisplayStyle.Flex;
-                    skillCheckLabel.text = "Skill Check: " + nodes[currentIndex].FlavourText; // Stub - extend with skill details
+                    skillCheckLabel.text = "Skill Check: " + nodes[currentIndex].FlavourText;
                 }
                 else
                 {
@@ -316,50 +320,77 @@ namespace VirulentVentures
             }
         }
 
-        private void UpdatePortraits(PartyData partyData)
-        {
-            if (!isInitialized || portraitContainer == null) return;
-            portraitContainer.Clear();
-            foreach (var hero in partyData.HeroStats)
-            {
-                VisualElement portrait = new VisualElement { name = $"Portrait_{hero.Id}" };
-                portrait.AddToClassList("portrait");
-                Sprite sprite = visualConfig.GetPortrait(hero.Id);
-                if (sprite != null)
-                {
-                    portrait.style.backgroundImage = new StyleBackground(sprite);
-                }
-                portraitContainer.Add(portrait);
-            }
-        }
-
-        // NEW: Update party panel with stats and viruses
         private void UpdatePartyPanel(PartyData partyData)
         {
             if (!isInitialized || partyPanel == null) return;
             partyPanel.Clear();
-            foreach (var hero in partyData.GetHeroes())
+            var heroes = partyData.GetHeroes()?.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList() ?? new List<CharacterStats>();
+            for (int i = 0; i < 4; i++)
             {
-                VisualElement heroCard = new VisualElement { name = $"HeroCard_{hero.Id}" };
+                VisualElement heroCard = new VisualElement { name = $"HeroCard_{(i < heroes.Count ? heroes[i].Id : "Empty")}" };
                 heroCard.AddToClassList("hero-card");
-                Label statsLabel = new Label($"HP: {hero.Health}/{hero.MaxHealth} Morale: {hero.Morale}/{hero.MaxMorale}");
-                heroCard.Add(statsLabel);
-                VisualElement viruses = new VisualElement { name = "Viruses" };
-                foreach (var virus in hero.Infections)
+
+                VisualElement portrait = new VisualElement { name = $"Portrait_{(i < heroes.Count ? heroes[i].Id : "Empty")}" };
+                portrait.AddToClassList("portrait");
+                if (i < heroes.Count && heroes[i] != null)
                 {
-                    Image virusIcon = new Image();
-                    virusIcon.image = virus.Sprite?.texture; // Use virus sprite
-                    virusIcon.style.width = 20;
-                    virusIcon.style.height = 20;
-                    virusIcon.tooltip = virus.DisplayName + " (" + virus.RarityString + ")";
-                    viruses.Add(virusIcon);
+                    Sprite sprite = visualConfig.GetPortrait(heroes[i].Id);
+                    if (sprite != null)
+                    {
+                        portrait.style.backgroundImage = new StyleBackground(sprite);
+                    }
+                    else
+                    {
+                        portrait.style.backgroundColor = new StyleColor(Color.gray);
+                    }
+                    if (heroes[i].Health <= 0) portrait.AddToClassList("portrait-dead");
+                    portrait.tooltip = $"Health: {heroes[i].Health}/{heroes[i].MaxHealth}, Morale: {heroes[i].Morale}/{heroes[i].MaxMorale}";
+                }
+                else
+                {
+                    portrait.style.backgroundColor = new StyleColor(Color.gray);
+                    portrait.tooltip = "Empty Slot";
+                }
+                portrait.style.width = 100;
+                portrait.style.height = 100;
+                heroCard.Add(portrait);
+
+                VisualElement barsContainer = new VisualElement();
+                barsContainer.AddToClassList("bars-container");
+                VisualElement healthBar = new VisualElement();
+                healthBar.AddToClassList("health-bar");
+                float healthPct = i < heroes.Count && heroes[i].MaxHealth > 0 ? (float)heroes[i].Health / heroes[i].MaxHealth * 100f : 0f;
+                healthBar.style.width = Length.Percent(healthPct);
+                barsContainer.Add(healthBar);
+                VisualElement moraleBar = new VisualElement();
+                moraleBar.AddToClassList("morale-bar");
+                float moralePct = i < heroes.Count && heroes[i].MaxMorale > 0 ? (float)heroes[i].Morale / heroes[i].MaxMorale * 100f : 0f;
+                moraleBar.style.width = Length.Percent(moralePct);
+                barsContainer.Add(moraleBar);
+                heroCard.Add(barsContainer);
+
+                VisualElement viruses = new VisualElement { name = "Viruses" };
+                viruses.AddToClassList("viruses-container");
+                viruses.style.flexDirection = FlexDirection.Row;
+                viruses.style.flexWrap = Wrap.Wrap;
+                if (i < heroes.Count && heroes[i] != null)
+                {
+                    foreach (var virus in heroes[i].Infections)
+                    {
+                        Image virusIcon = new Image();
+                        virusIcon.image = virus.Sprite?.texture ?? Texture2D.grayTexture;
+                        virusIcon.style.width = 20;
+                        virusIcon.style.height = 20;
+                        virusIcon.tooltip = $"{virus.DisplayName} ({virus.RarityString})";
+                        viruses.Add(virusIcon);
+                    }
                 }
                 heroCard.Add(viruses);
+
                 partyPanel.Add(heroCard);
             }
         }
 
-        // NEW: Update virus icons in skill check popup on failure
         private void UpdateVirusIcons(EventBusSO.VirusSeededData data)
         {
             if (!isInitialized || virusIconsContainer == null) return;
