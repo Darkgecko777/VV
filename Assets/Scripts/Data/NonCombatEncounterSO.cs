@@ -23,10 +23,13 @@ namespace VirulentVentures
         [SerializeField] private int difficultyCheck = 10; // DC
         [SerializeField] private string successOutcome; // e.g., "moraleBoost:10;loot:relic"
         [SerializeField] private string failureOutcome; // e.g., "seedVirus:BogRot;healthLoss:5"
-
+        [SerializeField, TextArea] private string successText = "Success!";
+        [SerializeField, TextArea] private string failureText = "Failure!";
         // Natural virus seeding (optional per encounter)
         [SerializeField] private VirusSO[] naturalVirusPool;
         [SerializeField, Range(0f, 1f)] private float naturalVirusChance = 0.2f;
+        public string FailureText => failureText;
+        public string SuccessText => successText;
 
         public string EncounterName => encounterName;
         public string Description => description;

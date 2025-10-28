@@ -162,19 +162,78 @@ namespace VirulentVentures
         {
             var encounter = resolveData.encounter;
             var node = resolveData.node;
-            var party = partyData.GetHeroes();
+            var heroes = partyData.GetHeroes();
 
-            int checkValue = GetPartySkillValue(party, encounter.SkillType, encounter.CheckMode);
+            // Step 1: Determine testing hero(es) based on CheckMode
+            List<CharacterStats> testingHeroes = GetTestingHeroes(heroes, encounter.CheckMode);
+
+            // Step 2: Compute skill check value and determine success
+            int checkValue = GetPartySkillValue(heroes, encounter.SkillType, encounter.CheckMode);
             bool success = checkValue >= encounter.DifficultyCheck;
 
-            string result = success
-                ? ParseAndApplyOutcome(encounter.SuccessOutcome, party)
-                : ParseAndApplyOutcome(encounter.FailureOutcome, party, node.SeededViruses);
+            // Step 3: Apply base outcome and get narrative text
+            string outcomeText = success ? encounter.SuccessText : encounter.FailureText; // New fields for flavor
+            string result = ParseAndApplyOutcome(success ? encounter.SuccessOutcome : encounter.FailureOutcome, heroes);
+
+            // Step 4: Always expose testing hero(es) to natural viruses (decoupled from success)
+            string virusLog = "";
+            if (encounter.NaturalVirusPool != null && encounter.NaturalVirusPool.Length > 0)
+            {
+                foreach (var hero in testingHeroes)
+                {
+                    foreach (var virus in encounter.NaturalVirusPool)
+                    {
+                        float infectionChance = Mathf.Clamp01(0.15f + (int)virus.Rarity * 0.05f - (hero.Immunity / 100f));
+                        if (Random.value <= infectionChance)
+                        {
+                            hero.Infections.Add(virus);
+                            virusLog += $" {hero.Id} caught {virus.DisplayName}!";
+                            eventBus.RaiseVirusSeeded(virus, hero);
+                        }
+                    }
+                }
+            }
+
+            // Step 5: On failure only, apply seeded (environmental/player) viruses to random hero
+            if (!success && node.SeededViruses != null)
+            {
+                foreach (var v in node.SeededViruses)
+                {
+                    if (heroes.Count > 0)
+                    {
+                        var target = heroes[Random.Range(0, heroes.Count)];
+                        target.Infections.Add(v);
+                        virusLog += $" Env: {target.Id} caught {v.DisplayName}!";
+                        eventBus.RaiseVirusSeeded(v, target);
+                    }
+                }
+            }
+
+            // Step 6: Combine logs (append virus messages only if any occurred)
+            string finalResult = outcomeText + (string.IsNullOrEmpty(result) ? "" : " " + result) + virusLog;
 
             node.Completed = true;
-            eventBus.RaiseNonCombatResolved(result, success);
+            eventBus.RaiseNonCombatResolved(finalResult, success);
             eventBus.RaisePartyUpdated(partyData);
             eventBus.RaiseNodeUpdated(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+        }
+
+        // Helper: Get heroes performing the check (for virus exposure)
+        private List<CharacterStats> GetTestingHeroes(List<CharacterStats> heroes, CheckMode mode)
+        {
+            if (heroes == null || heroes.Count == 0) return new List<CharacterStats>();
+
+            switch (mode)
+            {
+                case CheckMode.Leader:
+                    return new List<CharacterStats> { heroes[0] };
+                case CheckMode.Best:
+                case CheckMode.Worst:
+                case CheckMode.AllWeakestLink:
+                    return heroes; // All participate (or scan for best/worst, but expose all for simplicity/risk)
+                default:
+                    return heroes;
+            }
         }
 
         private int GetPartySkillValue(List<CharacterStats> heroes, SkillType type, CheckMode mode)
@@ -236,27 +295,14 @@ namespace VirulentVentures
                         {
                             var target = heroes[Random.Range(0, heroes.Count)];
                             target.Infections.Add(virusSO);
-                            log += $"Seeded {virusSO.DisplayName}. ";
+                            log += $"Forced: {virusSO.DisplayName}. ";
                             eventBus.RaiseVirusSeeded(virusSO, target);
                         }
                         break;
                 }
             }
 
-            if (extraViruses != null)
-            {
-                foreach (var v in extraViruses)
-                {
-                    if (heroes.Count > 0)
-                    {
-                        var target = heroes[Random.Range(0, heroes.Count)];
-                        target.Infections.Add(v);
-                        log += $"Natural: {v.DisplayName}. ";
-                        eventBus.RaiseVirusSeeded(v, target);
-                    }
-                }
-            }
-
+            // Extra viruses (seeded) handled outside now
             return log.Trim();
         }
 
