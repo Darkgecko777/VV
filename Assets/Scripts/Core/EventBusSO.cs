@@ -76,7 +76,7 @@ namespace VirulentVentures
             public float speed;
         }
 
-        // === NEW: NON-COMBAT EVENT STRUCTS ===
+        // === NON-COMBAT EVENT STRUCTS ===
         [System.Serializable]
         public struct NonCombatEncounterData
         {
@@ -94,8 +94,9 @@ namespace VirulentVentures
         [System.Serializable]
         public struct NonCombatResultData
         {
-            public string result;
+            public string result;     // effects + virus logs
             public bool success;
+            public string narrative;  // success/failure flavor text from SO
         }
 
         public event Action<LogData> OnLogMessage;
@@ -126,7 +127,7 @@ namespace VirulentVentures
         public event Action OnCureInfections;
         public event Action<float> OnRequestSetCombatSpeed;
 
-        // === NEW: NON-COMBAT EVENTS ===
+        // === NON-COMBAT EVENTS ===
         public event Action<NonCombatEncounterData> OnNonCombatEncounter;
         public event Action<NonCombatResolveData> OnNonCombatResolveRequested;
         public event Action<NonCombatResultData> OnNonCombatResolved;
@@ -267,7 +268,7 @@ namespace VirulentVentures
             OnRequestSetCombatSpeed?.Invoke(speed);
         }
 
-        // === NEW: NON-COMBAT RAISE METHODS ===
+        // === NON-COMBAT RAISE METHODS ===
         public void RaiseNonCombatEncounter(NonCombatEncounterSO encounter, NodeData node)
         {
             OnNonCombatEncounter?.Invoke(new NonCombatEncounterData { encounter = encounter, node = node });
@@ -278,9 +279,14 @@ namespace VirulentVentures
             OnNonCombatResolveRequested?.Invoke(new NonCombatResolveData { encounter = encounter, node = node });
         }
 
-        public void RaiseNonCombatResolved(string result, bool success)
+        public void RaiseNonCombatResolved(string result, bool success, string narrative = "")
         {
-            OnNonCombatResolved?.Invoke(new NonCombatResultData { result = result, success = success });
+            OnNonCombatResolved?.Invoke(new NonCombatResultData
+            {
+                result = result,
+                success = success,
+                narrative = narrative
+            });
         }
     }
 }

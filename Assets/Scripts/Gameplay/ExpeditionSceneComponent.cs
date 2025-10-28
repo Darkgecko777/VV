@@ -112,7 +112,6 @@ namespace VirulentVentures
 
             viewComponent?.SetContinueButtonEnabled(true);
 
-            // Skip non-combat UI for Temple (node 0)
             if (data.currentIndex == 0)
             {
                 eventBus.RaiseLogMessage(node.FlavourText, Color.white);
@@ -164,18 +163,24 @@ namespace VirulentVentures
             var node = resolveData.node;
             var heroes = partyData.GetHeroes();
 
-            // Step 1: Determine testing hero(es) based on CheckMode
+            // DEBUG 1: Encounter data
+            Debug.Log($"[NONCOMBAT] Encounter: {encounter?.EncounterName ?? "NULL"}");
+            Debug.Log($"[NONCOMBAT] SuccessText: \"{encounter?.SuccessText}\"");
+            Debug.Log($"[NONCOMBAT] FailureText: \"{encounter?.FailureText}\"");
+
             List<CharacterStats> testingHeroes = GetTestingHeroes(heroes, encounter.CheckMode);
 
-            // Step 2: Compute skill check value and determine success
             int checkValue = GetPartySkillValue(heroes, encounter.SkillType, encounter.CheckMode);
             bool success = checkValue >= encounter.DifficultyCheck;
 
-            // Step 3: Apply base outcome and get narrative text
-            string outcomeText = success ? encounter.SuccessText : encounter.FailureText; // New fields for flavor
-            string result = ParseAndApplyOutcome(success ? encounter.SuccessOutcome : encounter.FailureOutcome, heroes);
+            // DEBUG 2: Skill check
+            Debug.Log($"[NONCOMBAT] Check: {encounter.SkillType} ({encounter.CheckMode}) = {checkValue} vs DC {encounter.DifficultyCheck} → {(success ? "SUCCESS" : "FAILURE")}");
 
-            // Step 4: Always expose testing hero(es) to natural viruses (decoupled from success)
+            string effectLog = ParseAndApplyOutcome(success ? encounter.SuccessOutcome : encounter.FailureOutcome, heroes);
+
+            // DEBUG 3: Effects
+            Debug.Log($"[NONCOMBAT] EffectLog: \"{effectLog}\"");
+
             string virusLog = "";
             if (encounter.NaturalVirusPool != null && encounter.NaturalVirusPool.Length > 0)
             {
@@ -183,18 +188,18 @@ namespace VirulentVentures
                 {
                     foreach (var virus in encounter.NaturalVirusPool)
                     {
-                        float infectionChance = Mathf.Clamp01(0.15f + (int)virus.Rarity * 0.05f - (hero.Immunity / 100f));
-                        if (Random.value <= infectionChance)
+                        float chance = Mathf.Clamp01(0.15f + (int)virus.Rarity * 0.05f - (hero.Immunity / 100f));
+                        if (Random.value <= chance)
                         {
                             hero.Infections.Add(virus);
                             virusLog += $" {hero.Id} caught {virus.DisplayName}!";
                             eventBus.RaiseVirusSeeded(virus, hero);
+                            Debug.Log($"[NONCOMBAT] VIRUS: {hero.Id} infected with {virus.DisplayName} (chance: {chance:F2})");
                         }
                     }
                 }
             }
 
-            // Step 5: On failure only, apply seeded (environmental/player) viruses to random hero
             if (!success && node.SeededViruses != null)
             {
                 foreach (var v in node.SeededViruses)
@@ -205,35 +210,36 @@ namespace VirulentVentures
                         target.Infections.Add(v);
                         virusLog += $" Env: {target.Id} caught {v.DisplayName}!";
                         eventBus.RaiseVirusSeeded(v, target);
+                        Debug.Log($"[NONCOMBAT] SEEDED: {target.Id} infected with {v.DisplayName}");
                     }
                 }
             }
 
-            // Step 6: Combine logs (append virus messages only if any occurred)
-            string finalResult = outcomeText + (string.IsNullOrEmpty(result) ? "" : " " + result) + virusLog;
+            string finalResult = string.IsNullOrEmpty(effectLog) ? "" : effectLog;
+            finalResult += virusLog;
+
+            // DEBUG 4: Final narrative
+            string narrative = success ? encounter.SuccessText : encounter.FailureText;
+            Debug.Log($"[NONCOMBAT] Final Narrative: \"{narrative}\"");
+            Debug.Log($"[NONCOMBAT] Final Result (effects+viruses): \"{finalResult}\"");
 
             node.Completed = true;
-            eventBus.RaiseNonCombatResolved(finalResult, success);
+
+            // DEBUG 5: Event raised
+            Debug.Log($"[NONCOMBAT] RAISING EVENT: narrative=\"{narrative}\", result=\"{finalResult}\", success={success}");
+            eventBus.RaiseNonCombatResolved(finalResult, success, narrative);
             eventBus.RaisePartyUpdated(partyData);
             eventBus.RaiseNodeUpdated(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
         }
 
-        // Helper: Get heroes performing the check (for virus exposure)
         private List<CharacterStats> GetTestingHeroes(List<CharacterStats> heroes, CheckMode mode)
         {
             if (heroes == null || heroes.Count == 0) return new List<CharacterStats>();
-
-            switch (mode)
+            return mode switch
             {
-                case CheckMode.Leader:
-                    return new List<CharacterStats> { heroes[0] };
-                case CheckMode.Best:
-                case CheckMode.Worst:
-                case CheckMode.AllWeakestLink:
-                    return heroes; // All participate (or scan for best/worst, but expose all for simplicity/risk)
-                default:
-                    return heroes;
-            }
+                CheckMode.Leader => new List<CharacterStats> { heroes[0] },
+                _ => heroes
+            };
         }
 
         private int GetPartySkillValue(List<CharacterStats> heroes, SkillType type, CheckMode mode)
@@ -264,9 +270,9 @@ namespace VirulentVentures
             _ => 0
         };
 
-        private string ParseAndApplyOutcome(string outcome, List<CharacterStats> heroes, List<VirusSO> extraViruses = null)
+        private string ParseAndApplyOutcome(string outcome, List<CharacterStats> heroes)
         {
-            if (string.IsNullOrEmpty(outcome)) return "No effect.";
+            if (string.IsNullOrEmpty(outcome)) return "";
             var parts = outcome.Split(';');
             string log = "";
 
@@ -302,7 +308,6 @@ namespace VirulentVentures
                 }
             }
 
-            // Extra viruses (seeded) handled outside now
             return log.Trim();
         }
 

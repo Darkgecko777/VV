@@ -13,13 +13,15 @@ MonoBehaviour:
   m_Name: TestEncounter
   m_EditorClassIdentifier: 
   encounterName: Mucky Quagmire
-  description: Party Slips in Mud
+  description: A steep embankment blocks the way.
   vector: 3
   skillType: 3
   checkMode: 1
   difficultyCheck: 10
   successOutcome: 
   failureOutcome: 
+  successText: Success!
+  failureText: The party slips in mud.
   naturalVirusPool:
   - {fileID: 11400000, guid: 65c0f835874089d4f8ad8615b4d6776f, type: 2}
   naturalVirusChance: 0.606

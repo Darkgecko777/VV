@@ -238,32 +238,35 @@ namespace VirulentVentures
 
             var node = nodes[currentIndex];
 
-            // === COMBAT NODE HANDLING ===
+            // === DECLARE showContinue once at the top ===
+            bool showContinue;
+
+            // === PRESERVE RESULT TEXT AFTER NON-COMBAT RESOLVE ===
+            if (!node.IsCombat && node.Completed)
+            {
+                showContinue = true;
+                continueButton.style.display = showContinue ? DisplayStyle.Flex : DisplayStyle.None;
+                return;
+            }
+
+            // === NORMAL FLOW ===
             if (node.IsCombat && !node.Completed)
             {
                 popoutContainer.style.display = DisplayStyle.None;
                 return;
             }
 
-            // === TEXT & POPOUT VISIBILITY ===
             flavourText.text = node.IsCombat && node.Completed ? "Combat Won!" : node.FlavourText;
 
-            // Show popout only for non-combat nodes with encounters (index > 0)
             bool showPopout = !node.IsCombat && currentIndex != 0;
             popoutContainer.style.display = showPopout ? DisplayStyle.Flex : DisplayStyle.None;
 
-            // Reset non-combat panels
             skillCheckPanel.style.display = DisplayStyle.None;
             outcomePreview.style.display = DisplayStyle.None;
             resolveButton.style.display = DisplayStyle.None;
             resultPanel.style.display = DisplayStyle.None;
 
-            // === CONTINUE BUTTON VISIBILITY ===
-            // Show for:
-            // - All non-combat nodes (including temple at index 0)
-            // - Completed combat nodes
-            // - After non-combat result
-            bool showContinue = !node.IsCombat || (node.IsCombat && node.Completed);
+            showContinue = !node.IsCombat || (node.IsCombat && node.Completed);
             continueButton.style.display = showContinue ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
@@ -297,15 +300,22 @@ namespace VirulentVentures
 
         public void ShowNonCombatResult(EventBusSO.NonCombatResultData data)
         {
+            // Hide encounter UI
             skillCheckPanel.style.display = DisplayStyle.None;
             outcomePreview.style.display = DisplayStyle.None;
             resolveButton.style.display = DisplayStyle.None;
+            resultPanel.style.display = DisplayStyle.None;
 
-            resultText.text = data.result;
-            resultPanel.style.display = DisplayStyle.Flex;
+            // Replace description with narrative + any effects/viruses
+            flavourText.text = data.narrative;
+            if (!string.IsNullOrEmpty(data.result))
+                flavourText.text += " " + data.result;
+
+            flavourText.style.color = data.success
+                ? new StyleColor(Color.green)
+                : new StyleColor(Color.red);
+
             continueButton.style.display = DisplayStyle.Flex;
-
-            resultText.style.color = data.success ? new StyleColor(Color.green) : new StyleColor(Color.red);
         }
 
         private string FormatOutcome(string outcome)
