@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -39,6 +38,7 @@ namespace VirulentVentures
         void Awake()
         {
             if (!ValidateReferences()) { isInitialized = false; return; }
+
             root = uiDocument.rootVisualElement;
             popoutContainer = root.Q<VisualElement>("PopoutContainer");
             flavourText = popoutContainer?.Q<Label>("FlavourText");
@@ -185,7 +185,6 @@ namespace VirulentVentures
             fadeOverlay.style.opacity = 1f;
             onStartLoad?.Invoke();
             yield return null;
-
             var asyncOp = ExpeditionManager.Instance.CurrentAsyncOp;
             if (asyncOp == null)
             {
@@ -232,25 +231,40 @@ namespace VirulentVentures
         private void UpdateUI(EventBusSO.NodeUpdateData data)
         {
             if (!isInitialized || flavourText == null) return;
+
             var nodes = data.nodes;
             int currentIndex = data.currentIndex;
             if (nodes == null || currentIndex < 0 || currentIndex >= nodes.Count) return;
 
             var node = nodes[currentIndex];
+
+            // === COMBAT NODE HANDLING ===
             if (node.IsCombat && !node.Completed)
             {
                 popoutContainer.style.display = DisplayStyle.None;
                 return;
             }
 
+            // === TEXT & POPOUT VISIBILITY ===
             flavourText.text = node.IsCombat && node.Completed ? "Combat Won!" : node.FlavourText;
-            popoutContainer.style.display = (node.IsCombat && !node.Completed || currentIndex == 0) ? DisplayStyle.None : DisplayStyle.Flex;
 
+            // Show popout only for non-combat nodes with encounters (index > 0)
+            bool showPopout = !node.IsCombat && currentIndex != 0;
+            popoutContainer.style.display = showPopout ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Reset non-combat panels
             skillCheckPanel.style.display = DisplayStyle.None;
             outcomePreview.style.display = DisplayStyle.None;
             resolveButton.style.display = DisplayStyle.None;
             resultPanel.style.display = DisplayStyle.None;
-            continueButton.style.display = node.IsCombat ? DisplayStyle.None : DisplayStyle.Flex;
+
+            // === CONTINUE BUTTON VISIBILITY ===
+            // Show for:
+            // - All non-combat nodes (including temple at index 0)
+            // - Completed combat nodes
+            // - After non-combat result
+            bool showContinue = !node.IsCombat || (node.IsCombat && node.Completed);
+            continueButton.style.display = showContinue ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         // ---- RESOLVE BUTTON WIRING ----
@@ -258,20 +272,17 @@ namespace VirulentVentures
         {
             currentEncounter = data.encounter;
             currentNode = data.node;
-
             flavourText.text = data.encounter.Description;
             popoutContainer.style.display = DisplayStyle.Flex;
-
             skillCheckLabel.text = $"Skill Check: {data.encounter.SkillType} ({data.encounter.CheckMode}) vs DC {data.encounter.DifficultyCheck}";
             skillCheckPanel.style.display = DisplayStyle.Flex;
-
             successLabel.text = FormatOutcome(data.encounter.SuccessOutcome);
             failureLabel.text = FormatOutcome(data.encounter.FailureOutcome);
             outcomePreview.style.display = DisplayStyle.Flex;
 
             // Wire Resolve button
             resolveButton.style.display = DisplayStyle.Flex;
-            resolveButton.clicked -= OnResolveClicked; // prevent duplicate
+            resolveButton.clicked -= OnResolveClicked;
             resolveButton.clicked += OnResolveClicked;
 
             resultPanel.style.display = DisplayStyle.None;
@@ -308,6 +319,7 @@ namespace VirulentVentures
             if (!isInitialized || partyPanel == null) return;
             partyPanel.Clear();
             var heroes = partyData.GetHeroes()?.OrderBy(h => CharacterLibrary.GetHeroData(h.Id).PartyPosition).ToList() ?? new List<CharacterStats>();
+
             for (int i = 0; i < 4; i++)
             {
                 var heroCard = new VisualElement { name = $"HeroCard_{(i < heroes.Count ? heroes[i].Id : "Empty")}" };

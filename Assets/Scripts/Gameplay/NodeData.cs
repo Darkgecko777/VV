@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace VirulentVentures
@@ -16,7 +16,7 @@ namespace VirulentVentures
         [SerializeField] private bool completed;
         [SerializeField] private TransmissionVector vector;
 
-        // NEW � stores the actual encounter SO
+        // NEW – stores the actual encounter SO
         [SerializeField] private NonCombatEncounterSO nonCombatEncounter;
 
         public List<CharacterStats> Monsters => monsters;
