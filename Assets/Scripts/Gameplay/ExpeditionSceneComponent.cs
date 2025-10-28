@@ -24,6 +24,7 @@ namespace VirulentVentures
             eventBus.OnNodeUpdated += HandleNodeUpdate;
             eventBus.OnSceneTransitionCompleted += HandleNodeUpdate;
             eventBus.OnContinueClicked += HandleContinueClicked;
+            eventBus.OnNonCombatResolveRequested += HandleNonCombatResolve;
 
             var expedition = ExpeditionManager.Instance.GetExpedition();
             if (!expedition.IsValid())
@@ -43,6 +44,7 @@ namespace VirulentVentures
                 eventBus.OnNodeUpdated -= HandleNodeUpdate;
                 eventBus.OnSceneTransitionCompleted -= HandleNodeUpdate;
                 eventBus.OnContinueClicked -= HandleContinueClicked;
+                eventBus.OnNonCombatResolveRequested -= HandleNonCombatResolve;
             }
         }
 
@@ -64,7 +66,7 @@ namespace VirulentVentures
             bool isCombat = Random.value > 0.5f;
 
             var nonCombatGen = gameObject.AddComponent<NonCombatNodeGenerator>();
-            nonCombatGen.InitializeCache();                     // ensure cache is ready
+            nonCombatGen.InitializeCache();
             nodes.Add(nonCombatGen.GenerateNonCombatNode("", 1, 0, isTempleNode: true));
 
             var combatGen = gameObject.AddComponent<CombatNodeGenerator>();
@@ -110,10 +112,9 @@ namespace VirulentVentures
 
             viewComponent?.SetContinueButtonEnabled(true);
 
-            // === FIX: Skip temple node (index 0) ===
-            if (data.currentIndex == 0) // Temple node
+            // Skip non-combat UI for Temple (node 0)
+            if (data.currentIndex == 0)
             {
-                // Show flavour text only
                 eventBus.RaiseLogMessage(node.FlavourText, Color.white);
                 return;
             }
@@ -155,6 +156,108 @@ namespace VirulentVentures
                 eventBus.RaiseNodeUpdated(expedition.NodeData, expedition.CurrentNodeIndex);
                 ExpeditionManager.Instance.SaveProgress();
             }
+        }
+
+        private void HandleNonCombatResolve(EventBusSO.NonCombatResolveData resolveData)
+        {
+            var encounter = resolveData.encounter;
+            var node = resolveData.node;
+            var party = partyData.GetHeroes();
+
+            int checkValue = GetPartySkillValue(party, encounter.SkillType, encounter.CheckMode);
+            bool success = checkValue >= encounter.DifficultyCheck;
+
+            string result = success
+                ? ParseAndApplyOutcome(encounter.SuccessOutcome, party)
+                : ParseAndApplyOutcome(encounter.FailureOutcome, party, node.SeededViruses);
+
+            node.Completed = true;
+            eventBus.RaiseNonCombatResolved(result, success);
+            eventBus.RaisePartyUpdated(partyData);
+            eventBus.RaiseNodeUpdated(expeditionData.NodeData, expeditionData.CurrentNodeIndex);
+        }
+
+        private int GetPartySkillValue(List<CharacterStats> heroes, SkillType type, CheckMode mode)
+        {
+            if (heroes == null || heroes.Count == 0) return 0;
+            var values = heroes.Select(h => GetStat(h, type)).Where(v => v > 0).ToList();
+            if (values.Count == 0) return 0;
+
+            return mode switch
+            {
+                CheckMode.Best => values.Max(),
+                CheckMode.Worst => values.Min(),
+                CheckMode.Leader => GetStat(heroes[0], type),
+                CheckMode.AllWeakestLink => values.Min(),
+                _ => (int)values.Average()
+            };
+        }
+
+        private int GetStat(CharacterStats hero, SkillType type) => type switch
+        {
+            SkillType.Speed => hero.Speed,
+            SkillType.Attack => hero.Attack,
+            SkillType.Defense => hero.Defense,
+            SkillType.Evasion => hero.Evasion,
+            SkillType.Immunity => hero.Immunity,
+            SkillType.Morale => hero.Morale,
+            SkillType.Health => hero.Health,
+            _ => 0
+        };
+
+        private string ParseAndApplyOutcome(string outcome, List<CharacterStats> heroes, List<VirusSO> extraViruses = null)
+        {
+            if (string.IsNullOrEmpty(outcome)) return "No effect.";
+            var parts = outcome.Split(';');
+            string log = "";
+
+            foreach (var part in parts)
+            {
+                var kv = part.Split(':');
+                if (kv.Length < 2) continue;
+                string key = kv[0].Trim().ToLower();
+                string val = kv[1].Trim();
+
+                switch (key)
+                {
+                    case "moraleboost":
+                        int m = int.TryParse(val, out m) ? m : 0;
+                        heroes.ForEach(h => h.Morale = Mathf.Min(h.Morale + m, h.MaxMorale));
+                        log += $"Morale +{m}. ";
+                        break;
+                    case "healthloss":
+                        int h = int.TryParse(val, out h) ? h : 0;
+                        heroes.ForEach(hero => hero.Health = Mathf.Max(hero.Health - h, 0));
+                        log += $"Health -{h}. ";
+                        break;
+                    case "seedvirus":
+                        var virusSO = Resources.Load<VirusSO>($"Viruses/{val}");
+                        if (virusSO != null && heroes.Count > 0)
+                        {
+                            var target = heroes[Random.Range(0, heroes.Count)];
+                            target.Infections.Add(virusSO);
+                            log += $"Seeded {virusSO.DisplayName}. ";
+                            eventBus.RaiseVirusSeeded(virusSO, target);
+                        }
+                        break;
+                }
+            }
+
+            if (extraViruses != null)
+            {
+                foreach (var v in extraViruses)
+                {
+                    if (heroes.Count > 0)
+                    {
+                        var target = heroes[Random.Range(0, heroes.Count)];
+                        target.Infections.Add(v);
+                        log += $"Natural: {v.DisplayName}. ";
+                        eventBus.RaiseVirusSeeded(v, target);
+                    }
+                }
+            }
+
+            return log.Trim();
         }
 
         private bool CheckForHeroDeaths()

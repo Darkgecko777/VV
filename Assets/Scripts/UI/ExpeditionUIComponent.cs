@@ -22,6 +22,7 @@ namespace VirulentVentures
         private VisualElement nodeContainer;
         private VisualElement partyPanel;
 
+        // Non-combat UI
         private VisualElement skillCheckPanel;
         private Label skillCheckLabel;
         private VisualElement outcomePreview;
@@ -58,7 +59,7 @@ namespace VirulentVentures
 
             if (popoutContainer == null || flavourText == null || continueButton == null || nodeContainer == null)
             {
-                Debug.LogError("Missing critical UI elements!");
+                Debug.LogError("ExpeditionUIComponent: Missing critical UI elements!");
                 isInitialized = false;
                 return;
             }
@@ -252,9 +253,9 @@ namespace VirulentVentures
             continueButton.style.display = node.IsCombat ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
+        // ---- RESOLVE BUTTON WIRING ----
         public void ShowNonCombatEncounter(EventBusSO.NonCombatEncounterData data)
         {
-            // data.encounter is guaranteed non-null now
             currentEncounter = data.encounter;
             currentNode = data.node;
 
@@ -268,8 +269,9 @@ namespace VirulentVentures
             failureLabel.text = FormatOutcome(data.encounter.FailureOutcome);
             outcomePreview.style.display = DisplayStyle.Flex;
 
+            // Wire Resolve button
             resolveButton.style.display = DisplayStyle.Flex;
-            resolveButton.clicked -= OnResolveClicked;
+            resolveButton.clicked -= OnResolveClicked; // prevent duplicate
             resolveButton.clicked += OnResolveClicked;
 
             resultPanel.style.display = DisplayStyle.None;
@@ -278,6 +280,7 @@ namespace VirulentVentures
 
         private void OnResolveClicked()
         {
+            if (currentEncounter == null || currentNode == null) return;
             eventBus.RaiseNonCombatResolveRequested(currentEncounter, currentNode);
         }
 
@@ -367,12 +370,13 @@ namespace VirulentVentures
         {
             if (uiDocument == null || visualConfig == null || uiConfig == null || eventBus == null)
             {
-                Debug.LogError("Missing refs!");
+                Debug.LogError("ExpeditionUIComponent: Missing refs!");
                 return false;
             }
             return true;
         }
 
+        // Fallback UI creation
         private VisualElement CreateSkillCheckPanel()
         {
             var panel = new VisualElement { name = "SkillCheckPanel" };
