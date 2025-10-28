@@ -48,7 +48,6 @@ namespace VirulentVentures
             public CharacterStats unit;
         }
 
-
         [System.Serializable]
         public struct AttackData
         {
@@ -77,6 +76,28 @@ namespace VirulentVentures
             public float speed;
         }
 
+        // === NEW: NON-COMBAT EVENT STRUCTS ===
+        [System.Serializable]
+        public struct NonCombatEncounterData
+        {
+            public NonCombatEncounterSO encounter;
+            public NodeData node;
+        }
+
+        [System.Serializable]
+        public struct NonCombatResolveData
+        {
+            public NonCombatEncounterSO encounter;
+            public NodeData node;
+        }
+
+        [System.Serializable]
+        public struct NonCombatResultData
+        {
+            public string result;
+            public bool success;
+        }
+
         public event Action<LogData> OnLogMessage;
         public event Action<UnitUpdateData> OnUnitUpdated;
         public event Action<DamagePopupData> OnDamagePopup;
@@ -103,8 +124,14 @@ namespace VirulentVentures
         public event Action<CombatSpeedData> OnCombatSpeedChanged;
         public event Action<AttackData> OnAbilitySelected;
         public event Action OnCureInfections;
-        public event Action<float> OnRequestSetCombatSpeed; // Added for dynamic speed requests
+        public event Action<float> OnRequestSetCombatSpeed;
 
+        // === NEW: NON-COMBAT EVENTS ===
+        public event Action<NonCombatEncounterData> OnNonCombatEncounter;
+        public event Action<NonCombatResolveData> OnNonCombatResolveRequested;
+        public event Action<NonCombatResultData> OnNonCombatResolved;
+
+        // === RAISE METHODS ===
         public void RaiseLogMessage(string message, Color color)
         {
             OnLogMessage?.Invoke(new LogData { message = message, color = color });
@@ -235,9 +262,25 @@ namespace VirulentVentures
             OnCureInfections?.Invoke();
         }
 
-        public void RaiseRequestSetCombatSpeed(float speed) // Added
+        public void RaiseRequestSetCombatSpeed(float speed)
         {
             OnRequestSetCombatSpeed?.Invoke(speed);
+        }
+
+        // === NEW: NON-COMBAT RAISE METHODS ===
+        public void RaiseNonCombatEncounter(NonCombatEncounterSO encounter, NodeData node)
+        {
+            OnNonCombatEncounter?.Invoke(new NonCombatEncounterData { encounter = encounter, node = node });
+        }
+
+        public void RaiseNonCombatResolveRequested(NonCombatEncounterSO encounter, NodeData node)
+        {
+            OnNonCombatResolveRequested?.Invoke(new NonCombatResolveData { encounter = encounter, node = node });
+        }
+
+        public void RaiseNonCombatResolved(string result, bool success)
+        {
+            OnNonCombatResolved?.Invoke(new NonCombatResultData { result = result, success = success });
         }
     }
 }

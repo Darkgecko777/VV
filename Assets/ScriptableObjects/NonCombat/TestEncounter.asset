@@ -10,12 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9f6cb3c896a385498b65f43e52cc1a9, type: 3}
-  m_Name: MuckyQuagmire
+  m_Name: TestEncounter
   m_EditorClassIdentifier: 
   encounterName: Mucky Quagmire
   description: Party Slips in Mud
   vector: 3
   skillType: 3
   checkMode: 1
+  difficultyCheck: 10
   successOutcome: 
   failureOutcome: 
+  naturalVirusPool:
+  - {fileID: 11400000, guid: 65c0f835874089d4f8ad8615b4d6776f, type: 2}
+  naturalVirusChance: 0.606

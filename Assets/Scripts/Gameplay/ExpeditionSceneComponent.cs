@@ -9,7 +9,7 @@ namespace VirulentVentures
         [SerializeField] private EventBusSO eventBus;
         [SerializeField] private ExpeditionData expeditionData;
         [SerializeField] private PartyData partyData;
-        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Healer", "Scout", "TreasureHunter" };
+        [SerializeField] private List<string> fallbackHeroIds = new List<string> { "Fighter", "Monk", "Scout", "Healer" };
         [SerializeField] private CharacterPositions defaultPositions;
         [SerializeField] private EncounterData combatEncounterData;
         [SerializeField] private ExpeditionUIComponent viewComponent;
@@ -24,12 +24,16 @@ namespace VirulentVentures
             eventBus.OnNodeUpdated += HandleNodeUpdate;
             eventBus.OnSceneTransitionCompleted += HandleNodeUpdate;
             eventBus.OnContinueClicked += HandleContinueClicked;
+
             var expedition = ExpeditionManager.Instance.GetExpedition();
             if (!expedition.IsValid())
-            {
                 GenerateExpedition();
-            }
-            HandleNodeUpdate(new EventBusSO.NodeUpdateData { nodes = expedition.NodeData, currentIndex = expedition.CurrentNodeIndex });
+
+            HandleNodeUpdate(new EventBusSO.NodeUpdateData
+            {
+                nodes = expedition.NodeData,
+                currentIndex = expedition.CurrentNodeIndex
+            });
         }
 
         void OnDestroy()
@@ -46,49 +50,45 @@ namespace VirulentVentures
         {
             partyData.Reset();
             partyData.HeroIds = fallbackHeroIds;
+            partyData.PartyID = System.Guid.NewGuid().ToString();
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
-            partyData.AllowCultist = false;
+            foreach (var h in partyData.HeroStats)
+            {
+                h.Health = h.MaxHealth;
+                h.Morale = h.MaxMorale;
+            }
 
-            // Randomize total difficulty (D) for stage 1: 24-36
             int totalDifficulty = Random.Range(24, 37);
             List<NodeData> nodes = new List<NodeData>();
             int remainingDifficulty = totalDifficulty;
-            bool isCombat = Random.value > 0.5f; // Random start: combat or non-combat
+            bool isCombat = Random.value > 0.5f;
 
-            // Add temple node (R=0, non-combat)
-            var nonCombatGenerator = gameObject.AddComponent<NonCombatNodeGenerator>();
-            nodes.Add(nonCombatGenerator.GenerateNonCombatNode("", 1, 0, isTempleNode: true));
+            var nonCombatGen = gameObject.AddComponent<NonCombatNodeGenerator>();
+            nonCombatGen.InitializeCache();                     // ensure cache is ready
+            nodes.Add(nonCombatGen.GenerateNonCombatNode("", 1, 0, isTempleNode: true));
 
-            // Generate 5-7 additional nodes (6-8 total) with R=3-6
-            var combatGenerator = gameObject.AddComponent<CombatNodeGenerator>();
+            var combatGen = gameObject.AddComponent<CombatNodeGenerator>();
             while (remainingDifficulty >= 2 && nodes.Count < 8)
             {
-                int rating = Random.Range(3, 7); // R=3-6
+                int rating = Random.Range(3, 7);
                 if (remainingDifficulty < rating)
-                {
-                    if (remainingDifficulty < 2) break; // Discard remainder < 2
-                    rating = Mathf.Max(2, remainingDifficulty); // Ensure last node R≥2
-                }
+                    rating = Mathf.Max(2, remainingDifficulty);
 
-                NodeData node;
-                if (isCombat)
-                {
-                    node = combatGenerator.GenerateCombatNode("", 1, combatEncounterData, rating);
-                }
-                else
-                {
-                    node = nonCombatGenerator.GenerateNonCombatNode("", 1, rating);
-                }
+                NodeData node = isCombat
+                    ? combatGen.GenerateCombatNode("", 1, combatEncounterData, rating)
+                    : nonCombatGen.GenerateNonCombatNode("", 1, rating);
+
                 nodes.Add(node);
                 remainingDifficulty -= rating;
-                isCombat = !isCombat; // Alternate
+                isCombat = !isCombat;
             }
-            Destroy(nonCombatGenerator);
-            Destroy(combatGenerator);
+            Destroy(nonCombatGen);
+            Destroy(combatGen);
 
             expeditionData.SetNodes(nodes);
             expeditionData.CurrentNodeIndex = 0;
             expeditionData.SetParty(partyData);
+
             eventBus.RaiseExpeditionGenerated(expeditionData, partyData);
             eventBus.RaisePartyUpdated(partyData);
             eventBus.RaiseNodeUpdated(nodes, 0);
@@ -97,67 +97,58 @@ namespace VirulentVentures
         private void HandleNodeUpdate(EventBusSO.NodeUpdateData data)
         {
             if (data.nodes == null || data.currentIndex < 0 || data.currentIndex >= data.nodes.Count)
+                return;
+
+            var node = data.nodes[data.currentIndex];
+
+            if (node.IsCombat && !node.Completed)
             {
-                Debug.LogError("ExpeditionSceneComponent: Invalid node data or index!");
+                viewComponent?.SetContinueButtonEnabled(false);
+                viewComponent?.FadeToCombat(() => ExpeditionManager.Instance.TransitionToCombatScene());
                 return;
             }
 
-            var currentNode = data.nodes[data.currentIndex];
-
-            // **FIX: DISABLE BUTTON IMMEDIATELY ON COMBAT NODE**
-            if (currentNode.IsCombat && !currentNode.Completed)
-            {
-                viewComponent?.SetContinueButtonEnabled(false);  // DISABLE IMMEDIATELY
-
-                if (viewComponent != null)
-                {
-                    viewComponent.FadeToCombat(() => {
-                        var asyncOp = ExpeditionManager.Instance.TransitionToCombatScene();
-                    });
-                }
-                else
-                {
-                    ExpeditionManager.Instance.TransitionToCombatScene();
-                }
-                return;  // Exit - no more processing
-            }
-
-            // **RE-ENABLE BUTTON FOR NON-COMBAT NODES**
             viewComponent?.SetContinueButtonEnabled(true);
 
-            eventBus.RaiseLogMessage(currentNode.Completed ? "Combat Won!" : currentNode.FlavourText, Color.white);
-            eventBus.RaisePartyUpdated(partyData);
-
-            // Check for hero deaths after node processing
-            if (CheckForHeroDeaths())
+            // === FIX: Skip temple node (index 0) ===
+            if (data.currentIndex == 0) // Temple node
             {
-                Debug.Log($"ExpeditionSceneComponent: Hero death detected after node {data.currentIndex}, will transition to Temple on Continue");
+                // Show flavour text only
+                eventBus.RaiseLogMessage(node.FlavourText, Color.white);
                 return;
             }
+
+            if (!node.IsCombat && !node.Completed)
+            {
+                if (node.NonCombatEncounter == null)
+                {
+                    Debug.LogError($"Non-combat node {data.currentIndex} has no encounter SO!");
+                    return;
+                }
+                eventBus.RaiseNonCombatEncounter(node.NonCombatEncounter, node);
+                return;
+            }
+
+            eventBus.RaiseLogMessage(node.Completed ? "Combat Won!" : node.FlavourText, Color.white);
+            eventBus.RaisePartyUpdated(partyData);
+
+            if (CheckForHeroDeaths()) return;
             CheckExpeditionFailure();
         }
 
         private void HandleContinueClicked()
         {
             var expedition = ExpeditionManager.Instance.GetExpedition();
-            if (expedition == null || expedition.NodeData == null)
+            if (expedition == null || expedition.NodeData == null) return;
+
+            if (CheckForHeroDeaths())
             {
-                Debug.LogError("ExpeditionSceneComponent: Expedition or NodeData is null in HandleContinueClicked!");
+                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
                 return;
             }
 
-            // Check for hero deaths before advancing
-            if (CheckForHeroDeaths())
-            {
-                Debug.Log("ExpeditionSceneComponent: Hero death detected on Continue, transitioning to Temple");
-                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
-                return;
-            }
             if (expedition.CurrentNodeIndex >= expedition.NodeData.Count - 1)
-            {
-                Debug.Log("ExpeditionSceneComponent: Expedition completed, transitioning to Temple");
                 ExpeditionManager.Instance.TransitionToTemplePlanningScene();
-            }
             else
             {
                 expedition.CurrentNodeIndex++;
@@ -168,39 +159,23 @@ namespace VirulentVentures
 
         private bool CheckForHeroDeaths()
         {
-            if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
-            {
-                Debug.LogWarning("ExpeditionSceneComponent: HeroStats is null or empty in CheckForHeroDeaths");
-                return false;
-            }
-            bool hasDeadHero = partyData.HeroStats.Any(h => h.Type == CharacterType.Hero && h.Health <= 0);
-            if (hasDeadHero)
-            {
-                Debug.Log($"ExpeditionSceneComponent: Found dead hero(s): {string.Join(", ", partyData.HeroStats.Where(h => h.Type == CharacterType.Hero && h.Health <= 0).Select(h => h.Id))}");
-            }
-            return hasDeadHero;
+            bool dead = partyData.HeroStats.Any(h => h.Type == CharacterType.Hero && h.Health <= 0);
+            if (dead) Debug.Log("Hero death → return to Temple");
+            return dead;
         }
 
         private void CheckExpeditionFailure()
         {
-            if (partyData.HeroStats == null || partyData.HeroStats.Count == 0)
-            {
-                Debug.LogWarning("ExpeditionSceneComponent: HeroStats is null or empty in CheckExpeditionFailure, transitioning to Temple");
-                ExpeditionManager.Instance.TransitionToTemplePlanningScene();
-                return;
-            }
             if (partyData.HeroStats.All(h => h.HasRetreated || h.Health <= 0))
-            {
-                Debug.Log("ExpeditionSceneComponent: All heroes dead or retreated, transitioning to Temple");
                 ExpeditionManager.Instance.TransitionToTemplePlanningScene();
-            }
         }
 
         private bool ValidateReferences()
         {
-            if (eventBus == null || expeditionData == null || partyData == null || defaultPositions == null || combatEncounterData == null || viewComponent == null)
+            if (eventBus == null || expeditionData == null || partyData == null ||
+                defaultPositions == null || combatEncounterData == null || viewComponent == null)
             {
-                Debug.LogError($"ExpeditionSceneComponent: Missing references! EventBus: {eventBus != null}, ExpeditionData: {expeditionData != null}, PartyData: {partyData != null}, DefaultPositions: {defaultPositions != null}, CombatEncounterData: {combatEncounterData != null}, ViewComponent: {viewComponent != null}");
+                Debug.LogError("ExpeditionSceneComponent missing references!");
                 return false;
             }
             return true;

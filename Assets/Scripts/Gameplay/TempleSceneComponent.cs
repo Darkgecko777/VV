@@ -61,6 +61,10 @@ namespace VirulentVentures
             List<NodeData> nodes = new List<NodeData>();
             int remainingDifficulty = totalDifficulty;
             bool isCombat = Random.value > 0.5f;
+
+            // Initialize cache BEFORE any node generation
+            nonCombatNodeGenerator.InitializeCache();
+
             nodes.Add(nonCombatNodeGenerator.GenerateNonCombatNode("", 1, 0, isTempleNode: true));
             while (remainingDifficulty >= 2 && nodes.Count < 8)
             {
@@ -83,27 +87,10 @@ namespace VirulentVentures
                 remainingDifficulty -= rating;
                 isCombat = !isCombat;
             }
+
+            // CORRECT DEFAULT PARTY
             partyData.Reset();
-            partyData.HeroIds = new List<string>();
-            var positionMap = new Dictionary<int, string>
-            {
-                { 1, "Fighter" },
-                { 2, "Monk" },
-                { 3, "Scout" },
-                { 4, "Healer" }
-            };
-            foreach (var pos in positionMap.Keys)
-            {
-                string selectedHero = positionMap[pos];
-                if (playerProgress.UnlockedHeroes.Contains(selectedHero))
-                {
-                    partyData.HeroIds.Add(selectedHero);
-                }
-                else
-                {
-                    Debug.LogWarning($"TempleSceneComponent: Hero {selectedHero} not unlocked, skipping position {pos}");
-                }
-            }
+            partyData.HeroIds = new List<string> { "Fighter", "Monk", "Scout", "Healer" };
             partyData.PartyID = System.Guid.NewGuid().ToString();
             partyData.GenerateHeroStats(defaultPositions.heroPositions);
             foreach (var hero in partyData.HeroStats)
@@ -111,6 +98,7 @@ namespace VirulentVentures
                 hero.Health = hero.MaxHealth;
                 hero.Morale = hero.MaxMorale;
             }
+
             if (expeditionData == null)
             {
                 Debug.LogError("TempleSceneComponent: expeditionData is null in GenerateExpedition!");
@@ -142,10 +130,8 @@ namespace VirulentVentures
                 return;
             }
 
-            // FIXED: Use data.virus directly (no virusID lookup needed)
             VirusSO virus = data.virus;
 
-            // FIXED: Derive nodeIndex from current expedition context (since not in new struct)
             int nodeIndex = expeditionData.CurrentNodeIndex;
             if (nodeIndex < 0 || nodeIndex >= expeditionData.NodeData.Count)
             {
@@ -153,7 +139,6 @@ namespace VirulentVentures
                 return;
             }
 
-            // Add to current node (temple virus seeding affects active expedition node)
             expeditionData.NodeData[nodeIndex].SeededViruses.Add(virus);
             Debug.Log($"TempleSceneComponent: Seeded {virus.DisplayName} to Node {nodeIndex}");
             eventBus.RaiseExpeditionUpdated(expeditionData, partyData);

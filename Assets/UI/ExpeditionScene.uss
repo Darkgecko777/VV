@@ -60,7 +60,9 @@
     border-color: #000000;
     border-radius: 10px;
     width: 600px;
-    height: 300px;
+    height: auto !important;
+    min-height: 300px;
+    max-height: 600px;
     position: absolute;
     top: 200px;
     left: 50%;
@@ -68,9 +70,10 @@
     padding: 20px;
     display: none;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     z-index: 10;
+    overflow: visible;
 }
 
 .flavour-text {
@@ -81,16 +84,6 @@
 }
 
 .continue-button {
-    width: 200px;
-    height: 50px;
-    background-color: #333333;
-    color: #FFFFFF;
-    border-width: 2px;
-    border-color: #000000;
-    border-radius: 5px;
-}
-
-.advance-button {
     width: 200px;
     height: 50px;
     background-color: #333333;
@@ -151,4 +144,46 @@
 .viruses-container {
     margin-top: 10px;
     justify-content: center;
+}
+
+/* === NON-COMBAT STYLES === */
+.skill-check-label {
+    font-size: 18px;
+    color: #FFFF00;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.outcome-success {
+    color: #00FF88;
+    font-size: 14px;
+    margin: 4px 0;
+}
+
+.outcome-failure {
+    color: #FF6666;
+    font-size: 14px;
+    margin: 4px 0;
+}
+
+.resolve-button {
+    width: 220px;
+    height: 50px;
+    background-color: #2A2A2A;
+    color: #FFFFFF;
+    border-width: 2px;
+    border-color: #555555;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+.resolve-button:hover {
+    background-color: #3A3A3A;
+}
+
+.result-text {
+    font-size: 18px;
+    text-align: center;
+    margin-top: 10px;
 }

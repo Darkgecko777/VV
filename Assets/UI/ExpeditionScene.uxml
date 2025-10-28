@@ -9,11 +9,31 @@
             <ui:VisualElement name="Node2" class="node-box node-combat">
                 <ui:Label name="Node2_Label" text="Node 2" class="node-label" />
             </ui:VisualElement>
-            <!-- Add more nodes dynamically up to 9 -->
         </ui:VisualElement>
-        <ui:VisualElement name="PopoutContainer" style="position: absolute; top: 200px; left: 50%; margin-left: -300px; width: 600px; height: 300px; display: none;">
+
+        <ui:VisualElement name="PopoutContainer" style="position: absolute; top: 200px; left: 50%; margin-left: -300px; width: 600px; height: auto; min-height: 300px; max-height: 600px; display: none; flex-direction: column; padding: 20px; overflow: visible;">
             <ui:Label name="FlavourText" text="Swamp miasma clouds your mind." class="flavour-text" />
+
+            <!-- Non-Combat Skill Check -->
+            <ui:VisualElement name="SkillCheckPanel" style="display: none; flex-direction: column; margin-top: 15px;">
+                <ui:Label name="SkillCheckLabel" text="Skill Check: Speed (Best)" class="skill-check-label" />
+            </ui:VisualElement>
+
+            <!-- Outcome Preview -->
+            <ui:VisualElement name="OutcomePreview" style="display: none; margin-top: 15px; flex-direction: column;">
+                <ui:Label name="SuccessLabel" text="Success: +10 Morale" class="outcome-success" />
+                <ui:Label name="FailureLabel" text="Failure: Seed Bog Rot" class="outcome-failure" />
+            </ui:VisualElement>
+
+            <!-- Resolve Button -->
+            <ui:Button name="ResolveButton" text="Resolve Encounter" class="resolve-button" style="display: none;" />
+
+            <!-- Result Panel -->
+            <ui:VisualElement name="ResultPanel" style="display: none; margin-top: 20px; flex-direction: column; align-items: center;">
+                <ui:Label name="ResultText" text="" class="result-text" />
+            </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:Button name="ContinueButton" text="Continue" class="continue-button" style="position: absolute; top: 650px; left: 860px;" />
         <ui:VisualElement name="PartyPanel" style="position: absolute; bottom: 50px; left: 50%; margin-left: -300px; width: 600px; height: 300px; flex-direction: row; flex-wrap: wrap; justify-content: space-around; align-items: center;" />
         <ui:VisualElement name="FadeOverlay" style="width: 1920px; height: 1080px; display: none;" />

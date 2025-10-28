@@ -64,6 +64,12 @@ namespace VirulentVentures
             }
         }
 
+        // NEW: Check if hero is unlocked
+        public bool IsHeroUnlocked(string heroId)
+        {
+            return unlockedHeroes.Contains(heroId);
+        }
+
         public void CopyFrom(PlayerProgress other)
         {
             if (other == null)

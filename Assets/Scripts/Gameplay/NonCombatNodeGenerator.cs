@@ -1,14 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace VirulentVentures
 {
     public class NonCombatNodeGenerator : MonoBehaviour
     {
+        [SerializeField] private List<NonCombatEncounterSO> encounters = new List<NonCombatEncounterSO>();
+
         private static List<NonCombatEncounterSO> encounterCache = new List<NonCombatEncounterSO>();
         private static bool isInitialized = false;
 
@@ -22,22 +21,16 @@ namespace VirulentVentures
             } }
         };
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void InitializeCache()
+        public void InitializeCache()
         {
             if (isInitialized) return;
 
             encounterCache.Clear();
+            if (encounters != null && encounters.Count > 0)
+                encounterCache.AddRange(encounters);
 
-#if UNITY_EDITOR
-            string[] guids = AssetDatabase.FindAssets("t:NonCombatEncounterSO", new[] { "Assets/ScriptableObjects/NonCombat" });
-            foreach (string guid in guids)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                var encounter = AssetDatabase.LoadAssetAtPath<NonCombatEncounterSO>(path);
-                if (encounter != null) encounterCache.Add(encounter);
-            }
-#endif
+            if (encounterCache.Count == 0)
+                Debug.LogWarning("NonCombatNodeGenerator: No encounters assigned. Using fallback.");
 
             isInitialized = true;
         }
@@ -45,19 +38,24 @@ namespace VirulentVentures
         public NodeData GenerateNonCombatNode(string biome, int level, int rating, bool isTempleNode = false)
         {
             if (isTempleNode)
-            {
                 return new NodeData(new List<CharacterStats>(), "Temple", biome, false, "", new List<VirusSO>(), rating);
-            }
 
             if (encounterCache.Count == 0)
             {
-                Debug.LogWarning("NonCombatNodeGenerator: No encounters cached. Using placeholder.");
                 string[] texts = flavourTextPool.ContainsKey(biome) ? flavourTextPool[biome] : new[] { "A quiet rest spot." };
-                return new NodeData(new List<CharacterStats>(), "NonCombat", biome, false, texts[Random.Range(0, texts.Length)], new List<VirusSO>(), rating);
+                return new NodeData(new List<CharacterStats>(), "NonCombat", biome, false,
+                                      texts[Random.Range(0, texts.Length)], new List<VirusSO>(), rating);
             }
 
-            NonCombatEncounterSO encounter = encounterCache.OrderBy(_ => Random.value).First(); // Random
-            float virusChance = 0.05f + (rating - 3) * 0.05f; // Placeholder
+            NonCombatEncounterSO encounter = encounterCache.OrderBy(_ => Random.value).First();
+            List<VirusSO> seeded = new List<VirusSO>();
+
+            if (encounter.NaturalVirusPool != null && encounter.NaturalVirusPool.Length > 0)
+            {
+                float chance = encounter.NaturalVirusChance + (rating - 3) * 0.05f;
+                if (Random.value < chance)
+                    seeded.Add(encounter.NaturalVirusPool[Random.Range(0, encounter.NaturalVirusPool.Length)]);
+            }
 
             return new NodeData(
                 monsters: new List<CharacterStats>(),
@@ -65,10 +63,10 @@ namespace VirulentVentures
                 biome: biome,
                 isCombat: false,
                 flavourText: encounter.Description,
-                seededViruses: new List<VirusSO>(),
+                seededViruses: seeded,
                 challengeRating: rating,
-                vector: encounter.Vector // NEW
-            );
+                vector: encounter.Vector,
+                encounter: encounter);
         }
     }
 }
